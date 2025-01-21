@@ -18,8 +18,7 @@
 ## *   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx,                                       *
 ## *   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx                                       *
 #-----------------------------------------------------------------------------
-# Frontend2 Author: Jon Gough Testplugin(TP)
-# v1.0.304.0 20/09/2024 DD/MM/YYYY
+# Frontend2 Author: Jon Gough Testplugin(TP) v1.0.326.0 18/01/2025 DD/MM/YYYY
 # buildCI:yes useODAPI:no validateJSON:no
 # ---------------------------------------------------------------------------
 ## -- When changing this file do NOT change the order of the sections.    -- ##
@@ -32,7 +31,7 @@ set(CMLOC "CMakeLists: ")
 
 # define minimum cmake version
 cmake_minimum_required(VERSION 3.5.1)
-if (COMMAND cmake_policy)
+if(COMMAND cmake_policy)
   if (POLICY CMP0043)
     cmake_policy(SET CMP0043 NEW)
   endif (POLICY CMP0043)
@@ -59,9 +58,9 @@ set(LONG_DESCRIPTION "WR features include: optimal routing subject to various co
 
 set(VERSION_MAJOR "1")
 set(VERSION_MINOR "15")
-set(VERSION_PATCH "19")
+set(VERSION_PATCH "20")
 set(VERSION_TWEAK "0")
-set(VERSION_DATE  "13/10/2024")#DD/MM/YYYY format
+set(VERSION_DATE  "20/01/2025")#DD/MM/YYYY format
 set(OCPN_MIN_VERSION "ov58")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -88,7 +87,9 @@ set(CLOUDSMITH_BASE_REPOSITORY "weather-routing")  #without the _pi
 set(CLOUDSMITH_USER "opencpn")
 # set(CLOUDSMITH_USER "rick-gleason")
 
-set(XML_INFO_URL "https://opencpn.org/OpenCPN/plugins/weatherroute.html")
+set(XML_INFO_URL
+    "https://opencpn.org/OpenCPN/plugins/weatherroute.html"
+)
 set(XML_SUMMARY ${SHORT_DESCRIPTION})
 set(XML_DESCRIPTION ${LONG_DESCRIPTION})
 
@@ -209,7 +210,6 @@ SET (HDRS
             include/navobj_util.h
 )
 
-
 add_definitions(-DPLUGIN_USE_SVG)
 
 ## ----- Section above - Add your project SET(SRCS and SET(HDRS  etc.-------##
@@ -225,7 +225,7 @@ add_definitions(-DPLUGIN_USE_SVG)
 ## This add_library  can be used in conditionals below.
 ##=============================================================
 
-SET(SRC ${SRCS} ${HDRS} )
+SET(SRC ${SRCS} ${HDRS})
 
 ##=============================================================
 ## Modify/configure 'Include' Directories below for the Plugin
@@ -236,13 +236,13 @@ include_directories(BEFORE ${PROJECT_SOURCE_DIR}/include)
 ## Change target_sources to match your project needs.
 ##==============================================================
 
-target_sources(${PACKAGE_NAME} PUBLIC ${SRC} )
+target_sources(${PACKAGE_NAME} PUBLIC ${SRC})
 
 ##==============================================================
 
 if (NOT OCPN_FLATPAK_CONFIG)
-  # Build environment not available when flatpak is being configured
-  # so following statements will not work
+  # Build environment not available when flatpak is being configured so
+  # following statements will not work
   message(STATUS "${CMLOC}Adding target link libraries to ${PACKAGE_NAME}")
 
   if (WIN32)
@@ -250,31 +250,31 @@ if (NOT OCPN_FLATPAK_CONFIG)
     target_link_libraries(${PACKAGE_NAME} windows::headers)
   endif (WIN32)
 
-    add_subdirectory(opencpn-libs/api-17)
-    target_link_libraries(${PACKAGE_NAME} ocpn::api)
+  add_subdirectory(opencpn-libs/api-17)
+  target_link_libraries(${PACKAGE_NAME} ocpn::api)
 
-    add_subdirectory(opencpn-libs/tinyxml)
-    target_link_libraries(${PACKAGE_NAME} ocpn::tinyxml)
+  add_subdirectory(opencpn-libs/tinyxml)
+  target_link_libraries(${PACKAGE_NAME} ocpn::tinyxml)
 
-    add_subdirectory(opencpn-libs/odapi)
-    target_link_libraries(${PACKAGE_NAME} ocpn::odapi)
+  add_subdirectory(opencpn-libs/odapi)
+  target_link_libraries(${PACKAGE_NAME} ocpn::odapi)
 
-    add_subdirectory(opencpn-libs/jsonlib)
-    target_link_libraries(${PACKAGE_NAME} ocpn::jsonlib)
+  add_subdirectory(opencpn-libs/jsonlib)
+  target_link_libraries(${PACKAGE_NAME} ocpn::jsonlib)
 
-    add_subdirectory(opencpn-libs/plugin_dc)
-    target_link_libraries(${PACKAGE_NAME} ocpn::plugin-dc)
+  add_subdirectory(opencpn-libs/plugin_dc)
+  target_link_libraries(${PACKAGE_NAME} ocpn::plugin-dc)
 
-    add_subdirectory(opencpn-libs/pugixml)
-    target_link_libraries(${PACKAGE_NAME} ocpn::pugixml)
+  add_subdirectory(opencpn-libs/pugixml)
+  target_link_libraries(${PACKAGE_NAME} ocpn::pugixml)
 
-    IF(NOT UNIX)
-        add_subdirectory(opencpn-libs/bzip2)
-        target_link_libraries(${PACKAGE_NAME} ocpn::bzip2)
-    ENDIF(NOT UNIX)
+  IF(NOT UNIX)
+      add_subdirectory(opencpn-libs/bzip2)
+      target_link_libraries(${PACKAGE_NAME} ocpn::bzip2)
+  ENDIF(NOT UNIX)
 
-    add_subdirectory(opencpn-libs/libtess2)
-    target_link_libraries(${PACKAGE_NAME} ocpn::libtess2)
+  add_subdirectory(opencpn-libs/libtess2)
+  target_link_libraries(${PACKAGE_NAME} ocpn::libtess2)
 
 endif(NOT OCPN_FLATPAK_CONFIG)
 
