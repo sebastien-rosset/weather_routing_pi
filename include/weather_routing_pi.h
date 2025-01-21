@@ -84,7 +84,7 @@ std::cout << x << std::endl; } while (0)
 
 class WeatherRouting;
 
-class weather_routing_pi : public wxEvtHandler, public opencpn_plugin_117
+class weather_routing_pi : public wxEvtHandler, public opencpn_plugin_118
 {
 public:
       weather_routing_pi(void *ppimgr);
