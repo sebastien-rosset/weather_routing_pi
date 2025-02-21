@@ -632,6 +632,33 @@ bool RoutePoint::GetCurrentData(RouteMapConfiguration &configuration, double &C,
     return ReadWindAndCurrents(configuration, this, WG, VWG, W, VW, C, VC, atlas, data_mask);
 }
 
+/**
+ * Computes the boat speed and bearing based on wind, current, and polar data.
+ *
+ * This function calculates the boat's speed and bearing through water and over ground
+ * using either direct polar lookups or climatology wind atlas data. It handles tacking
+ * adjustments when the wind angle is too close to the bow.
+ *
+ * @param configuration Boat and route configuration settings
+ * @param timeseconds Duration in seconds for the calculation
+ * @param WG Wind direction over ground (degrees)
+ * @param VWG Wind speed over ground (knots)
+ * @param W Wind direction through water (degrees)
+ * @param VW Wind speed through water (knots)
+ * @param C Current direction (degrees)
+ * @param VC Current speed (knots)
+ * @param H Boat heading (degrees)
+ * @param atlas Wind climatology atlas containing probability distributions
+ * @param data_mask Bit mask indicating data sources (GRIB, climatology, etc.)
+ * @param B Boat's bearing relative to true wind (W+H), initialized by caller
+ * @param VB Boat speed through water [output parameter]
+ * @param BG Boat bearing over ground [output parameter]
+ * @param VBG Boat speed over ground [output parameter]
+ * @param dist Distance traveled over ground (nm) [output parameter]
+ * @param newpolar Index of the polar to use from the boat's polar array
+ *
+ * @return true if computation successful, false if NaN values detected
+ */
 static inline bool ComputeBoatSpeed
 (RouteMapConfiguration &configuration, double timeseconds,
  double WG, double VWG, double W, double VW, double C, double VC, double &H,
@@ -646,6 +673,7 @@ static inline bool ComputeBoatSpeed
         VB = 0;
         int windatlas_count = 8;
         for(int i = 0; i<windatlas_count; i++) {
+            // Calculate relative wind angle (difference between heading and wind direction).
             double dir = H-W+atlas.W[i];
             if(dir > 180)
                 dir = 360 - dir;
@@ -656,27 +684,30 @@ static inline bool ComputeBoatSpeed
                     * cos(deg2rad(mind)) / cos(deg2rad(dir));
             else
                 VBc = polar.Speed(dir, atlas.VW[i], true, configuration.OptimizeTacking);
-
+            // Accumulate weighted boat speed based on probability of each wind direction
             VB += atlas.directions[i]*VBc;
         }
 
+        // Adjust for probability of calm conditions if needed.
         if(configuration.ClimatologyType == RouteMapConfiguration::CUMULATIVE_MINUS_CALMS)
             VB *= 1-atlas.calm;
-    } else
+    } else {
+        // Direct polar lookup - get boat speed from polar data for current heading and wind speed.
         VB = polar.Speed(H, VW, true, configuration.OptimizeTacking);
+    }
 
     /* failed to determine speed.. */
     if(std::isnan(B) || std::isnan(VB)) {
         // when does this hit??
-        printf("polar failed bad! %f %f %f %f\n", W, VW, B, VB);
+        wxLogMessage("polar failed bad! %f %f %f %f\n", W, VW, B, VB);
         configuration.polar_failed = true;
         return false; //B = VB = 0;
     }
 
-    /* compound boatspeed with current */
+    // Calculate boat movement over ground by combining boat speed with current.
     OverGround(B, VB, C, VC, BG, VBG);
 
-    /* distance over ground */
+    // Calculate distance traveled over ground based on speed and time.
     dist = VBG * timeseconds / 3600.0;
     return true;
 }
