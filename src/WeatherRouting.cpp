@@ -864,19 +864,19 @@ void WeatherRouting::UpdateRoutePositionDialog()
     dlg.m_stTacks->SetLabel(wxString::Format(_T("%d"), data.tacks));
     
     // BOAT SPEED
-    if (std::abs(data.VB - data.VBG) > 0.1) {
-        dlg.m_stBoatSpeed->SetLabel(wxString::Format(_T("%.1f knts (SOW), %.1f knts (SOG)"), data.VB, data.VBG));
+    if (std::abs(data.stw - data.sog) > 0.1) {
+        dlg.m_stBoatSpeed->SetLabel(wxString::Format(_T("%.1f knts (SOW), %.1f knts (SOG)"), data.stw, data.sog));
     }
     else {
-        dlg.m_stBoatSpeed->SetLabel(wxString::Format(_T("%.1f knts"), data.VB));
+        dlg.m_stBoatSpeed->SetLabel(wxString::Format(_T("%.1f knts"), data.stw));
     }
 
     // BEARING
-    if (std::abs(data.B - data.BG) >= 5) {
-        dlg.m_stBoatCourse->SetLabel(wxString::Format(_T("%.0f \u00B0T (COW), %.0f \u00B0T (COG)"), positive_degrees(data.B), positive_degrees(data.BG)));
+    if (std::abs(data.ctw - data.cog) >= 5) {
+        dlg.m_stBoatCourse->SetLabel(wxString::Format(_T("%.0f \u00B0T (COW), %.0f \u00B0T (COG)"), positive_degrees(data.ctw), positive_degrees(data.cog)));
     }
     else {
-        dlg.m_stBoatCourse->SetLabel(wxString::Format(_T("%.0f \u00B0T"), positive_degrees(data.B)));
+        dlg.m_stBoatCourse->SetLabel(wxString::Format(_T("%.0f \u00B0T"), positive_degrees(data.ctw)));
     }
     
     // WIND SPEED
@@ -886,7 +886,7 @@ void WeatherRouting::UpdateRoutePositionDialog()
     // WIND: TRUE WIND ANGLE
     // For wind direction, specify if it is
     // coming from starboard or port side.
-    double windDirection = heading_resolve(data.B - data.W);
+    double windDirection = heading_resolve(data.ctw - data.W);
     wxString windDirectionLabel;
     if (windDirection <= 0)
         windDirectionLabel = wxString::Format(_T("%.0f\u00B0 starboard"), fabs(windDirection));
@@ -895,11 +895,11 @@ void WeatherRouting::UpdateRoutePositionDialog()
     dlg.m_stTWA->SetLabel(windDirectionLabel);
     
     // WIND: APPARENT WIND SPEED
-    float apparentWindSpeed = Polar::VelocityApparentWind(data.VB, windDirection, data.VW);
+    float apparentWindSpeed = Polar::VelocityApparentWind(data.stw, windDirection, data.VW);
     dlg.m_stAWS->SetLabel(wxString::Format(_T("%.0f knts"), apparentWindSpeed));
     
     // WIND: APPARENT WIND SPEED
-    float apparentWindDirection = Polar::DirectionApparentWind(apparentWindSpeed, data.VB,
+    float apparentWindDirection = Polar::DirectionApparentWind(apparentWindSpeed, data.stw,
                                                                windDirection, data.VW);
     wxString apparentWindDirectionLabel;
     if (apparentWindDirection <= 0)

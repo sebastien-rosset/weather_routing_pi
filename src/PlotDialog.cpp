@@ -91,36 +91,64 @@ void PlotDialog::OnMouseEventsPlot( wxMouseEvent& event )
 double PlotDialog::GetValue(PlotData &data, int var)
 {
     switch(var) {
-    case SPEED_OVER_GROUND:            return data.VBG;
-    case COURSE_OVER_GROUND:           return positive_degrees(data.BG);
+    case SPEED_OVER_GROUND:            return data.sog;
+    case COURSE_OVER_GROUND:           return positive_degrees(data.cog);
 
-    case SPEED_OVER_WATER:             return data.VB;
-    case COURSE_OVER_WATER:            return positive_degrees(data.B);
+    case SPEED_OVER_WATER:             return data.stw;
+    case COURSE_OVER_WATER:            return positive_degrees(data.ctw);
 
     case WIND_VELOCITY:                return data.VW;
-    case WIND_DIRECTION:               return heading_resolve(data.B - data.W);
+    case WIND_DIRECTION:               return heading_resolve(data.ctw - data.W);
     case WIND_COURSE:                  return positive_degrees(data.W);
 
-    case WIND_VELOCITY_GROUND:         return data.VWG;
-    case WIND_DIRECTION_GROUND:        return heading_resolve(data.BG - data.WG);
-    case WIND_COURSE_GROUND:           return positive_degrees(data.WG);
+    case WIND_VELOCITY_GROUND:         return data.tws;
+    case WIND_DIRECTION_GROUND:        return heading_resolve(data.cog - data.twd);
+    case WIND_COURSE_GROUND:           return positive_degrees(data.twd);
 
    case APPARENT_WIND_SPEED:
-        return Polar::VelocityApparentWind(data.VB, GetValue(data, WIND_DIRECTION), data.VW);
+        return Polar::VelocityApparentWind(data.stw, GetValue(data, WIND_DIRECTION), data.VW);
     case APPARENT_WIND_ANGLE: {
-        return Polar::DirectionApparentWind (GetValue(data, APPARENT_WIND_SPEED), data.VB,
+        return Polar::DirectionApparentWind (GetValue(data, APPARENT_WIND_SPEED), data.stw,
                                               GetValue(data, WIND_DIRECTION), data.VW);
     case WIND_GUST: return data.VW_GUST;
     }
-    case CURRENT_VELOCITY: return data.VC;
-    case CURRENT_DIRECTION: return positive_degrees(data.C);
+    case CURRENT_VELOCITY: return data.currentSpeed;
+    case CURRENT_DIRECTION: return positive_degrees(data.currentDir);
     case SIG_WAVE_HEIGHT: return data.WVHT;
     case TACKS: return data.tacks;
     }
     return NAN;
 }
 
-enum Type {SPEED, COURSE, WIND_SPEED, WIND_DIRECTION, CURRENT_SPEED, CURRENT_DIRECTION, WAVE_HEIGHT, TACKS, WIND_COURSE, INVALID};
+/**
+ * Categories of navigation and weather data
+ *
+ * This enum represents general categories that group the more specific
+ * variables from the Variable enum. Used for processing and displaying
+ * related types of data.
+ */
+enum Type {
+    /** Vessel speed values (SOG, STW) */
+    SPEED,
+    /** Vessel course/heading values (COG, CTW) */
+    COURSE,
+    /** Wind speed values (true, apparent, gusts) */
+    WIND_SPEED,
+    /** Wind direction values (angles relative to vessel) */
+    WIND_DIRECTION,
+    /** Water current speed */
+    CURRENT_SPEED,
+    /** Water current direction */
+    CURRENT_DIRECTION,
+    /** Significant wave height */
+    WAVE_HEIGHT,
+    /** Tacking maneuvers count */
+    TACKS,
+    /** Absolute wind directions (meteorological) */
+    WIND_COURSE,
+    /** Invalid or undefined type */
+    INVALID
+};
 int PlotDialog::GetType(int var)
 {
     switch(var) {

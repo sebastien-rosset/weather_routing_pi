@@ -130,7 +130,7 @@ void BoatDialog::OnMouseEventsPolarPlot( wxMouseEvent& event )
     m_PlotWindow->GetSize( &w, &h);
 
     /* range + to - */
-    double W, VW, B, VB, A, VA;
+    double W, VW, ctw, stw, A, aws;
     double windspeed;
 
     switch(m_lPlotType->GetSelection()) {
@@ -146,15 +146,15 @@ void BoatDialog::OnMouseEventsPolarPlot( wxMouseEvent& event )
             x /= m_PlotScale;
             y /= m_PlotScale;
 
-            B = rad2posdeg(atan2(x, -y));
+            ctw = rad2posdeg(atan2(x, -y));
         } else
-            B = (double)p.x/w*360;
+            ctw = (double)p.x/w*360;
 
         windspeed = m_sWindSpeed->GetValue();
         break;
     case 1:
     {
-        B = m_sWindDirection->GetValue();
+        ctw = m_sWindDirection->GetValue();
         double i = (double)p.x/w*num_wind_speeds;
         int i0 = floor(i), i1 = ceil(i);
         double d = i - i0;
@@ -164,40 +164,40 @@ void BoatDialog::OnMouseEventsPolarPlot( wxMouseEvent& event )
 
     switch(m_cPlotVariable->GetSelection()) {
     case 0: // true wind
-        W = B;
+        W = ctw;
         VW = windspeed;
-        VB = m_Boat.Plans[m_SelectedSailPlan].Speed(W, VW);
+        stw = m_Boat.Plans[m_SelectedSailPlan].Speed(W, VW);
 
-        VA = BoatPlan::VelocityApparentWind(VB, W, VW);
-        A = rad2posdeg(BoatPlan::DirectionApparentWind(VA, VB, W, VW));
+        aws = BoatPlan::VelocityApparentWind(stw, W, VW);
+        A = rad2posdeg(BoatPlan::DirectionApparentWind(aws, stw, W, VW));
         break;
     case 1:
-        A = heading_resolve(B);
+        A = heading_resolve(ctw);
         VW = windspeed;
-        VB = m_Boat.Plans[m_SelectedSailPlan].SpeedAtApparentWindDirection(A, VW, &W);
+        stw = m_Boat.Plans[m_SelectedSailPlan].SpeedAtApparentWindDirection(A, VW, &W);
         W = positive_degrees(W);
 
-        VA = BoatPlan::VelocityApparentWind(VB, W, VW);
+        aws = BoatPlan::VelocityApparentWind(stw, W, VW);
         break;
     case 2:
-        W = B;
-        VA = windspeed;
-        VB = m_Boat.Plans[m_SelectedSailPlan].SpeedAtApparentWindSpeed(W, VA);
-        VW = BoatPlan::VelocityTrueWind(VA, VB, W);
-        A = rad2posdeg(BoatPlan::DirectionApparentWind(VA, VB, W, VW));
+        W = ctw;
+        aws = windspeed;
+        stw = m_Boat.Plans[m_SelectedSailPlan].SpeedAtApparentWindSpeed(W, aws);
+        VW = BoatPlan::VelocityTrueWind(aws, stw, W);
+        A = rad2posdeg(BoatPlan::DirectionApparentWind(aws, stw, W, VW));
         break;
     case 3:
-        A = heading_resolve(B);
-        VA = windspeed;
-        VB = m_Boat.Plans[m_SelectedSailPlan].SpeedAtApparentWind(A, VA, &W);
+        A = heading_resolve(ctw);
+        aws = windspeed;
+        stw = m_Boat.Plans[m_SelectedSailPlan].SpeedAtApparentWind(A, aws, &W);
         W = positive_degrees(W);
-        VW = BoatPlan::VelocityTrueWind(VA, VB, W);
+        VW = BoatPlan::VelocityTrueWind(aws, stw, W);
     }
 
-    m_stBoatAngle->SetLabel(wxString::Format(_T("%03.0f"), B));
-    m_stBoatKnots->SetLabel(wxString::Format(_T("%.1f"), VB));
+    m_stBoatAngle->SetLabel(wxString::Format(_T("%03.0f"), ctw));
+    m_stBoatKnots->SetLabel(wxString::Format(_T("%.1f"), stw));
 
-    int newmousew = round(B);
+    int newmousew = round(ctw);
     if(newmousew != m_MouseW) {
         m_MouseW = newmousew;
         RefreshPlots();
@@ -208,7 +208,7 @@ void BoatDialog::OnMouseEventsPolarPlot( wxMouseEvent& event )
 
     m_stApparentWindAngle->SetLabel(wxString::Format(_T("%03.0f"), A));
 
-    m_stApparentWindKnots->SetLabel(wxString::Format(_T("%.1f"), VA));
+    m_stApparentWindKnots->SetLabel(wxString::Format(_T("%.1f"), aws));
 #endif
 }
 
@@ -242,17 +242,17 @@ void BoatDialog::OnPaintPlot(wxPaintEvent& event)
     int selection = m_cPlotVariable->GetSelection();
 
     for(unsigned int VWi = 0; VWi<polar.wind_speeds.size(); VWi++) {
-        double windspeed = polar.wind_speeds[VWi].VW;
+        double windspeed = polar.wind_speeds[VWi].tws;
         for(unsigned int Wi = 0; Wi<polar.degree_steps.size(); Wi++) {
             double W = polar.degree_steps[Wi];
-            double VB;
+            double stw;
             if(selection < 2)
-                VB = polar.Speed(W, windspeed);
+                stw = polar.Speed(W, windspeed);
             else
-                VB = polar.SpeedAtApparentWindSpeed(W, windspeed);
+                stw = polar.SpeedAtApparentWindSpeed(W, windspeed);
 
-            if(VB > maxVB)
-                maxVB = VB;
+            if(stw > maxVB)
+                maxVB = stw;
         }
     }
 
@@ -288,13 +288,13 @@ void BoatDialog::OnPaintPlot(wxPaintEvent& event)
 
     if(plottype == 0) {
         /* polar meridians */
-        for(double B = 0; B < DEGREES; B+=15) {
-            double x = maxVB*m_PlotScale*sin(deg2rad(B));
-            double y = maxVB*m_PlotScale*cos(deg2rad(B));
-            if(B < 180)
+        for(double ctw = 0; ctw < DEGREES; ctw+=15) {
+            double x = maxVB*m_PlotScale*sin(deg2rad(ctw));
+            double y = maxVB*m_PlotScale*cos(deg2rad(ctw));
+            if(ctw < 180)
                 dc.DrawLine(xc - x, h/2 + y, xc + x, h/2 - y);
 
-            wxString str = wxString::Format(_T("%.0f"), B);
+            wxString str = wxString::Format(_T("%.0f"), ctw);
             int sw, sh;
             dc.GetTextExtent(str, &sw, &sh);
             dc.DrawText(str, xc + .9*x - sw/2, h/2 - .9*y - sh/2);
@@ -320,11 +320,11 @@ void BoatDialog::OnPaintPlot(wxPaintEvent& event)
     /* boat speeds */
     if(plottype == 0) {
         for(unsigned int VWi = 0; VWi<polar.wind_speeds.size(); VWi++) {
-            double VW, VA;
+            double VW, aws;
             switch(selection) {
-            case 0: case 1: VW = polar.wind_speeds[VWi].VW; break;
+            case 0: case 1: VW = polar.wind_speeds[VWi].tws; break;
                 // use grid vw for va steps
-            case 2: case 3: VA = polar.wind_speeds[VWi].VW; break;
+            case 2: case 3: aws = polar.wind_speeds[VWi].tws; break;
             }
 
             bool lastvalid = false;
@@ -335,18 +335,18 @@ void BoatDialog::OnPaintPlot(wxPaintEvent& event)
             double Wn = polar.degree_steps[polar.degree_steps.size()-1];
             double Wd = Wn - W0, Ws = Wd / floor(Wd);
             for(double W = W0; W <= Wn; W+= Ws) {
-                double VB;
+                double stw;
                 switch(selection) {
                 case 0: case 1:
-                    VB = polar.Speed(W, VW);
+                    stw = polar.Speed(W, VW);
                     break;
                 case 2: case 3:
-                    VB = polar.SpeedAtApparentWindSpeed(W, VA);
-                    VW = Polar::VelocityTrueWind(VA, VB, W);
+                    stw = polar.SpeedAtApparentWindSpeed(W, aws);
+                    VW = Polar::VelocityTrueWind(aws, stw, W);
                     break;
                 }
 
-                if(std::isnan(VB)) {
+                if(std::isnan(stw)) {
                     lastvalid = false;
                     continue;
                 }
@@ -355,12 +355,12 @@ void BoatDialog::OnPaintPlot(wxPaintEvent& event)
 
                 switch(selection) {
                 case 0: case 2: a = W; break;
-                case 1: case 3: a = Polar::DirectionApparentWind(VB, W, VW); break;
+                case 1: case 3: a = Polar::DirectionApparentWind(stw, W, VW); break;
                 }
 
                 int px, py;
-                px =  m_PlotScale*VB*sin(deg2rad(a)) + cx;
-                py = -m_PlotScale*VB*cos(deg2rad(a)) + cy;
+                px =  m_PlotScale*stw*sin(deg2rad(a)) + cx;
+                py = -m_PlotScale*stw*cos(deg2rad(a)) + cy;
 
                 if(lastvalid) {
                     dc.DrawLine(lx, ly, px, py);
@@ -376,30 +376,30 @@ void BoatDialog::OnPaintPlot(wxPaintEvent& event)
         }
     } else {
         for(unsigned int Wi = 0; Wi<polar.degree_steps.size(); Wi++) {
-            double W = polar.degree_steps[Wi], VB;
+            double W = polar.degree_steps[Wi], stw;
 
             bool lastvalid = false;
             int lx, ly;
             for(unsigned int VWi = 0; VWi<polar.wind_speeds.size(); VWi++) {
-                double windspeed = polar.wind_speeds[VWi].VW;
-                double VW, VA;
+                double windspeed = polar.wind_speeds[VWi].tws;
+                double VW, aws;
                 switch(selection) {
                 case 0: case 1: VW = windspeed; break;
                     // use grid vw for va steps
-                case 2: case 3: VA = windspeed; break;
+                case 2: case 3: aws = windspeed; break;
                 }
 
                 switch(selection) {
                 case 0: case 1:
-                    VB = polar.Speed(W, VW);
+                    stw = polar.Speed(W, VW);
                     break;
                 case 2: case 3:
-                    VB = polar.SpeedAtApparentWindSpeed(W, VA);
-                    VW = Polar::VelocityTrueWind(VA, VB, W);
+                    stw = polar.SpeedAtApparentWindSpeed(W, aws);
+                    VW = Polar::VelocityTrueWind(aws, stw, W);
                     break;
                 }
 
-                if(std::isnan(VB)) {
+                if(std::isnan(stw)) {
                     lastvalid = false;
                     continue;
                 }
@@ -409,7 +409,7 @@ void BoatDialog::OnPaintPlot(wxPaintEvent& event)
 
                 switch(selection) {
                 case 0: case 2: a = W; break;
-                case 1: case 3: a = Polar::DirectionApparentWind(VB, W, VW); break;
+                case 1: case 3: a = Polar::DirectionApparentWind(stw, W, VW); break;
                 }
                 #endif
 
@@ -425,7 +425,7 @@ void BoatDialog::OnPaintPlot(wxPaintEvent& event)
 
                     px = x2 - x1 ? (y2 - y1)*(x - x1)/(x2 - x1) + y1 : y1;
                 }
-                py = h - 2*VB*m_PlotScale;
+                py = h - 2*stw*m_PlotScale;
 
                 if(lastvalid) {
                     dc.DrawLine(lx, ly, px, py);
@@ -441,8 +441,8 @@ void BoatDialog::OnPaintPlot(wxPaintEvent& event)
     wxPoint lastp[4];
     bool lastpvalid[4] = {false, false, false, false};
     for(unsigned int VWi = 0; VWi<polar.wind_speeds.size(); VWi++) {
-        double VA, VW = polar.wind_speeds[VWi].VW;
-        double windspeed = polar.wind_speeds[VWi].VW;
+        double aws, VW = polar.wind_speeds[VWi].tws;
+        double windspeed = polar.wind_speeds[VWi].tws;
         SailingVMG vmg = polar.GetVMGTrueWind(VW);
 
         for(int i=0; i<4; i++) {
@@ -458,28 +458,28 @@ void BoatDialog::OnPaintPlot(wxPaintEvent& event)
             if(std::isnan(W))
                 continue;
 
-            double VB = polar.Speed(W, VW);
+            double stw = polar.Speed(W, VW);
 
             double a;
             switch(selection) {
             case 0: case 2: a = W; break;
-            case 1: case 3: a = Polar::DirectionApparentWind(VB, W, VW); break;
+            case 1: case 3: a = Polar::DirectionApparentWind(stw, W, VW); break;
             }
             switch(selection) {
             case 0: case 1:
-                VB = polar.Speed(W, VW);
+                stw = polar.Speed(W, VW);
                 break;
             case 2: case 3:
-                VA = windspeed;
-                VB = polar.SpeedAtApparentWindSpeed(W, VA);
-                //VW = Polar::VelocityTrueWind(VA, VB, W);
+                aws = windspeed;
+                stw = polar.SpeedAtApparentWindSpeed(W, aws);
+                //VW = Polar::VelocityTrueWind(aws, stw, W);
                 break;
             }
 
             wxPoint p;
             if(plottype == 0) {
-                p.x =  m_PlotScale*VB*sin(deg2rad(a)) + cx;
-                p.y = -m_PlotScale*VB*cos(deg2rad(a)) + cy;
+                p.x =  m_PlotScale*stw*sin(deg2rad(a)) + cx;
+                p.y = -m_PlotScale*stw*cos(deg2rad(a)) + cy;
             } else {
                 int s;
                 for(s = 0; s<num_wind_speeds-1; s++)
@@ -492,7 +492,7 @@ void BoatDialog::OnPaintPlot(wxPaintEvent& event)
 
                     p.x = x2 - x1 ? (y2 - y1)*(x - x1)/(x2 - x1) + y1 : y1;
                 }
-                p.y = h - 2*VB*m_PlotScale;
+                p.y = h - 2*stw*m_PlotScale;
             }
 
             if(lastpvalid[i])
