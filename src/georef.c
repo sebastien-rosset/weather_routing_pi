@@ -552,7 +552,7 @@ fromPOLY(double x, double y, double lat0, double lon0, double *lat, double *lon)
       z = WGS84_semimajor_axis_meters * mercator_k0;
 
       yp = y - (lat0 * DEGREE * z);
-      if(fabs(yp <= TOL))
+      if(abs(yp <= TOL))
       {
             *lon = lon0 + (x / (DEGREE * z));
             *lat = lat0;

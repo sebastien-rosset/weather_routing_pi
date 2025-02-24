@@ -551,7 +551,7 @@ double Polar::SpeedAtApparentWindSpeed(double W, double aws) {
     double cVA = VelocityApparentWind(stw, W, VW);
     if (std::isnan(cVA) || iters++ > 256) return NAN;
 
-    if (fabsf(cVA - aws) < 2e-2) return cVB;
+    if (std::abs(cVA - aws) < 2e-2) return cVB;
 
     VW -= (cVA - aws) * lp;
     lp *= .97;
@@ -574,7 +574,7 @@ double Polar::SpeedAtApparentWind(double A, double aws, double* pW) {
       return NAN;
     }
 
-    if (fabsf(cVA - aws) < 2e-2 && fabsf(cA - A) < 2e-2) {
+    if (std::abs(cVA - aws) < 2e-2 && std::abs(cA - A) < 2e-2) {
       if (pW) *pW = W;
       return cVB;
     }
@@ -620,7 +620,7 @@ SailingVMG Polar::GetVMGApparentWind(double aws) {
 
       double stw = Speed(W, VW);
       double cVA = VelocityApparentWind(stw, W, VW);
-      if (fabsf(cVA - aws) < 2e-1) {
+      if (std::abs(cVA - aws) < 2e-1) {
         avmg.values[i] = W;
         break;
       }
@@ -983,8 +983,8 @@ void Polar::CalculateVMG(int VWi) {
       unsigned int Wi1 = maxWi > 0 ? maxWi - 1 : maxWi;
       unsigned int Wi2 = maxWi < degree_steps.size() - 1 ? maxWi + 1 : maxWi;
       double dsmaxWi = degree_steps[maxWi];
-      double step = wxMax(fabsf(dsmaxWi - degree_steps[Wi1]),
-                          fabsf(dsmaxWi - degree_steps[Wi2])) /
+      double step = wxMax(std::abs(dsmaxWi - degree_steps[Wi1]),
+                          std::abs(dsmaxWi - degree_steps[Wi2])) /
                     4;
 
       while (step > 2e-3) {
