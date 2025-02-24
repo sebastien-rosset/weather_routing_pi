@@ -404,16 +404,17 @@ struct RouteMapConfiguration {
   bool Update();
 
   wxString RouteGUID; /* Route GUID if any */
-  wxString Start;     /* The name of starting position, which is resolved to
-                         StartLat/StartLon. */
+  /* The name of starting position, which is resolved to StartLat/StartLon. */
+  wxString Start;
   wxString StartGUID;
-
-  wxString End; /* The name of the destination position, which is resolved to
-                   EndLat/EndLon. */
+  /*
+   * The name of the destination position, which is resolved to EndLat/EndLon.
+   */
+  wxString End;
   wxString EndGUID;
 
-  wxDateTime
-      StartTime; /* The time when the boat leaves the starting position. */
+  /* The time when the boat leaves the starting position. */
+  wxDateTime StartTime;
 
   double DeltaTime;     /* default time in seconds between propagations */
   double UsedDeltaTime; /* time in seconds between propagations */
@@ -489,8 +490,8 @@ struct RouteMapConfiguration {
   };
   enum ClimatologyDataType ClimatologyType;
   bool AllowDataDeficient;
-  double WindStrength;  // wind speed multiplier. 1.0 is 100% of the wind speed
-                        // in the grib.
+  /** wind speed multiplier. 1.0 is 100% of the wind speed in the grib. */
+  double WindStrength;
 
   // If true, the route calculation will avoid land, outside the
   // SafetyMarginLand.
@@ -554,7 +555,14 @@ struct RouteMapConfiguration {
   // The time starts at StartTime and is incremented for each step until the
   // destination is reached, or the route calculation fails.
   wxDateTime time;
-  bool grib_is_data_deficient, polar_failed, wind_data_failed;
+  bool grib_is_data_deficient;
+  /**
+   * Indicates the status of the polar computation.
+   * Errors can happen if the polar data is invalid, or there is no polar data
+   * for the wind conditions.
+   */
+  PolarSpeedStatus polar_status;
+  bool wind_data_failed;
   // Set to true if the route crossed land.
   bool land_crossing;
   // Set to true if the route crossed a boundary.
@@ -584,10 +592,19 @@ public:
   LOCKING_ACCESSOR(ReachedDestination, m_bReachedDestination)
   LOCKING_ACCESSOR(Valid, m_bValid)
   LOCKING_ACCESSOR(GribFailed, m_bGribFailed)
-  LOCKING_ACCESSOR(PolarFailed, m_bPolarFailed)
   LOCKING_ACCESSOR(NoData, m_bNoData)
   LOCKING_ACCESSOR(LandCrossing, m_bLandCrossing)
   LOCKING_ACCESSOR(BoundaryCrossing, m_bBoundaryCrossing)
+
+  wxString GetPolarStatus() {
+    Lock();
+    PolarSpeedStatus status = m_bPolarStatus;
+    Unlock();
+    if (status != POLAR_SPEED_SUCCESS) {
+      return Polar::GetPolarStatusMessage(status);
+    }
+    return wxEmptyString;
+  }
 
   bool Empty() {
     Lock();
@@ -689,7 +706,9 @@ protected:
   }
 
   void UpdateStatus(const RouteMapConfiguration& configuration) {
-    if (configuration.polar_failed) m_bPolarFailed = true;
+    if (configuration.polar_status != POLAR_SPEED_SUCCESS) {
+      m_bPolarStatus = configuration.polar_status;
+    }
 
     if (configuration.wind_data_failed) m_bNoData = true;
 
@@ -719,7 +738,7 @@ private:
   bool m_bFinished, m_bValid;
   bool m_bReachedDestination;
   bool m_bGribFailed;
-  bool m_bPolarFailed;
+  PolarSpeedStatus m_bPolarStatus;
   bool m_bNoData;
   bool m_bLandCrossing;
   bool m_bBoundaryCrossing;

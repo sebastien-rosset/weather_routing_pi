@@ -97,6 +97,32 @@ class Boat;
 
 #define DEGREES 360
 
+/**
+ * Enumeration of error codes that can be returned by the Speed() function.
+ * Used to provide detailed information about why a speed calculation failed.
+ */
+enum PolarSpeedStatus {
+  /** Calculation was successful */
+  POLAR_SPEED_SUCCESS = 0,
+  /** Wind speed is negative */
+  POLAR_SPEED_NEGATIVE_WINDSPEED,
+  /** No polar data available (empty degree_steps or wind_speeds) */
+  POLAR_SPEED_NO_POLAR_DATA,
+  /** Wind angle is too low (below minimum defined in polar) */
+  POLAR_SPEED_ANGLE_TOO_LOW,
+  /** Wind angle is too high (above minimum defined in polar) */
+  POLAR_SPEED_ANGLE_TOO_HIGH,
+  /** Wind speed is too low (below minimum defined in polar) */
+  POLAR_SPEED_WIND_TOO_LIGHT,
+  /** Wind speed is too high (above maximum defined in polar) */
+  POLAR_SPEED_WIND_TOO_STRONG,
+  /** Calculation resulted in negative boat speed (likely due to faulty polar
+     data) */
+  POLAR_SPEED_NEGATIVE_RESULT,
+  /** Invalid sail configuration. */
+  POLAR_SPEED_INVALID_SAIL_CONFIGURATION
+};
+
 class Polar {
 public:
   /**
@@ -172,6 +198,18 @@ public:
    */
   static double VelocityTrueWind2(double aws, double stw, double A);
 
+  /**
+   * Get a human-readable, translatable message for a polar speed status code.
+   *
+   * This helper method converts a PolarSpeedStatus code into a user-friendly
+   * message that can be displayed in the UI. All messages are wrapped in _()
+   * for translation support.
+   *
+   * @param status The status code to convert to a message.
+   * @return wxString containing the translated status message.
+   */
+  static wxString GetPolarStatusMessage(PolarSpeedStatus status);
+
   Polar();
 
   bool Open(const wxString& filename, wxString& message);
@@ -180,6 +218,20 @@ public:
   wxString FileName;
 
   void OptimizeTackingSpeeds();
+  /**
+   * Finds the closest wind speed indices in the polar data for a given wind
+   * speed.
+   *
+   * This function searches through the wind_speeds vector to find the indices
+   * of the two wind speed entries that bracket the given wind speed (VW). These
+   * indices can be used for interpolation between wind speed data points.
+   *
+   * @param VW The true wind speed to find brackets for, in knots
+   * @param[out] VW1i Reference to variable that will receive the lower bracket
+   * index
+   * @param[out] VW2i Reference to variable that will receive the upper bracket
+   * index
+   */
   void ClosestVWi(double VW, int& VW1i, int& VW2i);
 
   /**
@@ -194,6 +246,9 @@ public:
    * (0° = head to wind, 90° = beam reach, 180° = running). Values above 180°
    * are mirrored as the polar is assumed symmetric.
    * @param tws The true wind speed in knots.
+   * @param error Pointer to a PolarSpeedStatus variable that will receive
+   * detailed error code. If nullptr, error details are not returned. On
+   * success, *error is set to POLAR_SPEED_SUCCESS.
    * @param bound If true, returns NAN when wind speed is outside the range
    * defined in the polar data. If false, extrapolates the boat speed when wind
    * speed is outside the polar data range.
@@ -203,8 +258,8 @@ public:
    * @return The boat speed in knots, or NAN if the angle is in a no-go zone or
    * other calculation constraints.
    */
-  double Speed(double polarAngle, double tws, bool bound = false,
-               bool optimize_tacking = false);
+  double Speed(double polarAngle, double tws, PolarSpeedStatus* error = nullptr,
+               bool bound = false, bool optimize_tacking = false);
   /**
    * Iteratively solves for boat speed given a target apparent wind direction.
    *
@@ -309,7 +364,31 @@ public:
   void UpdateSpeeds();
   void UpdateDegreeStepLookup();
 
-  bool InsideCrossOverContour(float H, float VW, bool optimize_tacking);
+  /**
+   * Determines if the current sailing state is within the crossover contour.
+   *
+   * This function checks if the given heading (H) and wind speed (VW)
+   * combination falls within the defined crossover region. The crossover region
+   * typically represents conditions where a sail change would be beneficial.
+   *
+   * If optimize_tacking is true, the function first applies VMG optimization
+   * to the heading angle before checking the region.
+   *
+   * The function normalizes the heading angle to the 0-180 degree range for
+   * symmetric polars and handles special cases like zero wind speed.
+   *
+   * @param H The heading angle in degrees relative to the true wind
+   * @param VW The true wind speed in knots
+   * @param optimize_tacking If true, optimize the heading angle for VMG before
+   * checking
+   * @param status Pointer to a PolarSpeedStatus variable to receive detailed
+   * status information. If nullptr, status details are not returned. On
+   * success, *status is set to POLAR_SPEED_SUCCESS.
+   * @return true if the sailing state is inside the crossover contour, false
+   * otherwise
+   */
+  bool InsideCrossOverContour(float H, float VW, bool optimize_tacking,
+                              PolarSpeedStatus* status = nullptr);
   PolygonRegion CrossOverRegion;
 
   void Generate(const std::list<PolarMeasurement>& measurements);

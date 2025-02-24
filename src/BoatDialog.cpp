@@ -1042,8 +1042,9 @@ wxString BoatDialog::FormatVMG(double W, double VW) {
   long index = SelectedPolar();
   Polar& polar = m_Boat.Polars[index];
   if (std::isnan(W)) return _("wind speed out of range");
+  PolarSpeedStatus error;
   double A = positive_degrees(
-      Polar::DirectionApparentWind(polar.Speed(W, VW, true), W, VW));
+      Polar::DirectionApparentWind(polar.Speed(W, VW, &error, true), W, VW));
   return wxString::Format(_("%.1f True %.1f Apparent"), W, A);
 }
 
