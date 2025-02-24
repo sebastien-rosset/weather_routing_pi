@@ -27,22 +27,21 @@
 
 class RouteMapOverlay;
 
-class ReportDialog : public ReportDialogBase
-{
+class ReportDialog : public ReportDialogBase {
 public:
-    ReportDialog( WeatherRouting &weatherrouting );
+  ReportDialog(WeatherRouting& weatherrouting);
 
-    void SetRouteMapOverlays(std::list<RouteMapOverlay*> routemapoverlays);
+  void SetRouteMapOverlays(std::list<RouteMapOverlay*> routemapoverlays);
 
-    bool m_bReportStale;
+  bool m_bReportStale;
 
 protected:
-    void GenerateRoutesReport();
-    void OnInformation( wxCommandEvent& event );
-    void OnClose( wxCommandEvent& event ) { Hide(); }
+  void GenerateRoutesReport();
+  void OnInformation(wxCommandEvent& event);
+  void OnClose(wxCommandEvent& event) { Hide(); }
 
 private:
-    wxDateTime DisplayedTime(wxDateTime t);
-    wxString FormatTime(wxDateTime t);
-    WeatherRouting &m_WeatherRouting;
+  wxDateTime DisplayedTime(wxDateTime t);
+  wxString FormatTime(wxDateTime t);
+  WeatherRouting& m_WeatherRouting;
 };

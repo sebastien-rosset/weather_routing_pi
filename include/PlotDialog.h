@@ -71,8 +71,8 @@ private:
     WIND_COURSE,
     /** True wind speed relative to the earth's surface in knots (TWS) */
     WIND_VELOCITY_GROUND,
-    /** True Wind direction relative to the vessel's course over ground in degrees
-       (relative angle) */
+    /** True Wind direction relative to the vessel's course over ground in
+       degrees (relative angle) */
     WIND_DIRECTION_GROUND,
     /** Absolute true wind direction in degrees relative to true north (TWD) -
        meteorological, where wind is coming FROM */

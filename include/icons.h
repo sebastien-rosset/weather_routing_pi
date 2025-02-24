@@ -4,7 +4,7 @@
 
 #include <wx/wxprec.h>
 #ifndef WX_PRECOMP
-#	include <wx/wx.h>
+#include <wx/wx.h>
 #endif
 
 #include <wx/filename.h>
@@ -12,12 +12,12 @@
 
 extern void initialize_images(void);
 
-extern wxBitmap *_img_WeatherRouting;
+extern wxBitmap* _img_WeatherRouting;
 
 #ifdef PLUGIN_USE_SVG
-   extern wxString _svg_weather_routing;
-   extern wxString _svg_weather_routing_rollover;
-   extern wxString _svg_weather_routing_toggled;
+extern wxString _svg_weather_routing;
+extern wxString _svg_weather_routing_rollover;
+extern wxString _svg_weather_routing_toggled;
 #endif
 
 #endif /* ICONS_H */

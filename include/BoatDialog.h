@@ -33,63 +33,67 @@
 class WeatherRouting;
 class CrossOverGenerationThread;
 
-class BoatDialog : public BoatDialogBase
-{
+class BoatDialog : public BoatDialogBase {
 public:
-    BoatDialog(WeatherRouting &weatherrouting);
-    ~BoatDialog();
+  BoatDialog(WeatherRouting& weatherrouting);
+  ~BoatDialog();
 
-    void LoadPolar(const wxString &filename);
-    
-    Boat m_Boat;
-    wxString m_boatpath;
+  void LoadPolar(const wxString& filename);
+
+  Boat m_Boat;
+  wxString m_boatpath;
 
 private:
-    void OnMouseEventsPolarPlot( wxMouseEvent& event );
-    
-    void OnPaintPlot( wxPaintEvent& event );
-    void OnUpdatePlot( wxSizeEvent& event ) { OnUpdatePlot(); }
-    void OnPaintCrossOverChart( wxPaintEvent& event );
-    void OnOverlapPercentage( wxSpinEvent& event );
-    void OnSizePlot( wxSizeEvent& event ) { RefreshPlots(); }
-    void OnVMGWindSpeed( wxSpinEvent& event ) { UpdateVMG(); }
-    void OnUpdatePlot();
-    void OnUpdatePlot( wxCommandEvent& event ) { OnUpdatePlot(); }
-    void OnUpdatePlot( wxSpinEvent& event ) { OnUpdatePlot(); }
-    void OnOpenBoat( wxCommandEvent& event );
-    void SaveBoat();
-    void OnSaveAsBoat( wxCommandEvent& event );
-    void OnSaveBoat( wxCommandEvent& event ) { SaveBoat(); }
-    void OnClose( wxCommandEvent& event );
-    void LoadFile(bool switched = false);
-    void OnPolarSelected( wxListEvent& event ) { OnPolarSelected(); }
-    void OnPolarSelected();
+  void OnMouseEventsPolarPlot(wxMouseEvent& event);
 
-    void OnUpPolar( wxCommandEvent& event );
-    void OnDownPolar( wxCommandEvent& event );
-    void OnEditPolar( wxCommandEvent& event );
-    void OnAddPolar( wxCommandEvent& event );
-    void OnRemovePolar( wxCommandEvent& event );
+  void OnPaintPlot(wxPaintEvent& event);
+  void OnUpdatePlot(wxSizeEvent& event) { OnUpdatePlot(); }
+  void OnPaintCrossOverChart(wxPaintEvent& event);
+  void OnOverlapPercentage(wxSpinEvent& event);
+  void OnSizePlot(wxSizeEvent& event) { RefreshPlots(); }
+  void OnVMGWindSpeed(wxSpinEvent& event) { UpdateVMG(); }
+  void OnUpdatePlot();
+  void OnUpdatePlot(wxCommandEvent& event) { OnUpdatePlot(); }
+  void OnUpdatePlot(wxSpinEvent& event) { OnUpdatePlot(); }
+  void OnOpenBoat(wxCommandEvent& event);
+  void SaveBoat();
+  void OnSaveAsBoat(wxCommandEvent& event);
+  void OnSaveBoat(wxCommandEvent& event) { SaveBoat(); }
+  void OnClose(wxCommandEvent& event);
+  void LoadFile(bool switched = false);
+  void OnPolarSelected(wxListEvent& event) { OnPolarSelected(); }
+  void OnPolarSelected();
 
-    void GenerateCrossOverChart();
-    void OnEvtThread( wxThreadEvent & event );
+  void OnUpPolar(wxCommandEvent& event);
+  void OnDownPolar(wxCommandEvent& event);
+  void OnEditPolar(wxCommandEvent& event);
+  void OnAddPolar(wxCommandEvent& event);
+  void OnRemovePolar(wxCommandEvent& event);
 
-    void RepopulatePolars();
+  void GenerateCrossOverChart();
+  void OnEvtThread(wxThreadEvent& event);
 
-    void RefreshPlots() { m_PlotWindow->Refresh(); m_CrossOverChart->Refresh(); }
+  void RepopulatePolars();
 
-    wxString FormatVMG(double W, double VW);
-    void UpdateVMG();
-    void PlotVMG(wxPaintDC &dc, double lW, double W, double scale, int plottype);
-    long SelectedPolar() { return m_lPolars->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED); }
+  void RefreshPlots() {
+    m_PlotWindow->Refresh();
+    m_CrossOverChart->Refresh();
+  }
 
-    WeatherRouting &m_WeatherRouting;
+  wxString FormatVMG(double W, double VW);
+  void UpdateVMG();
+  void PlotVMG(wxPaintDC& dc, double lW, double W, double scale, int plottype);
+  long SelectedPolar() {
+    return m_lPolars->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+  }
 
-    double m_PlotScale;
-    int m_MouseW;
+  WeatherRouting& m_WeatherRouting;
 
-    bool m_CrossOverRegenerate;
-    CrossOverGenerationThread *m_CrossOverGenerationThread;
+  double m_PlotScale;
+  int m_MouseW;
+
+  bool m_CrossOverRegenerate;
+  CrossOverGenerationThread* m_CrossOverGenerationThread;
 };
 
 #endif

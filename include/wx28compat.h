@@ -27,13 +27,10 @@
  *
  */
 
-
-
-
 #ifndef __WX28COMPAT_H__
 #define __WX28COMPAT_H__
 
-#if !wxCHECK_VERSION(3,0,0)
+#if !wxCHECK_VERSION(3, 0, 0)
 
 typedef int wxPenStyle;
 
