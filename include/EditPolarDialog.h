@@ -31,32 +31,31 @@
 class BoatDialog;
 
 class Polar;
-class EditPolarDialog : public EditPolarDialogBase
-{
+class EditPolarDialog : public EditPolarDialogBase {
 public:
-    EditPolarDialog(wxWindow *parent);
+  EditPolarDialog(wxWindow* parent);
 
-    void SetPolarIndex(int i);
+  void SetPolarIndex(int i);
 
 private:
-    void OnPolarGridChanged( wxGridEvent& event );
-    void OnAddTrueWindAngle( wxCommandEvent& event );
-    void OnRemoveTrueWindAngle( wxCommandEvent& event );
-    void OnAddTrueWindSpeed( wxCommandEvent& event );
-    void OnRemoveTrueWindSpeed( wxCommandEvent& event );
-    void OnAddMeasurement( wxCommandEvent& event );
-    void OnRemoveMeasurement( wxCommandEvent& event );
-    void OnRemoveAllMeasurements( wxCommandEvent& event );
-    void OnGeneratePolar( wxCommandEvent& event );
-    void OnSave( wxCommandEvent& event ) { EndModal(wxID_SAVE); }
+  void OnPolarGridChanged(wxGridEvent& event);
+  void OnAddTrueWindAngle(wxCommandEvent& event);
+  void OnRemoveTrueWindAngle(wxCommandEvent& event);
+  void OnAddTrueWindSpeed(wxCommandEvent& event);
+  void OnRemoveTrueWindSpeed(wxCommandEvent& event);
+  void OnAddMeasurement(wxCommandEvent& event);
+  void OnRemoveMeasurement(wxCommandEvent& event);
+  void OnRemoveAllMeasurements(wxCommandEvent& event);
+  void OnGeneratePolar(wxCommandEvent& event);
+  void OnSave(wxCommandEvent& event) { EndModal(wxID_SAVE); }
 
-    void RebuildTrueWindAngles();
-    void RebuildTrueWindSpeeds();
-    void RebuildGrid();
-    Polar *GetPolar();
+  void RebuildTrueWindAngles();
+  void RebuildTrueWindSpeeds();
+  void RebuildGrid();
+  Polar* GetPolar();
 
-    int polarindex;
-    BoatDialog *m_BoatDialog;
+  int polarindex;
+  BoatDialog* m_BoatDialog;
 };
 
 #endif

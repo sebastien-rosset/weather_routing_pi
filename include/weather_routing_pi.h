@@ -23,39 +23,55 @@
  ***************************************************************************
  */
 #ifdef DEBUG_BUILD
-#  define DEBUGSL(x) do { \
-time_t now = time(0); \
-tm* localtm = localtime(&now); \
-char *stime = asctime(localtm); \
-stime[strlen(stime) - 1 ] = 0; \
-std::cout << stime << " : " << x << std::endl; } while (0)
+#define DEBUGSL(x)                                 \
+  do {                                             \
+    time_t now = time(0);                          \
+    tm* localtm = localtime(&now);                 \
+    char* stime = asctime(localtm);                \
+    stime[strlen(stime) - 1] = 0;                  \
+    std::cout << stime << " : " << x << std::endl; \
+  } while (0)
 
-#  define DEBUGST(x) do { \
-time_t now = time(0); \
-tm* localtm = localtime(&now); \
-char *stime = asctime(localtm); \
-stime[strlen(stime) - 1 ] = 0; \
-std::cout << stime << " : " << x; } while (0)
+#define DEBUGST(x)                    \
+  do {                                \
+    time_t now = time(0);             \
+    tm* localtm = localtime(&now);    \
+    char* stime = asctime(localtm);   \
+    stime[strlen(stime) - 1] = 0;     \
+    std::cout << stime << " : " << x; \
+  } while (0)
 
-#  define DEBUGCONT(x) do { \
-std::cout << x ; } while (0)
+#define DEBUGCONT(x) \
+  do {               \
+    std::cout << x;  \
+  } while (0)
 
-#  define DEBUGEND(x) do { \
-std::cout << x << std::endl; } while (0)
+#define DEBUGEND(x)              \
+  do {                           \
+    std::cout << x << std::endl; \
+  } while (0)
 #else
-#  define DEBUGSL(x) do {} while (0)
-#  define DEBUGST(x) do {} while (0)
-#  define DEBUGCONT(x) do {} while (0)
-#  define DEBUGEND(x) do {} while (0)
+#define DEBUGSL(x) \
+  do {             \
+  } while (0)
+#define DEBUGST(x) \
+  do {             \
+  } while (0)
+#define DEBUGCONT(x) \
+  do {               \
+  } while (0)
+#define DEBUGEND(x) \
+  do {              \
+  } while (0)
 #endif
 
 #ifndef _WEATHER_ROUTINGPI_H_
 #define _WEATHER_ROUTINGPI_H_
 
-//#ifndef __OCPN__ANDROID__
+// #ifndef __OCPN__ANDROID__
 #define GetDateCtrlValue GetValue
 #define GetTimeCtrlValue GetValue
-//#endif
+// #endif
 
 #include "version.h"
 
@@ -80,81 +96,81 @@ std::cout << x << std::endl; } while (0)
 //    The PlugIn Class Definition
 //----------------------------------------------------------------------------------------------------------
 
-#define WEATHER_ROUTING_TOOL_POSITION    -1          // Request default positioning of toolbar tool
+#define WEATHER_ROUTING_TOOL_POSITION \
+  -1  // Request default positioning of toolbar tool
 
 class WeatherRouting;
 
-class weather_routing_pi : public wxEvtHandler, public opencpn_plugin_118
-{
+class weather_routing_pi : public wxEvtHandler, public opencpn_plugin_118 {
 public:
-      weather_routing_pi(void *ppimgr);
-      ~weather_routing_pi();
+  weather_routing_pi(void* ppimgr);
+  ~weather_routing_pi();
 
-      int Init();
-      bool DeInit();
+  int Init();
+  bool DeInit();
 
-      int GetAPIVersionMajor();
-      int GetAPIVersionMinor();
-      int GetPlugInVersionMajor();
-      int GetPlugInVersionMinor();
-      int GetPlugInVersionPatch();
-      int GetPlugInVersionPost();
-	  
-      wxBitmap *GetPlugInBitmap();
-      wxString GetCommonName();
-      wxString GetShortDescription();
-      wxString GetLongDescription();
-	  //from Shipdriver for definition of panel icon
-	  wxBitmap m_panelBitmap;
+  int GetAPIVersionMajor();
+  int GetAPIVersionMinor();
+  int GetPlugInVersionMajor();
+  int GetPlugInVersionMinor();
+  int GetPlugInVersionPatch();
+  int GetPlugInVersionPost();
 
-      bool InBoundary(double lat, double lon);
+  wxBitmap* GetPlugInBitmap();
+  wxString GetCommonName();
+  wxString GetShortDescription();
+  wxString GetLongDescription();
+  // from Shipdriver for definition of panel icon
+  wxBitmap m_panelBitmap;
 
-      bool RenderOverlay(wxDC &dc, PlugIn_ViewPort *vp);
-      bool RenderGLOverlay(wxGLContext *pcontext, PlugIn_ViewPort *vp);
+  bool InBoundary(double lat, double lon);
 
-      void SetDefaults();
+  bool RenderOverlay(wxDC& dc, PlugIn_ViewPort* vp);
+  bool RenderGLOverlay(wxGLContext* pcontext, PlugIn_ViewPort* vp);
 
-      int GetToolbarToolCount();
+  void SetDefaults();
 
-      void SetCursorLatLon(double lat, double lon);
+  int GetToolbarToolCount();
 
-      void SetPluginMessage(wxString &message_id, wxString &message_body);
-      void SetPositionFixEx(PlugIn_Position_Fix_Ex &pfix);
-      void ShowPreferencesDialog( wxWindow* parent );
+  void SetCursorLatLon(double lat, double lon);
 
-      void OnToolbarToolCallback(int id);
-      void OnContextMenuItemCallback(int id);
+  void SetPluginMessage(wxString& message_id, wxString& message_body);
+  void SetPositionFixEx(PlugIn_Position_Fix_Ex& pfix);
+  void ShowPreferencesDialog(wxWindow* parent);
 
-      void SetColorScheme(PI_ColorScheme cs);
-      static wxString StandardPath();
-      void ShowMenuItems(bool show);
+  void OnToolbarToolCallback(int id);
+  void OnContextMenuItemCallback(int id);
 
-      double m_boat_lat, m_boat_lon;
-      double m_cursor_lat, m_cursor_lon;
+  void SetColorScheme(PI_ColorScheme cs);
+  static wxString StandardPath();
+  void ShowMenuItems(bool show);
+
+  double m_boat_lat, m_boat_lon;
+  double m_cursor_lat, m_cursor_lon;
 
 private:
-      void OnCursorLatLonTimer( wxTimerEvent & );
-      void RequestOcpnDrawSetting();
-      void NewWR();
+  void OnCursorLatLonTimer(wxTimerEvent&);
+  void RequestOcpnDrawSetting();
+  void NewWR();
 
-      bool LoadConfig();
-      bool SaveConfig();
+  bool LoadConfig();
+  bool SaveConfig();
 
-      bool	       b_in_boundary_reply;
+  bool b_in_boundary_reply;
 
-      wxFileConfig     *m_pconfig;
-      wxWindow         *m_parent_window;
+  wxFileConfig* m_pconfig;
+  wxWindow* m_parent_window;
 
-      WeatherRouting     *m_pWeather_Routing;
-      wxDateTime m_GribTime;
+  WeatherRouting* m_pWeather_Routing;
+  wxDateTime m_GribTime;
 
-      int              m_display_width, m_display_height;
-      int              m_leftclick_tool_id;
-      int              m_position_menu_id;
-      int              m_waypoint_menu_id;
-      int              m_route_menu_id;
+  int m_display_width, m_display_height;
+  int m_leftclick_tool_id;
+  int m_position_menu_id;
+  int m_waypoint_menu_id;
+  int m_route_menu_id;
 
-      wxTimer m_tCursorLatLon;
+  wxTimer m_tCursorLatLon;
 };
 
 #endif

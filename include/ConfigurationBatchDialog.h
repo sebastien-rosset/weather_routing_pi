@@ -35,58 +35,55 @@ class WeatherRouting;
 class weather_routing_pi;
 class piDC;
 
-struct BatchDestination
-{
-    BatchDestination(wxString n) : Name(n) {}
-    wxString Name;
+struct BatchDestination {
+  BatchDestination(wxString n) : Name(n) {}
+  wxString Name;
 };
 
-struct BatchSource : public BatchDestination
-{
-    BatchSource(wxString n) : BatchDestination(n) {}
-    std::list<BatchDestination*> destinations;
+struct BatchSource : public BatchDestination {
+  BatchSource(wxString n) : BatchDestination(n) {}
+  std::list<BatchDestination*> destinations;
 };
 
-class ConfigurationBatchDialog : public ConfigurationBatchDialogBase
-{
+class ConfigurationBatchDialog : public ConfigurationBatchDialogBase {
 public:
-    ConfigurationBatchDialog(WeatherRouting *parent);
-    ~ConfigurationBatchDialog() { ClearSources(); }
+  ConfigurationBatchDialog(WeatherRouting* parent);
+  ~ConfigurationBatchDialog() { ClearSources(); }
 
-    void Render(piDC &dc, PlugIn_ViewPort &vp);
-    void AddSource(wxString name);
-    void RemoveSource(wxString name);
-    void ClearSources();
+  void Render(piDC& dc, PlugIn_ViewPort& vp);
+  void AddSource(wxString name);
+  void RemoveSource(wxString name);
+  void ClearSources();
 
-    void Reset();
+  void Reset();
 
-    std::vector<BatchSource*> sources;
+  std::vector<BatchSource*> sources;
 
 protected:
-    void OnOnce( wxCommandEvent& event );
-    void OnDaily( wxCommandEvent& event );
-    void OnWeekly( wxCommandEvent& event );
-    void OnMonthly( wxCommandEvent& event );
-    void OnSources( wxCommandEvent& event );
-    void OnDestinations( wxCommandEvent& event );
-    void OnRemoveSource( wxCommandEvent& event );
-    void OnClearSources( wxCommandEvent& event );
-    void OnConnect( wxCommandEvent& event );
-    void OnDisconnectAll( wxCommandEvent& event );
-    void OnAddBoat( wxCommandEvent& event );
-    void OnRemoveBoat( wxCommandEvent& event );
-    void On100( wxCommandEvent& event );
-    void On80to120( wxCommandEvent& event );
-    void OnOpen( wxCommandEvent& event );
-    void OnSave( wxCommandEvent& event );
-    void OnReset( wxCommandEvent& event );
-    void OnInformation( wxCommandEvent& event );
-    void OnClose( wxCommandEvent& event );
-    void OnGenerate( wxCommandEvent& event );
+  void OnOnce(wxCommandEvent& event);
+  void OnDaily(wxCommandEvent& event);
+  void OnWeekly(wxCommandEvent& event);
+  void OnMonthly(wxCommandEvent& event);
+  void OnSources(wxCommandEvent& event);
+  void OnDestinations(wxCommandEvent& event);
+  void OnRemoveSource(wxCommandEvent& event);
+  void OnClearSources(wxCommandEvent& event);
+  void OnConnect(wxCommandEvent& event);
+  void OnDisconnectAll(wxCommandEvent& event);
+  void OnAddBoat(wxCommandEvent& event);
+  void OnRemoveBoat(wxCommandEvent& event);
+  void On100(wxCommandEvent& event);
+  void On80to120(wxCommandEvent& event);
+  void OnOpen(wxCommandEvent& event);
+  void OnSave(wxCommandEvent& event);
+  void OnReset(wxCommandEvent& event);
+  void OnInformation(wxCommandEvent& event);
+  void OnClose(wxCommandEvent& event);
+  void OnGenerate(wxCommandEvent& event);
 
-    wxString m_boatFileName;
+  wxString m_boatFileName;
 
-    WeatherRouting &m_WeatherRouting;
+  WeatherRouting& m_WeatherRouting;
 };
 
 #endif

@@ -25,31 +25,32 @@
 
 #include "Polar.h"
 
-/* 
- * This class is responsible for loading and saving the polars of a given boat to disk.
- * and for finding the fastest polar for a given wind and heading.
-*/
-class Boat
-{
+/*
+ * This class is responsible for loading and saving the polars of a given boat
+ * to disk. and for finding the fastest polar for a given wind and heading.
+ */
+class Boat {
 public:
-    Boat();
-    ~Boat();
+  Boat();
+  ~Boat();
 
-    wxString OpenXML(wxString filename, bool shortcut=true);
-    wxString SaveXML(wxString filename);
+  wxString OpenXML(wxString filename, bool shortcut = true);
+  wxString SaveXML(wxString filename);
 
-    std::vector<Polar> Polars;
+  std::vector<Polar> Polars;
 
-    int TrySwitchPolar(int curpolar, double VW, double H, double Swell, bool optimize_tacking);
-    bool FastestPolar(int p, float H, float VW);
-    void GenerateCrossOverChart(void *arg=0, void (*status)(void *, int, int)=0);
+  int TrySwitchPolar(int curpolar, double VW, double H, double Swell,
+                     bool optimize_tacking);
+  bool FastestPolar(int p, float H, float VW);
+  void GenerateCrossOverChart(void* arg = 0,
+                              void (*status)(void*, int, int) = 0);
 
 private:
-    Point Interp(const Point &p0, const Point &p1, int q, bool q0, bool q1);
-    void NewSegment(Point &p0, Point &p1, std::list<Segment> &segments);
-    void GenerateSegments(float H, float VW, float step, bool q[4],
-                          std::list<Segment> &segments, int p);
+  Point Interp(const Point& p0, const Point& p1, int q, bool q0, bool q1);
+  void NewSegment(Point& p0, Point& p1, std::list<Segment>& segments);
+  void GenerateSegments(float H, float VW, float step, bool q[4],
+                        std::list<Segment>& segments, int p);
 
-    wxString   m_last_filename;
-    wxDateTime m_last_filetime;
+  wxString m_last_filename;
+  wxDateTime m_last_filetime;
 };

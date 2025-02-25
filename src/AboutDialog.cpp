@@ -35,21 +35,20 @@
 
 #include "Utilities.h"
 
-AboutDialog::AboutDialog( wxWindow *parent )
-    : AboutDialogBase(parent)
-{
-//     m_stVersion->SetLabel(wxString::Format(_T("%d.%d"),PLUGIN_VERSION_MAJOR, PLUGIN_VERSION_MINOR));
+AboutDialog::AboutDialog(wxWindow* parent) : AboutDialogBase(parent) {
+  //     m_stVersion->SetLabel(wxString::Format(_T("%d.%d"),PLUGIN_VERSION_MAJOR,
+  //     PLUGIN_VERSION_MINOR));
 
-m_stVersion->SetLabel(wxString::Format(_T("%d.%d.%d.%d"), PLUGIN_VERSION_MAJOR, PLUGIN_VERSION_MINOR,PLUGIN_VERSION_PATCH,PLUGIN_VERSION_TWEAK));
-	  
-	
+  m_stVersion->SetLabel(wxString::Format(
+      _T("%d.%d.%d.%d"), PLUGIN_VERSION_MAJOR, PLUGIN_VERSION_MINOR,
+      PLUGIN_VERSION_PATCH, PLUGIN_VERSION_TWEAK));
+
 #ifdef __OCPN__ANDROID__
-    wxSize sz = ::wxGetDisplaySize();
-    SetSize(0, 0, sz.x, sz.y-40);
+  wxSize sz = ::wxGetDisplaySize();
+  SetSize(0, 0, sz.x, sz.y - 40);
 #endif
 }
 
-void AboutDialog::OnAboutAuthor( wxCommandEvent& event )
-{
-    wxLaunchDefaultBrowser(_T(ABOUT_AUTHOR_URL));
+void AboutDialog::OnAboutAuthor(wxCommandEvent& event) {
+  wxLaunchDefaultBrowser(_T(ABOUT_AUTHOR_URL));
 }
