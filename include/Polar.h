@@ -231,6 +231,12 @@ public:
    * index
    * @param[out] VW2i Reference to variable that will receive the upper bracket
    * index
+   *
+   * @note: if VW is less than the first wind speed in the table, VW1 is set to
+   * 0 and VW2i is set to 1.
+   * @note If VW is greater than the last wind speed in the table, VW1i is set
+   * to the index of the last wind speed and VW2i is set to the index of the
+   * last wind speed minus 1.
    */
   void ClosestVWi(double VW, int& VW1i, int& VW2i);
 
@@ -402,6 +408,7 @@ public:
 private:
   friend class EditPolarDialog;
   friend class BoatDialog;
+  friend class Boat;
 
   /**
    * Calculate and store the optimal VMG angles for a given wind speed entry in
@@ -499,7 +506,22 @@ private:
   bool VMGAngle(SailingWindSpeed& ws1, SailingWindSpeed& ws2, float VW,
                 float& W);
 
+  /**
+   * Stores boat performance data at different wind speeds.
+   * - The vector contains multiple SailingWindSpeed entries, each representing
+   *   boat performance at a specific true wind speed (tws).
+   * - Entries are ordered by increasing wind speed (from lowest to highest).
+   */
   std::vector<SailingWindSpeed> wind_speeds;
+  /**
+   * Stores the wind angles (in degrees) for which boat performance data
+   * is available in the polar diagram.
+   *
+   * Structure:
+   * - Contains wind angles in ascending order
+   * - Each entry corresponds to a column in the polar table
+   * - Ranges from the minimum pointing angle (close-hauled) to running downwind
+   */
   std::vector<double> degree_steps;
   unsigned int degree_step_index[DEGREES];
 };
