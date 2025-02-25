@@ -161,16 +161,16 @@ wxString Boat::SaveXML(wxString filename) {
 }
 
 int Boat::TrySwitchPolar(int curpolar, double VW, double H, double Swell,
-                         bool optimize_tacking) {
-  // are we still valid?
-  if (curpolar != -1 &&
-      Polars[curpolar].InsideCrossOverContour(H, VW, optimize_tacking))
+                         bool optimize_tacking, PolarSpeedStatus* status) {
+  // Check if the current polar is still adequate for the given conditions.
+  if (curpolar >= 0 &&
+      Polars[curpolar].InsideCrossOverContour(H, VW, optimize_tacking, status))
     return curpolar;
 
   // the current polar must change; select the first polar we can use
   for (int i = 0; i < (int)Polars.size(); i++)
     if (i != curpolar &&
-        Polars[i].InsideCrossOverContour(H, VW, optimize_tacking))
+        Polars[i].InsideCrossOverContour(H, VW, optimize_tacking, status))
       return i;
 
   return -1;  // no valid polar
@@ -195,12 +195,12 @@ static Point FindNextSegmentPoint(std::list<Segment>& segments, Point p,
 bool Boat::FastestPolar(int p, float H, float VW) {
   const float maxVW = 40;
   if (VW == 0 || VW == maxVW) return false;
-
-  double speed =
-      Polars[p].Speed(H, VW, true) * (1 + Polars[p].m_crossoverpercentage);
+  PolarSpeedStatus error;
+  double speed = Polars[p].Speed(H, VW, &error, true) *
+                 (1 + Polars[p].m_crossoverpercentage);
   for (int i = 0; i < (int)Polars.size(); i++) {
     if (i == p) continue;
-    if (Polars[i].Speed(H, VW, true) > speed) return false;
+    if (Polars[i].Speed(H, VW, &error, true) > speed) return false;
   }
 
   return speed > 0;

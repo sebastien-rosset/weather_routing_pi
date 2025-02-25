@@ -140,7 +140,7 @@ void RouteMapOverlay::RouteAnalysis(PlugIn_Route* proute) {
   std::list<PlotData>& plotdata = last_destination_plotdata;
   RouteMapConfiguration configuration = GetConfiguration();
 
-  configuration.polar_failed = false;
+  configuration.polar_status = POLAR_SPEED_SUCCESS;
   configuration.wind_data_failed = false;
   configuration.boundary_crossing = false;
   configuration.land_crossing = false;

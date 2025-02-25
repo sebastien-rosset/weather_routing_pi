@@ -734,6 +734,7 @@ static inline bool ComputeBoatSpeed(
     double& hdg, climatology_wind_atlas& atlas, int data_mask, double& ctw,
     double& stw, double& cog, double& sog, double& dist, int newpolar) {
   Polar& polar = configuration.boat.Polars[newpolar];
+  PolarSpeedStatus polar_status;
   if ((data_mask & Position::CLIMATOLOGY_WIND) &&
       (configuration.ClimatologyType == RouteMapConfiguration::CUMULATIVE_MAP ||
        configuration.ClimatologyType ==
@@ -749,12 +750,12 @@ static inline bool ComputeBoatSpeed(
       double VBc, mind = polar.MinDegreeStep();
       // if tacking
       if (fabs(dir) < mind)
-        VBc = polar.Speed(mind, atlas.VW[i], true,
+        VBc = polar.Speed(mind, atlas.VW[i], &polar_status, true,
                           configuration.OptimizeTacking) *
               cos(deg2rad(mind)) / cos(deg2rad(dir));
       else
-        VBc =
-            polar.Speed(dir, atlas.VW[i], true, configuration.OptimizeTacking);
+        VBc = polar.Speed(dir, atlas.VW[i], &polar_status, true,
+                          configuration.OptimizeTacking);
       // Accumulate weighted boat speed based on probability of each wind
       // direction
       stw += atlas.directions[i] * VBc;
@@ -766,14 +767,15 @@ static inline bool ComputeBoatSpeed(
   } else {
     // Direct polar lookup - get boat speed from polar data for current heading
     // and wind speed.
-    stw = polar.Speed(hdg, VW, true, configuration.OptimizeTacking);
+    stw = polar.Speed(hdg, VW, &polar_status, true,
+                      configuration.OptimizeTacking);
   }
 
   /* failed to determine speed.. */
   if (std::isnan(ctw) || std::isnan(stw)) {
     // when does this hit??
     wxLogMessage("polar failed bad! W=%f VW=%f ctw=%f stw=%f", W, VW, ctw, stw);
-    configuration.polar_failed = true;
+    configuration.polar_status = polar_status;
     return false;  // ctw = stw = 0;
   }
 
@@ -929,10 +931,11 @@ bool Position::Propagate(IsoRouteList& routelist,
     }
 
     {
+      PolarSpeedStatus status;
       int newpolar = configuration.boat.TrySwitchPolar(
-          polar, VW, H, S, configuration.OptimizeTacking);
+          polar, VW, H, S, configuration.OptimizeTacking, &status);
       if (newpolar == -1) {
-        configuration.polar_failed = true;
+        configuration.polar_status = status;
         continue;
       }
       if (polar == -1) polar = newpolar;
@@ -1180,6 +1183,7 @@ double RoutePoint::PropagateToPoint(double dlat, double dlon,
   int newpolar = polar;
   bool old = configuration.OptimizeTacking;
   if (end) configuration.OptimizeTacking = true;
+  PolarSpeedStatus status;
   do {
     /* make our correction in range */
     while (bearing - cog > 180) bearing -= 360;
@@ -1190,10 +1194,10 @@ double RoutePoint::PropagateToPoint(double dlat, double dlon,
 
     double dummy_dist;  // not used
 
-    newpolar = configuration.boat.TrySwitchPolar(polar, VW, H, S,
-                                                 configuration.OptimizeTacking);
+    newpolar = configuration.boat.TrySwitchPolar(
+        polar, VW, H, S, configuration.OptimizeTacking, &status);
     if (newpolar == -1) {
-      configuration.polar_failed = true;
+      configuration.polar_status = status;
       configuration.OptimizeTacking = old;
       return NAN;
     }
@@ -2813,7 +2817,7 @@ bool RouteMap::Propagate() {
 
   //
   RouteMapConfiguration configuration = m_Configuration;
-  configuration.polar_failed = false;
+  configuration.polar_status = POLAR_SPEED_SUCCESS;
   configuration.wind_data_failed = false;
   configuration.boundary_crossing = false;
   configuration.land_crossing = false;
@@ -2964,7 +2968,7 @@ void RouteMap::Reset() {
 
   m_bReachedDestination = false;
   m_bGribFailed = false;
-  m_bPolarFailed = false;
+  m_bPolarStatus = POLAR_SPEED_SUCCESS;
   m_bNoData = false;
   m_bFinished = false;
   m_bLandCrossing = false;

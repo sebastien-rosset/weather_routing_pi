@@ -2259,25 +2259,30 @@ void WeatherRoute::Update(WeatherRouting* wr, bool stateonly) {
         if (routemapoverlay->GribFailed()) {
           State += _("Grib");
           State += _T(": ");
+          State += _("Failed");
         }
-        if (routemapoverlay->PolarFailed()) {
+        wxString polarStatus = routemapoverlay->GetPolarStatus();
+        if (polarStatus != wxEmptyString) {
           State += _("Polar");
           State += _T(": ");
+          State += polarStatus;
         }
         if (routemapoverlay->NoData()) {
           State += _("No Data");
           State += _T(": ");
+          State += _("Failed");
         }
         if (routemapoverlay->LandCrossing()) {
           State += _("Land");
           State += _T(": ");
+          State += _("Failed");
         }
         if (routemapoverlay->BoundaryCrossing()) {
           State += _("Boundary");
           State += _T(": ");
+          State += _("Failed");
         }
 
-        State += _("Failed");
       }
     } else {
       for (std::list<RouteMapOverlay*>::iterator it =
