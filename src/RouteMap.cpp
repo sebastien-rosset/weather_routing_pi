@@ -272,6 +272,10 @@ static inline bool Current(RouteMapConfiguration& configuration, double lat,
 /**
  * Converts wind parameters from ground-relative to water-relative.
  *
+ * Imagine standing on a moving boat. The wind you feel (wind over water) is
+ * different from the true wind (wind over ground) because your reference frame
+ * is moving with the current.
+ *
  * This function transforms true wind (measured relative to ground) into
  * water-relative wind (relative to the moving water) by accounting for the
  * effect of sea currents. This is NOT the same as apparent wind experienced by
@@ -289,41 +293,69 @@ static inline bool Current(RouteMapConfiguration& configuration, double lat,
  * direction)
  * @param currentSpeed Current Speed (knots) - Note: for correct calculation,
  * this should be negative of actual current speed
- * @param waterWindDir [out] Wind Direction relative to water (degrees,
+ * @param windDirOverWater [out] Wind Direction relative to water (degrees,
  * meteorological convention)
- * @param waterWindSpeed [out] Wind Speed relative to water (knots)
+ * @param windSpeedOverWater [out] Wind Speed relative to water (knots)
  */
 static void OverWater(double twd, double tws, double currentDir,
-                      double currentSpeed, double& waterWindDir,
-                      double& waterWindSpeed) {
+                      double currentSpeed, double& windDirOverWater,
+                      double& windSpeedOverWater) {
   if (currentSpeed == 0) {  // short-cut if no currents
-    waterWindDir = twd, waterWindSpeed = tws;
+    windDirOverWater = twd, windSpeedOverWater = tws;
     return;
   }
 
   double Cx = currentSpeed * cos(deg2rad(currentDir)),
          Cy = currentSpeed * sin(deg2rad(currentDir));
   double Wx = tws * cos(deg2rad(twd)) - Cx, Wy = tws * sin(deg2rad(twd)) - Cy;
-  waterWindDir = rad2deg(atan2(Wy, Wx));
-  waterWindSpeed = distance(Wx, Wy);
+  windDirOverWater = rad2deg(atan2(Wy, Wx));
+  windSpeedOverWater = distance(Wx, Wy);
 }
 
-/* provisions to compute boat movement over ground
-
-   cog  - boat direction over ground
-   BGV - boat speed over ground (gps velocity)  */
-static void OverGround(double ctw, double stw, double currentDir,
-                       double currentSpeed, double& cog, double& sog) {
+/**
+ * Converts a vector measured relative to water into a vector relative to ground
+ * by adding current effects.
+ *
+ * This function transforms any vector (wind, vessel movement, etc.) from
+ * water-relative to ground-relative reference frame by vector addition with the
+ * water current.
+ *
+ * For example, this can be used to transform the vessel's motion relative to
+ * water (CTW and STW) into motion relative to ground (COG and SOG) by
+ * incorporating the effects of water currents.
+ *
+ * @param directionWater Direction of the vector relative to water (degrees)
+ * @param magnitudeWater Magnitude of the vector relative to water (typically
+ * knots)
+ * @param currentDir Current direction (degrees, meteorological convention: FROM
+ * direction)
+ * @param currentSpeed Current speed (knots)
+ * @param directionGround [out] Direction of the vector relative to ground
+ * (degrees)
+ * @param magnitudeGround [out] Magnitude of the vector relative to ground (same
+ * units as magnitudeWater)
+ *
+ * The calculation uses basic vector addition:
+ * [Velocity over ground] = [Velocity through water] + [Current vector]
+ *
+ * If there are no currents (currentSpeed = 0), the function simply copies
+ * currentDir to directionGround and magnitudeWater to magnitudeGround.
+ */
+static void TransformToGroundFrame(double directionWater, double magnitudeWater,
+                                   double currentDir, double currentSpeed,
+                                   double& directionGround,
+                                   double& magnitudeGround) {
   if (currentSpeed == 0) {  // short-cut if no currents
-    cog = ctw, sog = stw;
+    directionGround = directionWater, magnitudeGround = magnitudeWater;
     return;
   }
 
   double Cx = currentSpeed * cos(deg2rad(currentDir)),
          Cy = currentSpeed * sin(deg2rad(currentDir));
-  double BGx = stw * cos(deg2rad(ctw)) + Cx, BGy = stw * sin(deg2rad(ctw)) + Cy;
-  cog = rad2deg(atan2(BGy, BGx));
-  sog = distance(BGx, BGy);
+  double BGx = magnitudeWater * cos(deg2rad(directionWater)) + Cx,
+         BGy = magnitudeWater * sin(deg2rad(directionWater)) + Cy;
+  directionGround = rad2deg(atan2(BGy, BGx));
+  magnitudeGround = distance(BGx, BGy);
 }
 
 /* find intersection of two line segments
@@ -409,7 +441,8 @@ Position::Position(double latitude, double longitude, Position* p,
       parent(p),
       propagated(false),
       copied(false),
-      data_mask(dm) {
+      data_mask(dm),
+      propagation_error(PROPAGATION_NO_ERROR) {
   lat -= fmod(lat, EPSILON);
   lon -= fmod(lon, EPSILON);
 }
@@ -421,7 +454,8 @@ Position::Position(Position* p)
       parent(p->parent),
       propagated(p->propagated),
       copied(true),
-      data_mask(p->data_mask) {}
+      data_mask(p->data_mask),
+      propagation_error(p->propagation_error) {}
 
 /* sufficient for routemap uses only.. is this faster than below? if not, remove
  * it */
@@ -461,7 +495,7 @@ static int ComputeQuadrant(Position *p, Position *q)
 SkipPosition* Position::BuildSkipList() {
   /* build skip list of positions, skipping over strings of positions in
      the same quadrant */
-  SkipPosition* skippoints = NULL;
+  SkipPosition* skippoints = nullptr;
   Position* p = this;
   int firstquadrant, lastquadrant = -1, quadrant;
   do {
@@ -524,28 +558,30 @@ struct climatology_wind_atlas {
 };
 
 /**
- * Retrieves wind and current data for a specific location
+ * Retrieves wind and current data for a specific location at a particular time.
  *
  * This function attempts to obtain both wind and current information at the
- * specified location using multiple data sources in order of preference:
- * 1. GRIB files (if available and not data deficient)
- * 2. Climatology average data
- * 3. Climatology wind atlas data
- * 4. Data deficient GRIB (if allowed)
- * 5. Parent position data (fallback)
+ * specified location for the time defined in the configuration parameter.
+ * It uses multiple data sources in order of preference:
+ * 1. GRIB files (if available and not data deficient).
+ * 2. Climatology average data.
+ * 3. Climatology wind atlas data.
+ * 4. Data deficient GRIB (if allowed).
+ * 5. Parent position data (fallback).
  *
  * The function calculates both ground-relative (true) and water-relative
  * (apparent) wind values by accounting for current effects.
  *
  * @param configuration Route map configuration containing GRIB data,
- * climatology settings, etc.
+ * climatology settings, and the specific time for which to retrieve weather
+ * data.
  * @param p Pointer to the route point for which to retrieve data
  * @param twd [out] True Wind Direction over ground (degrees)
  * @param tws [out] True Wind Speed over ground (knots)
- * @param awd [out] Apparent Wind Direction through water (degrees)
- * @param aws [out] Apparent Wind Speed through water (knots)
- * @param cur [out] Current Direction (degrees)
- * @param spd [out] Current Speed (knots)
+ * @param windDirOverWater [out] Wind Direction over water (degrees)
+ * @param windSpeedOverWater [out] Wind Speed over water (knots)
+ * @param currentDir [out] Current Direction (degrees)
+ * @param currentSpeed [out] Current Speed (knots)
  * @param atlas [out] Climatology wind atlas data (filled if climatology data is
  * used)
  * @param data_mask [in/out] Bit flags indicating what data sources were used
@@ -556,8 +592,9 @@ struct climatology_wind_atlas {
 static inline bool ReadWindAndCurrents(
     RouteMapConfiguration& configuration, RoutePoint* p,
     /* normal data */
-    double& twd, double& tws, double& W, double& VW, double& currentDir,
-    double& currentSpeed, climatology_wind_atlas& atlas, int& data_mask) {
+    double& twd, double& tws, double& windDirOverWater,
+    double& windSpeedOverWater, double& currentDir, double& currentSpeed,
+    climatology_wind_atlas& atlas, int& data_mask) {
   /* read current data */
   if (!configuration.Currents || !Current(configuration, p->lat, p->lon,
                                           currentDir, currentSpeed, data_mask))
@@ -617,10 +654,13 @@ static inline bool ReadWindAndCurrents(
         double angle1 = atlas.W[maxia], angle2 = atlas.W[maxi];
         while (angle1 - angle2 > 180) angle1 -= 360;
         while (angle2 - angle1 > 180) angle2 -= 360;
-        W = heading_resolve(maxid * angle1 + (1 - maxid) * angle2);
-        VW = maxid * atlas.VW[maxia] + (1 - maxid) * atlas.VW[maxi];
+        windDirOverWater =
+            heading_resolve(maxid * angle1 + (1 - maxid) * angle2);
+        windSpeedOverWater =
+            maxid * atlas.VW[maxia] + (1 - maxid) * atlas.VW[maxi];
 
-        OverGround(W, VW, currentDir, currentSpeed, twd, tws);
+        TransformToGroundFrame(windDirOverWater, windSpeedOverWater, currentDir,
+                               currentSpeed, twd, tws);
         data_mask |= Position::CLIMATOLOGY_WIND;
         return true;
       }
@@ -640,7 +680,8 @@ static inline bool ReadWindAndCurrents(
   }
   tws *= configuration.WindStrength;
 
-  OverWater(twd, tws, currentDir, -currentSpeed, W, VW);
+  OverWater(twd, tws, currentDir, -currentSpeed, windDirOverWater,
+            windSpeedOverWater);
   return true;
 }
 
@@ -671,6 +712,8 @@ bool RoutePoint::GetPlotData(RoutePoint* next, double dt,
     return false;
   }
 
+  // Calculate the great circle distance and initial bearing between this route
+  // point and the next one.
   ll_gc_ll_reverse(lat, lon, next->lat, next->lon, &data.cog, &data.sog);
   if (dt == 0)
     data.sog = 0;
@@ -701,46 +744,52 @@ bool RoutePoint::GetCurrentData(RouteMapConfiguration& configuration,
 }
 
 /**
- * Computes the boat speed and bearing based on wind, current, and polar data.
+ * Calculates boat performance based on environmental conditions and desired
+ * heading.
  *
- * This function calculates the boat's speed and bearing through water and over
- * ground using either direct polar lookups or climatology wind atlas data. It
- * handles tacking adjustments when the wind angle is too close to the bow.
+ * Given a specific boat heading relative to wind, this function calculates:
+ * 1. How fast the boat will move through water (speed through water)
+ * 2. The actual direction the boat will travel through water (course through
+ * water)
+ * 3. How fast the boat will move over ground after accounting for currents
+ * (speed over ground)
+ * 4. The actual direction the boat will travel over ground (course over ground)
  *
  * @param configuration Boat and route configuration settings
  * @param timeseconds Duration in seconds for the calculation
- * @param twd Wind direction over ground (degrees)
- * @param tws Wind speed over ground (knots)
- * @param W Wind direction through water (degrees)
- * @param VW Wind speed through water (knots)
- * @param currentDir Current direction (degrees)
- * @param currentSpeed Current speed (knots)
- * @param hdg Boat heading (degrees)
- * @param atlas Wind climatology atlas containing probability distributions
- * @param data_mask Bit mask indicating data sources (GRIB, climatology, etc.)
- * @param ctw Boat's bearing relative to true wind (W+hdg), initialized by
+ * @param twd [in] Wind direction over ground (degrees)
+ * @param tws [in] Wind speed over ground (knots)
+ * @param windDirOverWater [in] Wind direction through water (degrees)
+ * @param windSpeedOverWater [in] Wind speed through water (knots)
+ * @param currentDir [in] Current direction (degrees)
+ * @param currentSpeed [in] Current speed (knots)
+ * @param twa [in] True Wind Angle (TWA) (degrees)
+ * @param atlas [in] Wind climatology atlas containing probability distributions
+ * @param data_mask [in] Bit mask indicating data sources (GRIB, climatology,
+ * etc.)
+ * @param ctw [in] Boat's bearing relative to true wind (W+twa), initialized by
  * caller
- * @param stw Boat speed through water [out]
- * @param cog Boat bearing over ground [out]
- * @param sog Boat speed over ground [out]
- * @param dist Distance traveled over ground (nm) [out]
- * @param newpolar Index of the polar to use from the boat's polar array
- * @param bound If true, returns NAN when wind speed is outside the range
+ * @param stw [out] Boat speed through water
+ * @param cog [out] Boat bearing over ground
+ * @param sog [out]Boat speed over ground
+ * @param dist [out] Distance traveled over ground (nm)
+ * @param newpolar [in] Index of the polar to use from the boat's polar array
+ * @param bound [in] If true, returns NAN when wind speed is outside the range
  * defined in the polar data. If false, extrapolates the boat speed when wind
  * speed is outside the polar data range.
  *
  * @return true if computation successful, false if NaN values detected
  */
-static inline bool ComputeBoatSpeed(RouteMapConfiguration& configuration,
-                                    double timeseconds, double twd, double tws,
-                                    double W, double VW, double currentDir,
-                                    double currentSpeed, double& hdg,
-                                    climatology_wind_atlas& atlas,
-                                    int data_mask, double& ctw, double& stw,
-                                    double& cog, double& sog, double& dist,
-                                    int newpolar, bool bound = true) {
+static inline bool ComputeBoatSpeed(
+    RouteMapConfiguration& configuration, double timeseconds, double twd,
+    double tws, double windDirOverWater, double windSpeedOverWater,
+    double currentDir, double currentSpeed, double twa,
+    climatology_wind_atlas& atlas, int data_mask, double ctw, double& stw,
+    double& cog, double& sog, double& dist, int newpolar, bool bound = true,
+    const char* caller = "unknown") {
   Polar& polar = configuration.boat.Polars[newpolar];
   PolarSpeedStatus polar_status;
+  bool used_grib = false;  // true if grib data was used, false if climatology.
   if ((data_mask & Position::CLIMATOLOGY_WIND) &&
       (configuration.ClimatologyType == RouteMapConfiguration::CUMULATIVE_MAP ||
        configuration.ClimatologyType ==
@@ -751,7 +800,7 @@ static inline bool ComputeBoatSpeed(RouteMapConfiguration& configuration,
     for (int i = 0; i < windatlas_count; i++) {
       // Calculate relative wind angle (difference between heading and wind
       // direction).
-      double dir = hdg - W + atlas.W[i];
+      double dir = twa - windDirOverWater + atlas.W[i];
       if (dir > 180) dir = 360 - dir;
       double VBc, mind = polar.MinDegreeStep();
       // if tacking
@@ -773,20 +822,28 @@ static inline bool ComputeBoatSpeed(RouteMapConfiguration& configuration,
   } else {
     // Direct polar lookup - get boat speed from polar data for current heading
     // and wind speed.
-    stw = polar.Speed(hdg, VW, &polar_status, bound,
+    used_grib = true;
+    stw = polar.Speed(twa, windSpeedOverWater, &polar_status, bound,
                       configuration.OptimizeTacking);
   }
 
-  /* failed to determine speed.. */
+  /* failed to determine speed. */
   if (std::isnan(ctw) || std::isnan(stw)) {
-    // when does this hit??
-    wxLogMessage("polar failed bad! W=%f VW=%f ctw=%f stw=%f", W, VW, ctw, stw);
+    // This can happen if the wind speed is outside the range of the polar data.
+    // For example, if the wind speed is too high or too low, or if the wind
+    // angle is too close to the polar's minimum angle.
+    wxLogMessage(
+        "[%s] Failed to get polar speed. windDirOverWater=%f "
+        "windSpeedOverWater=%f "
+        "twa=%f tws=%f ctw=%f stw=%f bound=%d grib=%d",
+        caller, windDirOverWater, windSpeedOverWater, twa, tws, ctw, stw, bound,
+        used_grib);
     configuration.polar_status = polar_status;
     return false;  // ctw = stw = 0;
   }
 
   // Calculate boat movement over ground by combining boat speed with current.
-  OverGround(ctw, stw, currentDir, currentSpeed, cog, sog);
+  TransformToGroundFrame(ctw, stw, currentDir, currentSpeed, cog, sog);
 
   // Calculate distance traveled over ground based on speed and time.
   dist = sog * timeseconds / 3600.0;
@@ -804,7 +861,7 @@ static inline bool ComputeBoatSpeed(RouteMapConfiguration& configuration,
  * @param timeseconds Time step in seconds
  * @param cog Course over ground (degrees)
  * @param dist Distance to travel (nm)
- * @param H Boat heading (degrees)
+ * @param twa True Wind Angle (degrees)
  * @param configuration Route configuration parameters
  * @param grib GRIB weather data
  * @param time Current time
@@ -815,28 +872,32 @@ static inline bool ComputeBoatSpeed(RouteMapConfiguration& configuration,
  *
  * @return true if step was successful, false if step failed
  */
-bool rk_step(Position* p, double timeseconds, double cog, double dist, double H,
-             RouteMapConfiguration& configuration, WR_GribRecordSet* grib,
-             const wxDateTime& time, int newpolar, double& rk_BG,
-             double& rk_dist, int& data_mask) {
+bool rk_step(Position* p, double timeseconds, double cog, double dist,
+             double twa, RouteMapConfiguration& configuration,
+             WR_GribRecordSet* grib, const wxDateTime& time, int newpolar,
+             double& rk_BG, double& rk_dist, int& data_mask) {
   double k1_lat, k1_lon;
   ll_gc_ll(p->lat, p->lon, cog, dist, &k1_lat, &k1_lon);
 
-  double twd, tws, W, VW, currentDir, currentSpeed;
+  double twd, tws, windDirOverWater, windSpeedOverWater, currentDir,
+      currentSpeed;
   climatology_wind_atlas atlas;
   Position rk(k1_lat, k1_lon,
               p->parent);  // parent so deficient data can find parent
-  if (!ReadWindAndCurrents(configuration, &rk, twd, tws, W, VW, currentDir,
-                           currentSpeed, atlas, data_mask))
+  if (!ReadWindAndCurrents(configuration, &rk, twd, tws, windDirOverWater,
+                           windSpeedOverWater, currentDir, currentSpeed, atlas,
+                           data_mask))
     return false;
 
-  double ctw = W + H; /* rotated relative to true wind */
+  double ctw = windDirOverWater + twa; /* rotated relative to true wind */
 
   double stw, sog;  // outputs
-  if (!ComputeBoatSpeed(configuration, timeseconds, twd, tws, W, VW, currentDir,
-                        currentSpeed, H, atlas, data_mask, ctw, stw, rk_BG, sog,
-                        rk_dist, newpolar, true /* check bounds */))
+  if (!ComputeBoatSpeed(configuration, timeseconds, twd, tws, windDirOverWater,
+                        windSpeedOverWater, currentDir, currentSpeed, twa,
+                        atlas, data_mask, ctw, stw, rk_BG, sog, rk_dist,
+                        newpolar, true /* check bounds */, "rk_step")) {
     return false;
+  }
 
   return true;
 }
@@ -860,39 +921,60 @@ static void DeletePoints(Position* point) {
 bool Position::Propagate(IsoRouteList& routelist,
                          RouteMapConfiguration& configuration) {
   /* already propagated from this position, don't need to again */
-  if (propagated) return false;
-
-  propagated = true;
-
-  Position* points = NULL;
-  /* through all angles relative to wind */
-  int count = 0;
-
-  double S = Swell(configuration, lat, lon);
-  if (S > configuration.MaxSwellMeters) return false;
-
-  if (fabs(lat) > configuration.MaxLatitude) return false;
-
-  double twd, tws, W, VW, currentDir, currentSpeed;
-  climatology_wind_atlas atlas;
-  int data_mask = 0;
-  if (!ReadWindAndCurrents(configuration, this, twd, tws, W, VW, currentDir,
-                           currentSpeed, atlas, data_mask)) {
-    configuration.wind_data_failed = true;
+  if (propagated) {
+    propagation_error = PROPAGATION_ALREADY_PROPAGATED;
     return false;
   }
 
-  if (VW > configuration.MaxTrueWindKnots) return false;
+  propagated = true;
+
+  Position* points = nullptr;
+  /* through all angles relative to wind */
+  int count = 0;
+
+  double swell = Swell(configuration, lat, lon);
+  if (swell > configuration.MaxSwellMeters) {
+    propagation_error = PROPAGATION_EXCEEDED_MAX_SWELL;
+    return false;
+  }
+
+  if (fabs(lat) > configuration.MaxLatitude) {
+    propagation_error = PROPAGATION_EXCEEDED_MAX_LATITUDE;
+    return false;
+  }
+
+  double twd, tws, windDirOverWater, windSpeedOverWater, currentDir,
+      currentSpeed;
+  climatology_wind_atlas atlas;
+  int data_mask = 0;
+  if (!ReadWindAndCurrents(configuration, this, twd, tws, windDirOverWater,
+                           windSpeedOverWater, currentDir, currentSpeed, atlas,
+                           data_mask)) {
+    propagation_error = PROPAGATION_WIND_DATA_FAILED;
+    configuration.wind_data_status = wxString::Format(
+        _("No wind data for position (lat=%f,lon=%f) at %s"), lat, lon,
+        configuration.time.Format("%Y-%m-%d %H:%M:%S"));
+    return false;
+  }
+
+  if (windSpeedOverWater > configuration.MaxTrueWindKnots) {
+    propagation_error = PROPAGATION_EXCEEDED_MAX_WIND;
+    return false;
+  }
 
   if (configuration.WindVSCurrent) {
     /* Calculate the wind vector (Wx, Wy) and ocean current vector (Cx, Cy). */
     /* these are already computed in OverWater.. could optimize by reusing them
      */
-    double Wx = VW * cos(deg2rad(W)), Wy = VW * sin(deg2rad(W));
+    double Wx = windSpeedOverWater * cos(deg2rad(windDirOverWater)),
+           Wy = windSpeedOverWater * sin(deg2rad(windDirOverWater));
     double Cx = currentSpeed * cos(deg2rad(currentDir) + M_PI),
            Cy = currentSpeed * sin(deg2rad(currentDir) + M_PI);
 
-    if (Wx * Cx + Wy * Cy + configuration.WindVSCurrent < 0) return false;
+    if (Wx * Cx + Wy * Cy + configuration.WindVSCurrent < 0) {
+      propagation_error = PROPAGATION_EXCEEDED_WIND_VS_CURRENT;
+      return false;
+    }
   }
 
   bool first_avoid = true;
@@ -909,12 +991,13 @@ bool Position::Propagate(IsoRouteList& routelist,
     double timeseconds = configuration.UsedDeltaTime;
     double dist;
 
-    double H = heading_resolve(*it);
+    double twa = heading_resolve(*it);
     double ctw, stw, cog, sog;
 
-    ctw = W + H; /* rotated relative to true wind */
+    ctw = windDirOverWater + twa; /* rotated relative to true wind */
 
-    /* test to avoid extra computations related to backtracking */
+    // Do no waste time exploring directions outside the configured search
+    // angle.
     if (!std::isnan(bearing1)) {
       double bearing3 = heading_resolve(ctw);
       if ((bearing1 > bearing2 && bearing3 > bearing2 && bearing3 < bearing1) ||
@@ -931,39 +1014,60 @@ bool Position::Propagate(IsoRouteList& routelist,
           rp->propagated =
               true;  // not a "real" position so we don't propagate it either.
           goto add_position;
-        } else
+        } else {
           continue;
+        }
       }
     }
 
     {
       PolarSpeedStatus status;
-      int newpolar = configuration.boat.TrySwitchPolar(
-          polar, VW, H, S, configuration.OptimizeTacking, &status);
-      if (newpolar == -1) {
-        configuration.polar_status = status;
-        continue;
+      int newpolar = configuration.boat.FindBestPolarForCondition(
+          polar, windSpeedOverWater, twa, swell, configuration.OptimizeTacking,
+          &status);
+      bool inside_polar_bounds = true;
+      if (newpolar == -1 || status != PolarSpeedStatus::POLAR_SPEED_SUCCESS) {
+        if (newpolar == -1 && polar >= 0) {
+          newpolar = polar;
+        }
+        if (status == PolarSpeedStatus::POLAR_SPEED_WIND_TOO_LIGHT) {
+          // In light winds, FindBestPolarForCondition() may return a polar
+          // where the heading and wind are not in the sail plan, but this is
+          // the best we can do. This is not an error, the boat will just not
+          // move in this direction, and perhaps the wind will pick up later.
+          // case PolarSpeedStatus::POLAR_SPEED_ANGLE_TOO_LOW:
+          // case PolarSpeedStatus::POLAR_SPEED_ANGLE_TOO_HIGH:
+          //  @todo: how to handle case when wind is too strong?
+          //  If the polar goes to 30 knots and the wind is 31 knots,
+          //  we might still want to use the polar. But if the wind is
+          //  hurricane force, we should not use that path.
+          //  case PolarSpeedStatus::POLAR_SPEED_WIND_TOO_STRONG:
+          inside_polar_bounds = false;
+        } else {
+          configuration.polar_status = status;
+          continue;
+        }
       }
-      // In light winds, TrySwitchPolar() may return a polar where the heading
-      // and wind are not in the sail plan, but this is the best we can do. This
-      // is not an error, the boat will just not move in this direction, and
-      // perhaps the wind will pick up later.
-      if (polar == -1) polar = newpolar;
 
       /* did we tack thru the wind? apply penalty */
       bool tacked = false;
-      if (parent_heading * H < 0 && fabs(parent_heading - H) < 180) {
+      if (parent_heading * twa < 0 && fabs(parent_heading - twa) < 180) {
         timeseconds -= configuration.TackingTime;
         tacked = true;
       }
-      bool bound = (status != PolarSpeedStatus::POLAR_SPEED_WIND_TOO_LIGHT);
       // In light winds, we don't want to check the polar bounds, because
       // we already know the wind is too light for the polar.
 
-      if (!ComputeBoatSpeed(configuration, timeseconds, twd, tws, W, VW,
-                            currentDir, currentSpeed, H, atlas, data_mask, ctw,
-                            stw, cog, sog, dist, newpolar, bound))
+      if (!ComputeBoatSpeed(configuration, timeseconds, twd, tws,
+                            windDirOverWater, windSpeedOverWater, currentDir,
+                            currentSpeed, twa, atlas, data_mask, ctw, stw, cog,
+                            sog, dist, newpolar,
+                            inside_polar_bounds /* when using out-of-bound sail
+                                                    plan, set bound=false */
+                            ,
+                            "Propagate")) {
         continue;
+      }
 
       double dlat, dlon;
       if (configuration.Integrator == RouteMapConfiguration::RUNGE_KUTTA) {
@@ -974,16 +1078,17 @@ bool Position::Propagate(IsoRouteList& routelist,
             configuration.time + wxTimeSpan::Seconds(timeseconds / 2);
         wxDateTime rk_time =
             configuration.time + wxTimeSpan::Seconds(timeseconds);
-        if (!rk_step(this, timeseconds, cog, dist / 2, H, configuration,
+        if (!rk_step(this, timeseconds, cog, dist / 2, twa, configuration,
                      configuration.grib, rk_time_2, newpolar, k2_BG, k2_dist,
                      data_mask) ||
-            !rk_step(this, timeseconds, cog, k2_dist / 2, H + k2_BG - cog,
+            !rk_step(this, timeseconds, cog, k2_dist / 2, twa + k2_BG - cog,
                      configuration, configuration.grib, rk_time_2, newpolar,
                      k3_BG, k3_dist, data_mask) ||
-            !rk_step(this, timeseconds, cog, k3_dist, H + k3_BG - cog,
+            !rk_step(this, timeseconds, cog, k3_dist, twa + k3_BG - cog,
                      configuration, configuration.grib, rk_time, newpolar,
-                     k4_BG, k4_dist, data_mask))
+                     k4_BG, k4_dist, data_mask)) {
           continue;
+        }
 
         ll_gc_ll(lat, lon, cog,
                  dist / 6 + k2_dist / 3 + k3_dist / 3 + k4_dist / 6, &dlat,
@@ -1012,8 +1117,9 @@ bool Position::Propagate(IsoRouteList& routelist,
         bearing = rad2deg(atan2(d2, d1));
 
         if (fabs(heading_resolve(configuration.StartEndBearing - bearing)) >
-            configuration.MaxCourseAngle)
+            configuration.MaxCourseAngle) {
           continue;
+        }
       }
 
       if (configuration.MaxDivertedCourse < 180) {
@@ -1034,15 +1140,17 @@ bool Position::Propagate(IsoRouteList& routelist,
         term = pow(term / 16, 4) + 1;  // make 1 until the end, then make big
 
         if (fabs(heading_resolve(bearing1 - bearing)) >
-            configuration.MaxDivertedCourse * term)
+            configuration.MaxDivertedCourse * term) {
           continue;
+        }
       }
 
       /* quick test first to avoid slower calculation */
-      if (stw + VW > configuration.MaxApparentWindKnots &&
-          Polar::VelocityApparentWind(stw, H, VW) >
-              configuration.MaxApparentWindKnots)
+      if (stw + windSpeedOverWater > configuration.MaxApparentWindKnots &&
+          Polar::VelocityApparentWind(stw, twa, windSpeedOverWater) >
+              configuration.MaxApparentWindKnots) {
         continue;
+      }
 
       if (configuration.DetectLand || configuration.DetectBoundary) {
         double dlat1, dlon1;
@@ -1134,14 +1242,15 @@ bool Position::Propagate(IsoRouteList& routelist,
         int crossings = RouteMap::ClimatologyCycloneTrackCrossings(
             lat, lon, dlat, dlon, configuration.time,
             configuration.CycloneMonths * 30 + configuration.CycloneDays);
-        if (crossings > 0) continue;
+        if (crossings > 0) {
+          continue;
+        }
       }
 
-      rp = new Position(dlat, dlon, this, H, ctw, newpolar, tacks + tacked,
+      rp = new Position(dlat, dlon, this, twa, ctw, newpolar, tacks + tacked,
                         data_mask, configuration.grib_is_data_deficient);
     }
   add_position:
-
     if (points) {
       rp->prev = points->prev;
       rp->next = points;
@@ -1156,6 +1265,7 @@ bool Position::Propagate(IsoRouteList& routelist,
 
   if (count < 3) { /* would get eliminated anyway, but save the extra steps */
     if (count) DeletePoints(points);
+    propagation_error = PROPAGATION_ANGLE_ERROR;
     return false;
   }
 
@@ -1166,62 +1276,106 @@ bool Position::Propagate(IsoRouteList& routelist,
 
 double RoutePoint::PropagateToPoint(double dlat, double dlon,
                                     RouteMapConfiguration& configuration,
-                                    double& H, int& data_mask, bool end) {
-  double S = Swell(configuration, lat, lon);
-  if (S > configuration.MaxSwellMeters) return NAN;
+                                    double& heading, int& data_mask, bool end) {
+  double swell = Swell(configuration, lat, lon);
+  if (swell > configuration.MaxSwellMeters) return NAN;
 
   if (fabs(lat) > configuration.MaxLatitude) return NAN;
 
-  double twd, tws, W, VW, currentDir, currentSpeed;
+  double twd, tws, windDirOverWater, windSpeedOverWater, currentDir,
+      currentSpeed;
   climatology_wind_atlas atlas;
-  if (!ReadWindAndCurrents(configuration, this, twd, tws, W, VW, currentDir,
-                           currentSpeed, atlas, data_mask)) {
-    if (!end) configuration.wind_data_failed = true;
+  if (!ReadWindAndCurrents(configuration, this, twd, tws, windDirOverWater,
+                           windSpeedOverWater, currentDir, currentSpeed, atlas,
+                           data_mask)) {
+    if (!end)
+      configuration.wind_data_status = wxString::Format(
+          "No wind data for position (lat=%f,lon=%f) at %s", lat, lon,
+          configuration.time.Format("%Y-%m-%d %H:%M:%S"));
     return NAN;
   }
 
-  if (VW > configuration.MaxTrueWindKnots) return NAN;
+  if (windSpeedOverWater > configuration.MaxTrueWindKnots) return NAN;
 
   /* todo: we should make sure we don't tack if we are already at the max tacks,
      possibly perform other tests and/or switch sail polar? */
   double bearing, dist;
+  // Calculate the great circle distance and initial bearing between this route
+  // point and the input destination point.
   ll_gc_ll_reverse(lat, lon, dlat, dlon, &bearing, &dist);
 
   /* figure out bearing and distance to go, because it is a non-linear problem
      if compounded with currents solve iteratively (without currents only one
      iteration will ever occur */
-  double ctw, stw, cog = W, sog;
+  double ctw;  // Course Through Water: Direction the boat is traveling relative
+               // to the water.
+  double stw;  // Speed Through Water: Speed of the boat relative to the water
+
+  // This is a starting point for the iterative solver. It's using the wind
+  // direction as an initial guess for which way the boat might be heading, but
+  // this gets refined in the do-while loop.
+  double cog = windDirOverWater;
+  double sog;
   int iters = 0;
-  H = 0;
+  heading = 0;
   int newpolar = polar;
   bool old = configuration.OptimizeTacking;
   if (end) configuration.OptimizeTacking = true;
   PolarSpeedStatus status;
   do {
-    /* make our correction in range */
+    // (bearing - cog) represents the angle between the destination and the
+    // where the boat is heading in the iterative process.
     while (bearing - cog > 180) bearing -= 360;
     while (cog - bearing > 180) bearing += 360;
 
-    H += bearing - cog;
-    ctw = W + H; /* rotated relative to true wind */
+    heading += bearing - cog;
+    ctw = windDirOverWater + heading; /* rotated relative to true wind */
 
     double dummy_dist;  // not used
 
-    newpolar = configuration.boat.TrySwitchPolar(
-        polar, VW, H, S, configuration.OptimizeTacking, &status);
-    // In light winds, TrySwitchPolar() may return a polar where the heading
-    // and wind are not in the sail plan, but this is the best we can do. This
-    // is not an error, the boat will just not move in this direction, and
-    // perhaps the wind will pick up later.
-    if (newpolar == -1) {
-      configuration.polar_status = status;
-      configuration.OptimizeTacking = old;
-      return NAN;
+    newpolar = configuration.boat.FindBestPolarForCondition(
+        polar, windSpeedOverWater, heading, swell,
+        configuration.OptimizeTacking, &status);
+
+    bool inside_polar_bounds = true;
+    if (newpolar == -1 || status != PolarSpeedStatus::POLAR_SPEED_SUCCESS) {
+      if (newpolar == -1 && polar >= 0) {
+        newpolar = polar;
+      }
+      if (status == PolarSpeedStatus::POLAR_SPEED_WIND_TOO_LIGHT) {
+        // In light winds, FindBestPolarForCondition() may return a polar
+        // where the heading and wind are not in the sail plan, but this is
+        // the best we can do. This is not an error, the boat will just not
+        // move in this direction, and perhaps the wind will pick up later.
+        // case PolarSpeedStatus::POLAR_SPEED_ANGLE_TOO_LOW:
+        // case PolarSpeedStatus::POLAR_SPEED_ANGLE_TOO_HIGH:
+        // @todo: how to handle case when wind is too strong?
+        // If the polar goes to 30 knots and the wind is 31 knots,
+        // we might still want to use the polar. But if the wind is
+        // hurricane force, we should not use that path.
+        // case PolarSpeedStatus::POLAR_SPEED_WIND_TOO_STRONG:
+        inside_polar_bounds = false;
+        newpolar = polar;
+        wxLogMessage(
+            "Using out-of-bound sail plan. Status: %s. windSpeedOverWater=%f "
+            "tws=%f",
+            Polar::GetPolarStatusMessage(status), windSpeedOverWater, tws);
+      } else {
+        configuration.polar_status = status;
+        configuration.OptimizeTacking = old;
+        wxLogMessage(
+            "Failed to switch polar. Status: %s. windSpeedOverWater=%f "
+            "tws=%f",
+            Polar::GetPolarStatusMessage(status), windSpeedOverWater, tws);
+        return NAN;
+      }
     }
 
-    if (!ComputeBoatSpeed(configuration, 0, twd, tws, W, VW, currentDir,
-                          currentSpeed, H, atlas, data_mask, ctw, stw, cog, sog,
-                          dummy_dist, newpolar) ||
+    if (!ComputeBoatSpeed(configuration, 0, twd, tws, windDirOverWater,
+                          windSpeedOverWater, currentDir, currentSpeed, heading,
+                          atlas, data_mask, ctw, stw, cog, sog, dummy_dist,
+                          newpolar, inside_polar_bounds /* bound */,
+                          "PropagateToPoint") ||
         ++iters == 10  // give up
     ) {
       configuration.OptimizeTacking = old;
@@ -1237,8 +1391,8 @@ double RoutePoint::PropagateToPoint(double dlat, double dlon,
   if (end && dist / sog > configuration.UsedDeltaTime / 3600.0) return NAN;
 
   /* quick test first to avoid slower calculation */
-  if (stw + VW > configuration.MaxApparentWindKnots &&
-      Polar::VelocityApparentWind(stw, H, VW) >
+  if (stw + windSpeedOverWater > configuration.MaxApparentWindKnots &&
+      Polar::VelocityApparentWind(stw, heading, windSpeedOverWater) >
           configuration.MaxApparentWindKnots)
     return NAN;
 
@@ -1283,6 +1437,61 @@ int Position::SailChanges() {
   return (polar != parent->polar) + parent->SailChanges();
 }
 
+wxString Position::GetErrorText(PropagationError error) {
+  static wxString error_texts[] = {"No error",
+                                   "Already propagated",
+                                   "Exceeded maximum swell",
+                                   "Exceeded maximum latitude",
+                                   "Wind data retrieval failed",
+                                   "Exceeded maximum wind speed",
+                                   "Exceeded wind vs current threshold",
+                                   "Angle outside search limits",
+                                   "Polar constraints not met",
+                                   "Boat speed computation failed",
+                                   "Exceeded maximum apparent wind",
+                                   "Land intersection detected",
+                                   "Boundary intersection detected",
+                                   "Cyclone track crossing detected",
+                                   "No valid angles found"};
+
+  if (error >= 0 && error <= PROPAGATION_ANGLE_ERROR)
+    return error_texts[error];
+  else
+    return "Unknown error";
+}
+
+void Position::ResetErrorTracking() {
+  propagation_error = PROPAGATION_NO_ERROR;
+}
+
+wxString Position::GetErrorInfo() const {
+  if (propagation_error == PROPAGATION_NO_ERROR) return wxEmptyString;
+
+  return wxString::Format("%s", GetErrorText(propagation_error));
+}
+
+wxString Position::GetDetailedErrorInfo() const {
+  wxString info;
+
+  if (propagation_error != PROPAGATION_NO_ERROR) {
+    info += wxString::Format("Position propagation failed: %s\n",
+                             GetErrorText(propagation_error));
+
+    // Add position coordinates
+    info += wxString::Format("  Position: %.6f, %.6f\n", lat, lon);
+
+    // Add wind and current data if available
+    if (parent) {
+      info +=
+          wxString::Format("  Heading from parent: %.1f°\n", parent_heading);
+      info +=
+          wxString::Format("  Bearing from parent: %.1f°\n", parent_bearing);
+    }
+  }
+
+  return info;
+}
+
 bool RoutePoint::EntersBoundary(double dlat, double dlon) {
   struct FindClosestBoundaryLineCrossing_t t;
   t.dStartLat = lat, t.dStartLon = heading_resolve(lon);
@@ -1306,11 +1515,11 @@ SkipPosition* SkipPosition::Copy() {
   SkipPosition* s = this;
   if (!s) return s;
 
-  SkipPosition *fs, *ns = NULL;
-  Position *fp, *np = NULL;
+  SkipPosition *fs, *ns = nullptr;
+  Position *fp, *np = nullptr;
   Position* p = s->point;
   do {
-    Position* nsp = NULL;
+    Position* nsp = nullptr;
     do { /* copy all positions between skip positions */
       Position* nnp = new Position(p);
       if (!nsp) nsp = nnp;
@@ -1355,7 +1564,7 @@ void DeleteSkipPoints(SkipPosition* skippoints) {
 }
 
 IsoRoute::IsoRoute(SkipPosition* s, int dir)
-    : skippoints(s), direction(dir), parent(NULL) {
+    : skippoints(s), direction(dir), parent(nullptr) {
   /* make sure the skip points start at the minimum
      latitude so we know we are on the outside */
   MinimizeLat();
@@ -1646,7 +1855,7 @@ void IsoRoute::RemovePosition(SkipPosition* s, Position* p) {
   if (s->point == p) {
     if (s == s->next) {
       delete s;
-      skippoints = NULL;
+      skippoints = nullptr;
     } else {
       /* rebuild skip list */
       Position* points = skippoints->point;
@@ -2019,7 +2228,7 @@ startnormalizing:
       rx = sr->point->lon, ry = sr->point->lat;
       COMPUTE_MIN_MAX(sr->quadrant, r, s, r)
 
-      pstart = pend = NULL;
+      pstart = pend = nullptr;
       q = sp->point;
       qx = q->lon, qy = q->lat;
       COMPUTE_STATE(pstate, q, r)
@@ -2041,7 +2250,7 @@ startnormalizing:
       //    if(pstart == pend)  // this is never hit in practice
       //      goto done;
 
-      rstart = rend = NULL;
+      rstart = rend = nullptr;
       s = sr->point;
       rstate = state; /* still valid from before */
       do {
@@ -2236,7 +2445,7 @@ startnormalizing:
 
                 route1->children.splice(route1->children.end(),
                                         route2->children);
-                route2->skippoints = NULL; /* all points are now in route1 */
+                route2->skippoints = nullptr; /* all points are now in route1 */
                 delete route2;
                 route2 = route1;
                 ssend = spend;
@@ -2495,10 +2704,14 @@ bool IsoRoute::Propagate(IsoRouteList& routelist,
                          RouteMapConfiguration& configuration) {
   Position* p = skippoints->point;
   bool ret = false;
-  if (p) do {
-      if (p->Propagate(routelist, configuration)) ret = true;
+  if (p) {
+    do {
+      if (p->Propagate(routelist, configuration)) {
+        ret = true;
+      }
       p = p->next;
     } while (p != skippoints->point);
+  }
   return ret;
 }
 
@@ -2608,7 +2821,7 @@ void IsoChron::PropagateIntoList(IsoRouteList& routelist,
   for (IsoRouteList::iterator it = routes.begin(); it != routes.end(); ++it) {
     bool propagated = false;
 
-    IsoRoute* x = NULL;
+    IsoRoute* x = nullptr;
     /* if anchoring is allowed, then we can propagate a second time,
        so copy the list before clearing the propagate flag,
        when depth data is implemented we will need to flag positions as
@@ -2627,7 +2840,7 @@ void IsoChron::PropagateIntoList(IsoRouteList& routelist,
       if (configuration.Anchoring)
         y = new IsoRoute(*cit, x);
       else
-        y = NULL;
+        y = nullptr;
       if ((*cit)->Propagate(routelist, configuration)) {
         if (!configuration.Anchoring) y = new IsoRoute(*cit, x);
         x->children.push_back(y); /* copy child */
@@ -2665,7 +2878,7 @@ bool IsoChron::Contains(double lat, double lon) {
 
 Position* IsoChron::ClosestPosition(double lat, double lon, wxDateTime* t,
                                     double* d) {
-  Position* minpos = NULL;
+  Position* minpos = nullptr;
   double mindist = INFINITY;
   wxDateTime mint;
   for (IsoRouteList::iterator it = routes.begin(); it != routes.end(); ++it) {
@@ -2739,7 +2952,9 @@ bool RouteMapConfiguration::Update() {
     EndLon = positive_degrees(EndLon);
   }
 
-  ll_gc_ll_reverse(StartLat, StartLon, EndLat, EndLon, &StartEndBearing, 0);
+  // Calculate the bearing between the start and end points.
+  ll_gc_ll_reverse(StartLat, StartLon, EndLat, EndLon, &StartEndBearing,
+                   nullptr);
 
   DegreeSteps.clear();
   if (RouteGUID.IsEmpty()) {
@@ -2762,16 +2977,16 @@ bool RouteMapConfiguration::Update() {
 }
 
 bool (*RouteMap::ClimatologyData)(int setting, const wxDateTime&, double,
-                                  double, double&, double&) = NULL;
+                                  double, double&, double&) = nullptr;
 bool (*RouteMap::ClimatologyWindAtlasData)(const wxDateTime&, double, double,
                                            int& count, double*, double*,
-                                           double&, double&) = NULL;
+                                           double&, double&) = nullptr;
 int (*RouteMap::ClimatologyCycloneTrackCrossings)(double, double, double,
                                                   double, const wxDateTime&,
-                                                  int) = NULL;
+                                                  int) = nullptr;
 
 OD_FindClosestBoundaryLineCrossing RouteMap::ODFindClosestBoundaryLineCrossing =
-    NULL;
+    nullptr;
 
 std::list<RouteMapPosition> RouteMap::Positions;
 
@@ -2835,7 +3050,7 @@ bool RouteMap::Propagate() {
   //
   RouteMapConfiguration configuration = m_Configuration;
   configuration.polar_status = POLAR_SPEED_SUCCESS;
-  configuration.wind_data_failed = false;
+  configuration.wind_data_status = wxEmptyString;
   configuration.boundary_crossing = false;
   configuration.land_crossing = false;
 
@@ -2870,11 +3085,13 @@ bool RouteMap::Propagate() {
 
   IsoRouteList routelist;
   if (origin.empty()) {
+    // The routing calculation has not started yet.
     Position* np = new Position(configuration.StartLat, configuration.StartLon);
     np->prev = np->next = np;
     routelist.push_back(new IsoRoute(np->BuildSkipList()));
-    configuration.grib = NULL;
+    configuration.grib = nullptr;
   } else {
+    // At least one isochrone has been calculated.
     configuration.grib = origin.back()->m_Grib;
     configuration.time = origin.back()->time;
     configuration.UsedDeltaTime = origin.back()->delta;
@@ -2888,9 +3105,37 @@ bool RouteMap::Propagate() {
         (!RouteMap::ClimatologyData ||
          m_Configuration.ClimatologyType <=
              RouteMapConfiguration::CURRENTS_ONLY)) {
+      // This route is supposed to use GRIB data without climatology, but the
+      // GRIB data is not available.
       Lock();
       m_bFinished = true;
-      m_bGribFailed = true;
+      if (!configuration.grib) {
+        m_bWeatherForecastStatus = WEATHER_FORECAST_NO_GRIB_DATA;
+        m_bWeatherForecastError =
+            wxString::Format(_("The isochrone has reached timestamp %s beyond "
+                               "the available data in the GRIB file"),
+                             configuration.time.Format("%Y-%m-%d %H:%M:%S"));
+      } else if (!configuration.grib->m_GribRecordPtrArray[Idx_WIND_VX] ||
+                 !configuration.grib->m_GribRecordPtrArray[Idx_WIND_VY]) {
+        m_bWeatherForecastStatus = WEATHER_FORECAST_NO_WIND_DATA;
+        m_bWeatherForecastError = wxString::Format(
+            _("GRIB data for time %s does not contain wind information."),
+            configuration.time.Format("%Y-%m-%d %H:%M:%S"));
+      } else if (!RouteMap::ClimatologyData) {
+        m_bWeatherForecastStatus = WEATHER_FORECAST_NO_CLIMATOLOGY_DATA;
+        m_bWeatherForecastError =
+            _("Climatology data is not available but is required for this "
+              "configuration");
+      } else if (m_Configuration.ClimatologyType <=
+                 RouteMapConfiguration::CURRENTS_ONLY) {
+        m_bWeatherForecastStatus = WEATHER_FORECAST_CLIMATOLOGY_DISABLED;
+        m_bWeatherForecastError = _(
+            "Climatology is disabled in the configuration but is required for "
+            "this route");
+      } else {
+        m_bWeatherForecastStatus = WEATHER_FORECAST_OTHER_ERROR;
+        m_bWeatherForecastError = _("Unknown weather forecast error occurred");
+      }
       Unlock();
       return false;
     }
@@ -2900,7 +3145,7 @@ bool RouteMap::Propagate() {
 
   IsoChron* update;
   if (routelist.empty()) {
-    update = NULL;
+    update = nullptr;
   } else {
     IsoRouteList merged;
     if (!ReduceList(merged, routelist, configuration)) return false;
@@ -2931,9 +3176,9 @@ bool RouteMap::Propagate() {
 
 Position* RouteMap::ClosestPosition(double lat, double lon, wxDateTime* t,
                                     double* d) {
-  if (origin.empty()) return NULL;
+  if (origin.empty()) return nullptr;
 
-  Position* minpos = NULL;
+  Position* minpos = nullptr;
   double mindist = INFINITY;
   bool inside;
   bool first = (t != 0);
@@ -2976,7 +3221,7 @@ void RouteMap::Reset() {
   Lock();
   Clear();
 
-  m_NewGrib = NULL;
+  m_NewGrib = nullptr;
   m_SharedNewGrib.SetGribRecordSet(0);
 
   m_NewTime = m_Configuration.StartTime;
@@ -2984,9 +3229,9 @@ void RouteMap::Reset() {
   m_ErrorMsg = wxEmptyString;
 
   m_bReachedDestination = false;
-  m_bGribFailed = false;
+  m_bWeatherForecastStatus = WEATHER_FORECAST_SUCCESS;
   m_bPolarStatus = POLAR_SPEED_SUCCESS;
-  m_bNoData = false;
+  m_bGribError = wxEmptyString;
   m_bFinished = false;
   m_bLandCrossing = false;
   m_bBoundaryCrossing = false;
@@ -3101,4 +3346,169 @@ void RouteMap::Clear() {
     delete *it;
 
   origin.clear();
+}
+
+/**
+ * Get a human-readable, translatable message for a weather forecast status
+ * code.
+ *
+ * This helper method converts a WeatherForecastStatus code into a user-friendly
+ * message that can be displayed in the UI.
+ *
+ * @param status The status code to convert to a message.
+ * @return wxString containing the translated status message.
+ */
+wxString RouteMap::GetWeatherForecastStatusMessage(
+    WeatherForecastStatus status) {
+  switch (status) {
+    case WEATHER_FORECAST_SUCCESS:
+      return wxEmptyString;
+    case WEATHER_FORECAST_NO_GRIB_DATA:
+      return _("GRIB has no data");
+    case WEATHER_FORECAST_NO_WIND_DATA:
+      return _("GRIB does not contain wind data");
+    case WEATHER_FORECAST_NO_CLIMATOLOGY_DATA:
+      return _("No climatology data available");
+    case WEATHER_FORECAST_CLIMATOLOGY_DISABLED:
+      return _("Climatology is disabled");
+    case WEATHER_FORECAST_OTHER_ERROR:
+      return _("Other GRIB error");
+    default:
+      return _("Unknown error");
+  }
+}
+
+// Implementation for route error reporting
+
+void RouteMap::CollectPositionErrors(Position* position,
+                                     std::vector<Position*>& failed_positions) {
+  // If this position has an error, add it to the list
+  if (position->propagation_error != PROPAGATION_NO_ERROR) {
+    failed_positions.push_back(position);
+  }
+
+  // Check parent positions recursively to find chain of propagation
+  if (position->parent && !position->parent->propagated) {
+    CollectPositionErrors(dynamic_cast<Position*>(position->parent),
+                          failed_positions);
+  }
+}
+
+wxString RouteMap::GetRoutingErrorInfo() {
+  wxString info;
+  Lock();
+
+  if (origin.empty()) {
+    info = "No routing data available.";
+    Unlock();
+    return info;
+  }
+
+  // Get the most recent isochron
+  IsoChron* latest = origin.back();
+  std::vector<Position*> failed_positions;
+
+  // Track error counts to find most common issues
+  std::map<PropagationError, int> error_counts;
+
+  // Look at all positions in the latest isochron
+  for (IsoRouteList::iterator it = latest->routes.begin();
+       it != latest->routes.end(); ++it) {
+    Position* p = (*it)->skippoints->point;
+    do {
+      // If this position wasn't able to propagate further, add it to analysis
+      if (p->propagated && p->propagation_error != PROPAGATION_NO_ERROR) {
+        failed_positions.push_back(p);
+        error_counts[p->propagation_error]++;
+      }
+      p = p->next;
+    } while (p != (*it)->skippoints->point);
+  }
+
+  if (failed_positions.empty()) {
+    if (m_bReachedDestination) {
+      info = "Route calculation completed successfully.";
+    } else {
+      info =
+          "Route calculation terminated without finding a path to "
+          "destination.";
+
+      if (m_bLandCrossing) {
+        info +=
+            "\nLand crossing detected - the destination may be unreachable "
+            "by water.";
+      }
+
+      if (m_bBoundaryCrossing) {
+        info +=
+            "\nBoundary crossing detected - the destination may be inside a "
+            "boundary area.";
+      }
+
+      if (m_bGribError != wxEmptyString) {
+        info += "\n" + m_bGribError;
+      }
+    }
+  } else {
+    // Report the most common propagation errors
+    info = "Route calculation failed to reach destination. Common issues:\n";
+
+    // Sort errors by frequency
+    std::vector<std::pair<PropagationError, int>> sorted_errors;
+    for (const auto& error : error_counts) {
+      sorted_errors.push_back(error);
+    }
+    std::sort(sorted_errors.begin(), sorted_errors.end(),
+              [](const std::pair<PropagationError, int>& a,
+                 const std::pair<PropagationError, int>& b) {
+                return a.second > b.second;
+              });
+
+    // List top errors
+    for (size_t i = 0; i < std::min(size_t(5), sorted_errors.size()); i++) {
+      wxString error = Position::GetErrorText(sorted_errors[i].first);
+      int count = sorted_errors[i].second;
+      info += wxString::Format("  * %s: %d occurrences\n", error, count);
+    }
+
+    // Detailed analysis of a few positions
+    info += "\nSample position analysis:\n";
+
+    // Sort failed positions by error type for better readability
+    std::sort(failed_positions.begin(), failed_positions.end(),
+              [](Position* a, Position* b) {
+                return a->propagation_error < b->propagation_error;
+              });
+
+    // Show details for up to 3 positions
+    for (size_t i = 0; i < std::min(size_t(3), failed_positions.size()); i++) {
+      Position* pos = failed_positions[i];
+      info +=
+          wxString::Format(_("Position %.6f, %.6f - %s\n"), pos->lat, pos->lon,
+                           Position::GetErrorText(pos->propagation_error));
+    }
+
+    // General route advice based on errors
+    if (error_counts[PROPAGATION_LAND_INTERSECTION] > 0) {
+      info +=
+          "\nRoute appears to be blocked by land. Consider increasing "
+          "MaxDivertedCourse or checking if destination is reachable by "
+          "water.";
+    }
+
+    if (error_counts[PROPAGATION_EXCEEDED_MAX_WIND] > 0) {
+      info +=
+          "\nMaximum wind constraints preventing progress. Consider "
+          "increasing MaxTrueWindKnots if conditions permit.";
+    }
+
+    if (error_counts[PROPAGATION_BOAT_SPEED_COMPUTATION_FAILED] > 0) {
+      info +=
+          "\nPolar data constraints preventing progress. Check if your polar "
+          "data is appropriate for the conditions.";
+    }
+  }
+
+  Unlock();
+  return info;
 }

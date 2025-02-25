@@ -40,42 +40,6 @@ public:
   std::vector<Polar> Polars;
 
   /**
-   * Attempts to find an appropriate polar (sail configuration) for the given
-   * sailing conditions.
-   *
-   * This function determines if the current polar is still valid for the
-   * specified conditions. If not, it searches through all available polars to
-   * find a suitable alternative. The selection is based on the
-   * "CrossOverContour" for each polar, which defines the valid ranges of wind
-   * speeds and angles for that particular sail configuration.
-   *
-   * In sailing, different sail configurations (e.g., full main + jib, reefed
-   * main, spinnaker, etc.) perform optimally in different conditions. This
-   * function helps the routing algorithm automatically select the appropriate
-   * sail configuration based on the current wind and course.
-   *
-   * @param curpolar Index of the current polar being used, or -1 if no polar is
-   * selected yet
-   * @param VW True wind speed in knots
-   * @param H Heading relative to true wind direction in degrees
-   * @param Swell Swell height in meters (reserved for future use, currently not
-   * used in selection)
-   * @param optimize_tacking Whether to optimize the tacking angle for upwind
-   * sailing
-   * @param status Pointer to a PolarSpeedStatus variable to receive detailed
-   * status information. If nullptr, status details are not returned. On
-   * success, *status is set to POLAR_SPEED_SUCCESS.
-   *
-   * @return The index of the valid polar to use, or -1 if no valid polar was
-   * found. If curpolar is still valid, it will be returned to avoid unnecessary
-   * sail changes. If curpolar is invalid but another polar is valid, the index
-   * of that polar is returned. If no valid polar is found, -1 is returned,
-   * indicating that sailing is not possible with the available sail
-   * configurations in the given conditions.
-   */
-  int TrySwitchPolar(int curpolar, double VW, double H, double Swell,
-                     bool optimize_tacking, PolarSpeedStatus* status = nullptr);
-  /**
    * Determines if a specific polar represents the fastest sail configuration
    * for given conditions.
    *
@@ -138,29 +102,58 @@ public:
    */
   void GenerateCrossOverChart(void* arg = 0,
                               void (*status)(void*, int, int) = 0);
+
   /**
-   * Attempts to find the best polar for light wind conditions.
+   * Finds the most suitable polar (sail configuration) for the given weather
+   * and sailing conditions.
    *
-   * This function selects the most appropriate polar when the wind speed is
-   * below the minimum defined in any polar. It considers both the compatibility
-   * with the desired heading and how close the minimum wind speed is to our
-   * actual wind.
+   * The selection is based on the "CrossOverContour" for each polar, which
+   * defines the valid ranges of wind speeds and angles for that particular sail
+   * configuration. In sailing, different sail configurations (e.g., full main +
+   * jib, reefed main, spinnaker, etc.) perform optimally in different
+   * conditions. This function helps the routing algorithm automatically select
+   * the appropriate sail configuration based on the current wind and course.
+   *
+   * This function follows a multi-step process to select the optimal polar.
+   * 1. Check if the current polar is still valid for the conditions. If so,
+   *    it's retained for continuity.
+   * 2. If current polar is invalid, tries to find any suitable polar from the
+   *    available set.
+   * 3. If no polar meets the conditions perfectly, implements a fallback
+   *    strategy based on the specific limitation:
+   *    - When wind is too light, selects the polar with minimum wind speed
+   *      requirements closest to the current wind.
+   *    - When sailing too close to the wind, finds polars that can sail at the
+   *      lowest angles. This could happen while tacking.
+   *    - When sailing too far downwind, finds polars that can handle the
+   *      highest angles. This could happen while jibing.
+   *
+   * Each candidate polar receives a score based on its suitability, with the
+   * current polar given a slight preference (10% bonus) if it's a viable
+   * option. Find the best polar for the weather conditions.
    *
    * @param curpolar Index of the current polar being used, or -1 if no polar is
    * selected yet
-   * @param VW True wind speed in knots (below minimum in polars)
-   * @param H Heading relative to true wind direction in degrees
-   * @param Swell Swell height in meters
+   * @param tws True Wind Speed (TWS) in knots
+   * @param twa True Wind Angle (TWA), i.e., heading relative to true wind
+   * direction in degrees.
+   * @param swell Swell height in meters (reserved for future use, currently not
+   * used in selection)
    * @param optimize_tacking Whether to optimize the tacking angle for upwind
    * sailing
    * @param status Pointer to a PolarSpeedStatus variable to receive detailed
-   * status
+   * status information. If nullptr, status details are not returned. On
+   * success, *status is set to POLAR_SPEED_SUCCESS.
    *
-   * @return The index of the best polar to use, or -1 if no valid polar was
-   * found
+   * @return The index of the valid polar to use, or -1 if no valid polar was
+   * found. If curpolar is still valid, it will be returned to avoid unnecessary
+   * sail changes. If curpolar is invalid but another polar is valid, the index
+   * of that polar is returned. If no valid polar is found, -1 is returned,
+   * indicating that sailing is not possible with the available sail
+   * configurations in the given conditions.
    */
-  int FindBestPolarForLightWind(int curpolar, double VW, double H, double Swell,
-                                bool optimize_tacking,
+  int FindBestPolarForCondition(int curpolar, double tws, double twa,
+                                double swell, bool optimize_tacking,
                                 PolarSpeedStatus* status = nullptr);
 
 private:

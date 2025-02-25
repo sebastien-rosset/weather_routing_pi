@@ -59,7 +59,7 @@ void* RouteMapOverlayThread::Entry() {
     if (proute == nullptr) return 0;
 
     m_RouteMapOverlay.RouteAnalysis(proute);
-  } else
+  } else {
     while (!TestDestroy() && !m_RouteMapOverlay.Finished()) {
       if (!m_RouteMapOverlay.Propagate())
         wxThread::Sleep(50);
@@ -70,19 +70,20 @@ void* RouteMapOverlayThread::Entry() {
         wxThread::Sleep(5);
       }
     }
-  //    m_RouteMapOverlay.m_Thread = NULL;
+  }
+  //    m_RouteMapOverlay.m_Thread = nullptr;
   return 0;
 }
 
 RouteMapOverlay::RouteMapOverlay()
     : m_UpdateOverlay(true),
       m_bEndRouteVisible(false),
-      m_Thread(NULL),
+      m_Thread(nullptr),
       last_cursor_lat(0),
       last_cursor_lon(0),
-      last_cursor_position(NULL),
-      destination_position(NULL),
-      last_destination_position(NULL),
+      last_cursor_position(nullptr),
+      destination_position(nullptr),
+      last_destination_position(nullptr),
       m_bUpdated(false),
       m_overlaylist(0),
       clear_destination_plotdata(false),
@@ -141,7 +142,7 @@ void RouteMapOverlay::RouteAnalysis(PlugIn_Route* proute) {
   RouteMapConfiguration configuration = GetConfiguration();
 
   configuration.polar_status = POLAR_SPEED_SUCCESS;
-  configuration.wind_data_failed = false;
+  configuration.wind_data_status = wxEmptyString;
   configuration.boundary_crossing = false;
   configuration.land_crossing = false;
 
@@ -183,7 +184,7 @@ void RouteMapOverlay::RouteAnalysis(PlugIn_Route* proute) {
     // ll_gc_ll_reverse(data.lat, data.lon, next->lat, next->lon, &data.cog,
     // &data.sog);
     curtime += wxTimeSpan(0, 0, eta);
-    if (!configuration.wind_data_failed) {
+    if (configuration.wind_data_status == wxEmptyString) {
       data.GetPlotData(next, eta, configuration, data);
       plotdata.push_back(data);
     }
@@ -210,7 +211,7 @@ void RouteMapOverlay::DeleteThread() {
 
   m_Thread->Delete();
   delete m_Thread;
-  m_Thread = NULL;
+  m_Thread = nullptr;
 }
 
 static void SetColor(piDC& dc, wxColour c, bool penifgl = false) {
@@ -573,7 +574,7 @@ void RouteMapOverlay::Render(wxDateTime time, SettingsDialog& settingsdialog,
     // CUSTOMIZATION
     // Display the position of the cursor on route
     // where the infos are read from Route Position window
-    if (positionOnRoute != NULL) {
+    if (positionOnRoute != nullptr) {
       wxPoint r;
       WR_GetCanvasPixLL(&vp, &r, positionOnRoute->lat, positionOnRoute->lon);
       wxColour ownBlue(20, 83, 186);
@@ -648,7 +649,7 @@ int RouteMapOverlay::sailingConditionLevel(const PlotData& plot) const {
 
   double level_calc = 0.0;
 
-  // Define mximum constants. Over this value, sailing comfort is very impacted
+  // Define maximum constants. Over this value, sailing comfort is very impacted
   // (coef > 1) and automatically displayed in red.
   // Definitions:
   // AW   - Apparent Wind Direction from the boat (0 = upwind)
@@ -1118,7 +1119,7 @@ void RouteMapOverlay::RenderWindBarbs(piDC& dc, PlugIn_ViewPort& vp) {
       tb.draw(dc.GetDC());
     }
   } else
-    wind_barb_cache.draw(NULL);
+    wind_barb_cache.draw(nullptr);
 
 #if defined(ocpnUSE_GL) && !defined(__OCPN__ANDROID__)
   if (!dc.GetDC()) {
@@ -1321,7 +1322,7 @@ void RouteMapOverlay::RenderCurrent(piDC& dc, PlugIn_ViewPort& vp) {
       tb.draw(dc.GetDC());
     }
   } else
-    current_cache.draw(NULL);
+    current_cache.draw(nullptr);
 
 #if defined(ocpnUSE_GL) && !defined(__OCPN__ANDROID__)
   if (!dc.GetDC()) {
@@ -1547,8 +1548,8 @@ int RouteMapOverlay::Cyclones(int* months) {
 
 void RouteMapOverlay::Clear() {
   RouteMap::Clear();
-  last_cursor_position = NULL;
-  last_destination_position = NULL;
+  last_cursor_position = nullptr;
+  last_destination_position = nullptr;
   clear_destination_plotdata = false;
   // clear_cursor_plotdata = false;
   last_cursor_plotdata.clear();

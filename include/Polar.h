@@ -248,13 +248,13 @@ public:
    * any other factors such as current. This is the theoretical maximum boat
    * speed for the given wind conditions.
    *
-   * @param polarAngle The wind angle in degrees relative to the boat heading
+   * @param twa The True Wind Angle in degrees relative to the boat heading
    * (0° = head to wind, 90° = beam reach, 180° = running). Values above 180°
    * are mirrored as the polar is assumed symmetric.
-   * @param tws The true wind speed in knots.
-   * @param error Pointer to a PolarSpeedStatus variable that will receive
-   * detailed error code. If nullptr, error details are not returned. On
-   * success, *error is set to POLAR_SPEED_SUCCESS.
+   * @param tws The True Wind Speed in knots.
+   * @param status Pointer to a PolarSpeedStatus variable that will receive
+   * detailed status code. If nullptr, status details are not returned. On
+   * success, *status is set to POLAR_SPEED_SUCCESS.
    * @param bound If true, returns NAN when wind speed is outside the range
    * defined in the polar data. If false, extrapolates the boat speed when wind
    * speed is outside the polar data range.
@@ -264,7 +264,7 @@ public:
    * @return The boat speed in knots, or NAN if the angle is in a no-go zone or
    * other calculation constraints.
    */
-  double Speed(double polarAngle, double tws, PolarSpeedStatus* error = nullptr,
+  double Speed(double twa, double tws, PolarSpeedStatus* status = nullptr,
                bool bound = false, bool optimize_tacking = false);
   /**
    * Iteratively solves for boat speed given a target apparent wind direction.
@@ -277,7 +277,8 @@ public:
    * @param tws True wind speed in knots
    * @param pTWA Optional pointer to store the resulting true wind angle in
    * degrees
-   * @return Boat speed in knots, or NAN if no convergence after 256 iterations
+   * @return Boat speed in knots, or NAN if no convergence after multiple
+   * iterations.
    */
   double SpeedAtApparentWindDirection(double awa, double tws, double* pTWA = 0);
   /**
@@ -287,9 +288,10 @@ public:
    * would result in the specified apparent wind speed at the given true wind
    * angle.
    *
-   * @param twa True wind angle in degrees
-   * @param aws Target apparent wind speed in knots
-   * @return Boat speed in knots, or NAN if no convergence after 256 iterations
+   * @param twa True Wind Angle in degrees.
+   * @param aws Target apparent wind speed in knots.
+   * @return Boat speed in knots, or NAN if no convergence after multiple
+   * iterations.
    */
   double SpeedAtApparentWindSpeed(double twa, double aws);
   /**
@@ -304,18 +306,20 @@ public:
    * @param aws Target apparent wind speed in knots
    * @param pTWA Optional pointer to store the resulting true wind angle in
    * degrees
-   * @return Boat speed in knots, or NAN if no convergence after 256 iterations
+   * @return Boat speed in knots, or NAN if no convergence after multiple
+   * iterations.
    */
   double SpeedAtApparentWind(double awa, double aws, double* pTWA = 0);
 
   /**
-   * Gets the smallest wind angle (relative to boat heading) in the polar data.
+   * Gets the smallest True Wind Angle (relative to boat heading) in the polar
+   * data.
    *
    * This represents the closest angle to directly upwind that has performance
    * data, typically defining the minimum pointing angle (tacking angle) for the
    * boat.
    *
-   * @return The minimum wind angle in degrees from the polar data
+   * @return The minimum True Wind Angle in degrees from the polar data.
    */
   double MinDegreeStep() { return degree_steps[0]; }
 
@@ -373,9 +377,10 @@ public:
   /**
    * Determines if the current sailing state is within the crossover contour.
    *
-   * This function checks if the given heading (H) and wind speed (VW)
-   * combination falls within the defined crossover region. The crossover region
-   * typically represents conditions where a sail change would be beneficial.
+   * This function checks if the given True Wind Angle (TWA) and True Wind Speed
+   * (TWS) combination falls within the defined crossover region. The crossover
+   * region typically represents conditions where a sail change would be
+   * beneficial.
    *
    * If optimize_tacking is true, the function first applies VMG optimization
    * to the heading angle before checking the region.
@@ -383,8 +388,9 @@ public:
    * The function normalizes the heading angle to the 0-180 degree range for
    * symmetric polars and handles special cases like zero wind speed.
    *
-   * @param H The heading angle in degrees relative to the true wind
-   * @param VW The true wind speed in knots
+   * @param twa True Wind Angle (TWA), i.e., heading angle in degrees relative
+   * to the true wind.
+   * @param tws The True Wind Speed (TWS) in knots
    * @param optimize_tacking If true, optimize the heading angle for VMG before
    * checking
    * @param status Pointer to a PolarSpeedStatus variable to receive detailed
@@ -393,7 +399,7 @@ public:
    * @return true if the sailing state is inside the crossover contour, false
    * otherwise
    */
-  bool InsideCrossOverContour(float H, float VW, bool optimize_tacking,
+  bool InsideCrossOverContour(float twa, float tws, bool optimize_tacking,
                               PolarSpeedStatus* status = nullptr);
   PolygonRegion CrossOverRegion;
 

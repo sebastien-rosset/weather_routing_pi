@@ -39,6 +39,39 @@ typedef std::list<IsoRoute*> IsoRouteList;
 
 class PlotData;
 
+/**
+ * Enumeration of error codes for GRIB and climatology requests.
+ */
+enum WeatherForecastStatus {
+  /** GRIB request was successful. */
+  WEATHER_FORECAST_SUCCESS = 0,
+  /**
+   * There is no GRIB data for the requested time.
+   * For example, the timestamp is beyond the weather forecast range.
+   */
+  WEATHER_FORECAST_NO_GRIB_DATA,
+  /** GRIB contains no wind data. */
+  WEATHER_FORECAST_NO_WIND_DATA,
+  /** There is no climatology data. */
+  WEATHER_FORECAST_NO_CLIMATOLOGY_DATA,
+  /** Climatology data is disabled. */
+  WEATHER_FORECAST_CLIMATOLOGY_DISABLED,
+  /** Other GRIB error (catch all) */
+  WEATHER_FORECAST_OTHER_ERROR,
+};
+
+/**
+ * A base class representing a geographical position that is part of a route.
+ *
+ * RoutePoint stores the essential information about a point along a route,
+ * including its latitude and longitude coordinates, which polar was used
+ * to reach this point, and how many tacks were required. It also provides
+ * methods for retrieving weather data at this position and determining if
+ * the route point intersects with land or boundaries.
+ *
+ * This serves as the foundation class for more specialized route position
+ * classes like Position and PlotData.
+ */
 class RoutePoint {
 public:
   RoutePoint(double latitude = 0., double longitude = 0., int sp = -1,
@@ -80,14 +113,14 @@ public:
    * @param dlat Target latitude
    * @param dlon Target longitude
    * @param configuration Route configuration parameters
-   * @param H [out] Final heading to reach target
+   * @param heading [out] Final heading to reach target
    * @param data_mask [out] Mask indicating data sources used
    * @param end If true, indicates this is the final destination point
    *
    * @return Time in seconds to reach target point, or NAN if not possible
    */
   double PropagateToPoint(double dlat, double dlon, RouteMapConfiguration& cf,
-                          double& H, int& data_mask, bool end = true);
+                          double& heading, int& data_mask, bool end = true);
 };
 
 /*
@@ -113,33 +146,70 @@ public:
  */
 class PlotData : public RoutePoint {
 public:
-  wxDateTime time;  // The time when the boat reaches this position, based on
-                    // the route calculation.
-  double delta;     // The time in seconds from the previous position to this
-                    // position.
-  double sog;       // Speed of boat over ground (knots).
-  double cog;       // Course of boat over ground (degrees).
-  double stw;       // Speed of boat through water (knots).
-  double ctw;       // Course of boat through water (degrees).
+  /** The time when the boat reaches this position, based on the route
+   * calculation. */
+  wxDateTime time;
+  /** The time in seconds from the previous position to this position. */
+  double delta;
+  double sog;  //!< Speed of boat over ground (knots).
+  double cog;  //!< Course of boat over ground (degrees).
+  double stw;  //!< Speed of boat through water (knots).
+  double ctw;  //!< Course of boat through water (degrees).
   /** Wind speed relative to the water's frame of reference in knots. */
   double VW;
   /** Relative angle between vessel's course through water (CTW) and the wind
    * direction in degrees. */
   double W;
-  double tws;           // Velocity of wind over ground (knots).
-  double twd;           // Wind direction over ground.
-  double currentSpeed;  // Velocity of current over ground (knots).
-  double currentDir;    // Sea current direction over ground.
-  double WVHT;          // Swell height (meters).
-  double VW_GUST;       // Gust wind speed (knots).
+  double tws;           //!< Velocity of wind over ground (knots).
+  double twd;           //!< Wind direction over ground.
+  double currentSpeed;  //!< Velocity of current over ground (knots).
+  double currentDir;    //!< Sea current direction over ground.
+  double WVHT;          //!< Swell height (meters).
+  double VW_GUST;       //!< Gust wind speed (knots).
 };
 
 class SkipPosition;
 
-/* circular linked list node for positions which take equal time to reach */
+enum PropagationError {
+  PROPAGATION_NO_ERROR = 0,
+  /** Position has already been propagated. */
+  PROPAGATION_ALREADY_PROPAGATED = 1,
+  /** Swell exceeds max value at position. */
+  PROPAGATION_EXCEEDED_MAX_SWELL = 2,
+  /** Position exceeds maximum latitude. */
+  PROPAGATION_EXCEEDED_MAX_LATITUDE = 3,
+  /** Wind data is missing or invalid. */
+  PROPAGATION_WIND_DATA_FAILED = 4,
+  /** Wind speed exceeds maximum value at position. */
+  PROPAGATION_EXCEEDED_MAX_WIND = 5,
+  /** Wind speed exceeds current speed at position. */
+  PROPAGATION_EXCEEDED_WIND_VS_CURRENT = 6,
+  /** Propagation angle is outside search limits. */
+  PROPAGATION_ANGLE_OUTSIDE_SEARCH_LIMITS = 7,
+  /** Propagation violates polar constraints. */
+  PROPAGATION_POLAR_CONSTRAINTS = 8,
+  /** Boat speed computation failed. */
+  PROPAGATION_BOAT_SPEED_COMPUTATION_FAILED = 9,
+  /** Apparent wind speed exceeds maximum value at position. */
+  PROPAGATION_EXCEEDED_APPARENT_WIND = 10,
+  /** Land intersection detected during propagation. */
+  PROPAGATION_LAND_INTERSECTION = 11,
+  /** Land safety margin exceeded during propagation. */
+  PROPAGATION_LAND_SAFETY_MARGIN = 12,
+  /** Boundary intersection detected during propagation. */
+  PROPAGATION_BOUNDARY_INTERSECTION = 13,
+  /** Cyclone track crossing detected during propagation. */
+  PROPAGATION_CYCLONE_TRACK_CROSSING = 14,
+  /** Propagation angle error. */
+  PROPAGATION_ANGLE_ERROR = 15
+};
+
+/**
+ * Circular linked list node for positions which take equal time to reach.
+ */
 class Position : public RoutePoint {
 public:
-  Position(double latitude, double longitude, Position* p = NULL,
+  Position(double latitude, double longitude, Position* p = nullptr,
            double pheading = NAN, double pbearing = NAN, int sp = -1, int t = 0,
            int dm = 0, bool df = false);
   Position(Position* p);
@@ -168,9 +238,46 @@ public:
   double PropagateToEnd(RouteMapConfiguration& configuration, double& H,
                         int& data_mask);
 
-  double parent_heading; /* angle relative to true wind we sailed from parent to
-                            this position */
-  double parent_bearing; /* angle relative to north */
+  /** Helper method to get error as string. */
+  static wxString GetErrorText(PropagationError error);
+
+  /** Structure to track errors for specific angle attempts. */
+  struct AngleStatus {
+    double angle;  //!< The True Wind Angle that was attempted (degrees).
+    PropagationError error;  //!< Error code for this angle attempt.
+  };
+
+  /**
+   * Angle relative to true wind direction when traveling from parent to this
+   * position.
+   *
+   * This value represents the vessel's heading relative to the true wind when
+   * moving from the parent position to this position. It is measured in degrees
+   * where:
+   * - 0 degrees is directly upwind
+   * - 90 degrees is perpendicular to the wind (beam reach)
+   * - 180 degrees is directly downwind
+   *
+   * This angle is used to determine if tacking occurred (sign change in
+   * heading) and to apply tacking penalties. It's also used for optimizing sail
+   * configurations and evaluating polar performance.
+   */
+  double parent_heading;
+
+  /**
+   * Geographic bearing from parent position to this position.
+   *
+   * This value represents the compass bearing (in degrees) when traveling from
+   * the parent position to this position, where:
+   * - 0 degrees is North
+   * - 90 degrees is East
+   * - 180 degrees is South
+   * - 270 degrees is West
+   *
+   * This bearing is used to constrain the angular sector for the next
+   * propagation step based on the MaxSearchAngle configuration parameter.
+   */
+  double parent_bearing;
 
   Position* parent;      /* previous position in time */
   Position *prev, *next; /* doubly linked circular list of positions */
@@ -188,65 +295,323 @@ public:
     DATA_DEFICIENT_CURRENT = 32
   };
   int data_mask;
+  /** Indicates why propagation failed. */
+  PropagationError propagation_error;
+
+private:
+  /** Reset error tracking information. */
+  void ResetErrorTracking();
+
+  /** Get error information for debugging. */
+  wxString GetErrorInfo() const;
+  /** Get detailed error information for debugging. */
+  wxString GetDetailedErrorInfo() const;
 };
 
-/* circular skip list of positions which point to where we
-   change direction of quadrant.
-   That way we can skip past a long string of positions very quickly
-   when they all go in the same direction.  */
+/**
+ * A circular linked list that optimizes route path traversal by grouping
+ * consecutive positions that share the same directional quadrant. This allows
+ * the routing algorithm to quickly "skip" over large segments of consistent
+ * direction, which improves performance when checking for intersections or
+ * containment in routes with many points.
+ *
+ * Each SkipPosition points to:
+ * 1. A Position object (a point in the route)
+ * 2. The next SkipPosition in the list (which may skip over many intermediate
+ * Positions)
+ * 3. The previous SkipPosition in the list
+ *
+ * The quadrant value (0-3) represents the directional relationship between
+ * consecutive positions, calculated based on their relative latitude and
+ * longitude:
+ * - Quadrant 0: Northwest movement (lat decreasing, lon decreasing)
+ * - Quadrant 1: Northeast movement (lat decreasing, lon increasing)
+ * - Quadrant 2: Southwest movement (lat increasing, lon decreasing)
+ * - Quadrant 3: Southeast movement (lat increasing, lon increasing)
+ */
 class SkipPosition {
 public:
+  /**
+   * Constructs a new SkipPosition object.
+   *
+   * @param p Pointer to a Position object that this SkipPosition will reference
+   * @param q Quadrant value (0-3) indicating the directional relationship
+   *          with the next position.
+   */
   SkipPosition(Position* p, int q);
 
+  /**
+   * Removes this SkipPosition from the circular list.
+   *
+   * Connects the previous and next positions, maintaining the circular
+   * structure before deleting this instance.
+   */
   void Remove();
+  /**
+   * Creates a deep copy of the entire skip list including referenced positions.
+   *
+   * This method recursively traverses the circular skip list, duplicating all
+   * SkipPosition objects along with their corresponding Position objects,
+   * maintaining the same structure and connectivity as the original list.
+   *
+   * @return Pointer to the first SkipPosition in the new copied list
+   */
   SkipPosition* Copy();
 
   Position* point;
   SkipPosition *prev, *next;
+  /**
+   * Direction quadrant (0-3) indicating relationship between this point and
+   * the next.
+   */
   int quadrant;
 };
 
-/* A closed loop of isochrone positions */
+/**
+ * Represents a closed loop of positions forming an isochrone boundary.
+ *
+ * An IsoRoute defines a closed contour of geographic positions that can be
+ * reached within the same amount of time from a starting point. "Closed loop"
+ * means the positions form a complete circuit where the last position connects
+ * back to the first position, creating a continuous perimeter with no gaps or
+ * endpoints.
+ *
+ * These boundaries (isochrones) expand outward as travel time increases,
+ * creating concentric regions of accessibility from the starting point.
+ *
+ * The class supports:
+ * - Normal regions (direction = 1) representing areas the vessel can reach.
+ * - Inverted regions (direction = -1) representing "holes" or areas within a
+ * normal region that cannot be reached (e.g., islands or other obstacles)
+ * - Parent-child relationships for handling nested regions.
+ *
+ * IsoRoute provides methods for merging, normalizing (removing intersections),
+ * checking containment, and propagating routes to create the next isochrone.
+ */
 class IsoRoute {
 public:
+  /**
+   * Constructs an IsoRoute from a SkipPosition list.
+   *
+   * @param p Pointer to a SkipPosition that defines the start of the boundary
+   * @param dir Direction value: 1 for normal regions, -1 for inverted regions
+   */
   IsoRoute(SkipPosition* p, int dir = 1);
-  IsoRoute(IsoRoute* r, IsoRoute* p = NULL);
+  /**
+   * Copy constructor that optionally sets a parent.
+   *
+   * Creates a deep copy of another IsoRoute, including all Position and
+   * SkipPosition objects, and optionally establishes a parent-child
+   * relationship.
+   *
+   * @param r Source IsoRoute to copy
+   * @param p Parent IsoRoute (nullptr if no parent)
+   */
+  IsoRoute(IsoRoute* r, IsoRoute* p = nullptr);
   ~IsoRoute();
 
-  void Print(); /* for debugging */
+  /**
+   * Outputs route information for debugging.
+   *
+   * Prints all positions in the route to standard output for debugging
+   * purposes.
+   */
+  void Print();
+  /**
+   * Outputs skip list information for debugging.
+   *
+   * Prints all skip positions in the route to standard output for debugging
+   * purposes.
+   */
   void PrintSkip();
 
+  /**
+   * Adjusts skippoints to start at the minimum latitude.
+   *
+   * Ensures the skippoints list starts at the position with minimum latitude,
+   * which helps identify the outer boundary of the route for intersection
+   * testing.
+   */
   void MinimizeLat();
+  /**
+   * Counts intersections between a position and this route.
+   *
+   * Determines how many times a ray from the given position to infinity
+   * crosses the route boundary. Used to determine if a position is inside
+   * or outside the route.
+   *
+   * @param pos Position to test
+   * @return Number of intersections, or -1 if the test is inconclusive
+   */
   int IntersectionCount(Position& pos);
+  /**
+   * Tests if a position is contained within this route.
+   *
+   * Uses ray casting algorithm to determine if a position is inside this route,
+   * optionally testing children routes as well.
+   *
+   * @param pos Position to test
+   * @param test_children Whether to test child routes as well
+   * @return 1 if position is inside, 0 if outside, -1 if test is inconclusive
+   */
   int Contains(Position& pos, bool test_children);
 
+  /**
+   * Tests if this route completely contains another route.
+   *
+   * Checks if every position in route r is contained within this route.
+   *
+   * @param r The route to test for containment
+   * @return true if r is completely contained within this route
+   */
   bool CompletelyContained(IsoRoute* r);
+  /**
+   * Tests if this route contains another route.
+   *
+   * Tests if the first position of route r is contained within this route.
+   * If that test is inconclusive, tries other positions.
+   *
+   * @param r The route to test for containment
+   * @return true if r is contained within this route
+   */
   bool ContainsRoute(IsoRoute* r);
 
+  /**
+   * Simplifies the route by removing points that are very close together.
+   *
+   * Removes positions that are within a small epsilon distance of each other
+   * to improve computational efficiency without significantly changing the
+   * route.
+   */
   void ReduceClosePoints();
   //    bool ApplyCurrents(GribRecordSet *grib, wxDateTime time,
   //    RouteMapConfiguration &configuration);
+  /**
+   * Finds the bounding box of this route.
+   *
+   * Calculates the minimum and maximum latitude and longitude values
+   * that encompass the entire route.
+   *
+   * @param bounds[4] Array to store results: [min_lon, max_lon, min_lat,
+   * max_lat]
+   */
   void FindIsoRouteBounds(double bounds[4]);
 
+  /**
+   * Removes a position from the route.
+   *
+   * Removes and deletes a position from the route, updating the skip list
+   * if necessary.
+   *
+   * @param s The SkipPosition preceding the position to remove
+   * @param p The Position to remove
+   */
   void RemovePosition(SkipPosition* s, Position* p);
+  /**
+   * Finds the closest position in the route to a given lat/lon.
+   *
+   * Searches the route and its children for the position closest to
+   * the specified coordinates.
+   *
+   * @param lat Latitude to find closest position to
+   * @param lon Longitude to find closest position to
+   * @param dist Pointer to store the squared distance (optional)
+   * @return Pointer to the closest position
+   */
   Position* ClosestPosition(double lat, double lon, double* dist = 0);
+  /**
+   * Attempts to propagate from all positions in this route.
+   *
+   * Creates new potential routes by propagating from each position in this
+   * route according to the specified configuration.
+   *
+   * @param routelist List to store new routes generated by propagation
+   * @param configuration Route configuration parameters
+   * @return true if at least one successful propagations occurred.
+   */
   bool Propagate(IsoRouteList& routelist, RouteMapConfiguration& configuration);
+  /**
+   * Propagates directly to the configured end position.
+   *
+   * Attempts to find the best path from this route directly to the
+   * destination point specified in the configuration.
+   *
+   * @param configuration Route configuration parameters
+   * @param mindt [out] Minimum time to reach destination
+   * @param endp [out] Position from which the end is reached
+   * @param minH [out] Final heading at destination
+   * @param mintacked [out] Whether tacking occurred on final approach
+   * @param mindata_mask [out] Data source mask for the final approach
+   */
   void PropagateToEnd(RouteMapConfiguration& configuration, double& mindt,
                       Position*& endp, double& minH, bool& mintacked,
                       int& mindata_mask);
 
+  /**
+   * Counts the number of skip positions in this route.
+   *
+   * @return Number of skip positions
+   */
   int SkipCount();
+  /**
+   * Counts the total number of positions in this route.
+   *
+   * @return Number of positions
+   */
   int Count();
+  /**
+   * Updates various statistics about this route and its children.
+   *
+   * Calculates totals for routes, inverted routes, skip positions,
+   * and positions across this route and all its children.
+   *
+   * @param routes [in/out] Counter for number of routes
+   * @param invroutes [in/out] Counter for number of inverted routes
+   * @param skippositions [in/out] Counter for number of skip positions
+   * @param positions [in/out] Counter for number of positions
+   */
   void UpdateStatistics(int& routes, int& invroutes, int& skippositions,
                         int& positions);
+  /**
+   * Resets the drawn flag on all positions in this route and its children.
+   *
+   * Marks all positions as not drawn, used before rendering the route.
+   */
   void ResetDrawnFlag();
 
-  SkipPosition* skippoints; /* skip list of positions */
+  /**
+   * Skip list of positions for efficient traversal.
+   *
+   * The skippoints list provides optimized access to the positions in this
+   * route, allowing rapid traversal of segments that maintain the same
+   * directional quadrant.
+   */
 
-  int direction; /* 1 or -1 for inverted region */
+  SkipPosition* skippoints;
 
-  IsoRoute* parent;      /* outer region if a child */
-  IsoRouteList children; /* inner inverted regions */
+  /**
+   * Indicates whether this is a normal (1) or inverted (-1) region.
+   *
+   * Direction = 1: Normal region the vessel can reach.
+   * Direction = -1: Inverted region (hole) representing areas that cannot be
+   * reached.
+   */
+  int direction;
+
+  /**
+   * Pointer to the parent route if this is a child (inner region).
+   *
+   * nullptr if this is a top-level route, otherwise points to the outer region
+   * that contains this route.
+   */
+  IsoRoute* parent;
+  /**
+   * List of child routes representing inner inverted regions.
+   *
+   * Contains routes representing areas inside this route that cannot be
+   * reached (e.g., islands, obstacles, or other exclusion zones).
+   */
+  IsoRouteList children;
 };
 
 // -----------------
@@ -349,31 +714,124 @@ protected:
   }
 };
 
-/* list of isochrone routes with equal time to reach their endpoint from the
- * same starting point. */
+/**
+ * Manages a collection of IsoRoute objects that represent equal-time boundaries
+ * from a starting point.
+ *
+ * While an IsoRoute represents a single closed boundary, an IsoChron
+ * encapsulates a complete set of multiple IsoRoute objects that together define
+ * all regions reachable within the same amount of time.
+ *
+ * An IsoChron contains:
+ * - A list of IsoRoute objects (which may include normal regions and their
+ * inverted "hole" regions)
+ * - The specific time value this isochrone represents (when these points can be
+ * reached)
+ * - The time delta from the previous isochrone
+ * - Associated weather data (GRIB) for this time period
+ *
+ * The IsoChron class forms the backbone of the routing algorithm, with
+ * successive IsoChron objects representing expanding time boundaries as the
+ * vessel travels further from the origin. Each IsoChron builds upon the
+ * previous one by propagating routes outward based on vessel capabilities and
+ * environmental conditions.
+ */
 class IsoChron {
 public:
+  /**
+   * Constructs an IsoChron from a list of routes and associated time and
+   * weather data.
+   *
+   * @param r List of IsoRoute objects forming this isochrone
+   * @param t Time when the vessel would reach positions on this isochrone
+   * @param d Time increment (in seconds) from previous isochrone
+   * @param g Shared GRIB weather data associated with this time period
+   * @param grib_is_data_deficient Flag indicating if GRIB data has limitations
+   */
   IsoChron(IsoRouteList r, wxDateTime t, double d, Shared_GribRecordSet& g,
            bool grib_is_data_deficient);
   ~IsoChron();
 
+  /**
+   * Propagates all routes in this isochron to create the next isochrone.
+   *
+   * From each position on each route in the current isochrone, calculates all
+   * possible new positions the vessel could reach in the next time increment,
+   * creating a new expanded set of routes.
+   *
+   * @param routelist Output list to store the newly generated routes
+   * @param configuration Route configuration parameters controlling propagation
+   */
   void PropagateIntoList(IsoRouteList& routelist,
                          RouteMapConfiguration& configuration);
+  /**
+   * Tests if a position is contained within any route in this isochrone.
+   *
+   * @param p Position to test
+   * @return true if the position is inside any route in this isochrone
+   */
   bool Contains(Position& p);
+  /**
+   * Tests if a geographic coordinate is contained within any route in this
+   * isochrone.
+   *
+   * @param lat Latitude to test
+   * @param lon Longitude to test
+   * @return true if the coordinate is inside any route in this isochrone
+   */
   bool Contains(double lat, double lon);
+  /**
+   * Finds the closest position in any route to the given coordinates.
+   *
+   * @param lat Latitude to find closest position to
+   * @param lon Longitude to find closest position to
+   * @param t Optional pointer to store the time at the closest position
+   * @param dist Optional pointer to store the distance to the closest position
+   * @return Pointer to the closest position
+   */
   Position* ClosestPosition(double lat, double lon, wxDateTime* t = 0,
                             double* dist = 0);
   void ResetDrawnFlag();
 
+  /**
+   * List of IsoRoute objects that together form this isochrone.
+   *
+   * Each IsoRoute represents a distinct region reachable within the same time,
+   * and collectively they define the complete isochrone boundary.
+   */
   IsoRouteList routes;
-  // The time at which all isochone routes reach their endpoint.
-  // All routes in this isochrone have equal travel time from the starting
-  // point.
+  /**
+   * The time at which all positions on this isochrone can be reached.
+   *
+   * All routes in this isochrone have equal travel time from the starting
+   * point.
+   */
   wxDateTime time;
-  // The time in seconds from the previous isochrone to this isochrone.
+  /**
+   * The time increment (in seconds) from the previous isochrone to this one.
+   *
+   * Represents how much more time is needed to reach this isochrone compared
+   * to the previous one.
+   */
   double delta;
+  /**
+   * Shared reference to GRIB weather data for this time period.
+   *
+   * Contains wind, current, and other weather information used for
+   * calculations.
+   */
   Shared_GribRecordSet m_SharedGrib;
+  /**
+   * Pointer to the GRIB record set for this time period.
+   *
+   * Direct access to weather data used in propagation calculations.
+   */
   WR_GribRecordSet* m_Grib;
+  /**
+   * Flag indicating if the GRIB data has limitations or deficiencies.
+   *
+   * When true, weather data may be incomplete or extrapolated.
+   */
   bool m_Grib_is_data_deficient;
 };
 
@@ -393,7 +851,27 @@ struct RouteMapPosition {
   static long s_ID;
 };
 
-/* Configuration parameters for a route between two points. */
+/**
+ * Contains both configuration parameters and runtime state for a weather
+ * routing calculation.
+ *
+ * This struct serves multiple purposes in the weather routing system:
+ * 1. Stores user-defined configuration settings that control the routing
+ * algorithm
+ * 2. Maintains runtime state during the routing calculation
+ * 3. Tracks error conditions and other status information
+ *
+ * The dual nature of this struct (both configuration and state) is important to
+ * understand:
+ * - Configuration fields are typically set before starting a routing
+ * calculation and remain unchanged during execution
+ * - State fields are updated during the routing process and reflect the current
+ * progress and conditions
+ *
+ * Configuration aspects include boat parameters, weather data sources, routing
+ * constraints, and algorithm settings. State aspects include the current
+ * position, timestamp, error flags, and intermediate calculation results.
+ */
 struct RouteMapConfiguration {
   RouteMapConfiguration()
       : StartLon(0),
@@ -413,14 +891,17 @@ struct RouteMapConfiguration {
   wxString End;
   wxString EndGUID;
 
-  /* The time when the boat leaves the starting position. */
+  /** The time when the boat leaves the starting position. */
   wxDateTime StartTime;
+  /** Default time in seconds between propagations. */
+  double DeltaTime;
+  /** Time in seconds between propagations. */
+  double UsedDeltaTime;
 
-  double DeltaTime;     /* default time in seconds between propagations */
-  double UsedDeltaTime; /* time in seconds between propagations */
-
-  Boat boat; /* The polars of the boat, used for the route calculation. */
-  wxString boatFileName; /* The name of the boat XML file referencing polars. */
+  /** The polars of the boat, used for the route calculation. */
+  Boat boat;
+  /** The name of the boat XML file referencing polars. */
+  wxString boatFileName;
 
   enum IntegratorType { NEWTON, RUNGE_KUTTA } Integrator;
 
@@ -479,22 +960,77 @@ struct RouteMapConfiguration {
   int CycloneMonths;
   int CycloneDays;
 
+  /**
+   * Controls whether GRIB weather data is used for weather routing
+   * calculations.
+   *
+   * When set to true:
+   *   - The system attempts to use available GRIB data for wind and currents.
+   *   - Fallback to climatology data may occur depending on configuration
+   * settings.
+   *
+   * When set to false:
+   *   - GRIB data is ignored even if available.
+   *   - Routing will rely only on climatology data or other configured data
+   * sources.
+   *   - This can be useful for theoretical routing or when comparing against
+   * climatological averages.
+   */
   bool UseGrib;
+  /**
+   * Controls how climatology data is used for weather routing calculations.
+   *
+   * This enum defines the different modes for incorporating climatological
+   * data.
+   */
   enum ClimatologyDataType {
+    /**
+     * Climatology data is not used at all. Routing will rely solely on GRIB
+     * data or fail if insufficient GRIB data is available.
+     */
     DISABLED,
+    /**
+     * Only current/ocean data from climatology is used. Wind and other weather
+     * data must come from GRIB files or other sources.
+     */
     CURRENTS_ONLY,
+    /**
+     * Uses the full probability distribution of winds from climatology data.
+     * This approach considers all possible wind scenarios weighted by their
+     * probability of occurrence.
+     */
     CUMULATIVE_MAP,
+    /**
+     * Similar to CUMULATIVE_MAP, but excludes calm conditions (no wind) from
+     * the calculation. This can provide more realistic routing in areas prone
+     * to periods of no wind.
+     */
     CUMULATIVE_MINUS_CALMS,
+    /** Uses only the most probable wind scenario from climatology. This is
+     * faster but may miss alternative routing options that could be more
+     * optimal in certain conditions.
+     */
     MOST_LIKELY,
+    /** Uses the average wind values from climatology. This provides the
+     * simplest model but may not accurately represent areas with variable wind
+     * patterns.
+     */
     AVERAGE
   };
   enum ClimatologyDataType ClimatologyType;
+  /**
+   * Controls whether to use weather data outside its valid time range.
+   *
+   * When set to true, allows the routing algorithm to use GRIB data beyond its
+   * valid time range as a fallback when no valid data is available.
+   */
   bool AllowDataDeficient;
   /** wind speed multiplier. 1.0 is 100% of the wind speed in the grib. */
   double WindStrength;
 
-  // If true, the route calculation will avoid land, outside the
-  // SafetyMarginLand.
+  /**
+   * If true, the route calculation will avoid land, outside the
+   * SafetyMarginLand. */
   bool DetectLand;
   // If true, the route calculation will avoid exclusion boundaries.
   bool DetectBoundary;
@@ -531,6 +1067,25 @@ struct RouteMapConfiguration {
   double ByDegrees;
 
   /* computed values */
+  /**
+   * Collection of angular steps used for vessel propagation calculations.
+   *
+   * This list contains the discrete angular steps (in degrees) that represent
+   * the possible headings relative to the true wind direction that the vessel
+   * can take during propagation. These angles are pre-computed based on the
+   * FromDegree, ToDegree, and ByDegrees configuration parameters.
+   *
+   * During the propagation process, the algorithm tests each of these angles to
+   * determine which headings are viable considering the vessel's capabilities,
+   * weather conditions, and other constraints. Each angle represents a
+   * potential direction of travel relative to the wind, where 0 degrees is
+   * directly upwind.
+   *
+   * The granularity of these steps (controlled by ByDegrees) directly affects
+   * both the accuracy of the routing calculation and its computational
+   * complexity. Smaller step sizes provide more precise routing but require
+   * more calculations.
+   */
   std::list<double> DegreeSteps;
   double StartLat, StartLon;  // The latitude and longitude of the starting
                               // position, in decimal degrees.
@@ -544,17 +1099,43 @@ struct RouteMapConfiguration {
    * change the bearing to the destination.
    */
   double StartEndBearing;
-  bool positive_longitudes; /* longitudes are either 0 to 360 or -180 to 180,
+  /** longitudes are either 0 to 360 or -180 to 180,
   this means the map cannot cross both 0 and 180 longitude.
   To fully support this requires a lot more logic and would probably slow the
   algorithm by about 8%.  Is it even useful?  */
+  bool positive_longitudes;
 
   // parameters
   WR_GribRecordSet* grib;
-  // The time of the current isochrone step in the route calculation.
-  // The time starts at StartTime and is incremented for each step until the
-  // destination is reached, or the route calculation fails.
+  /**
+   * Current timestamp in the routing calculation in UTC.
+   * This is initialized to StartTime and advances with each propagation step.
+   * The plugin maintains times in UTC internally, though some interactions with
+   * other components may require conversion to local time.
+   */
   wxDateTime time;
+
+  /**
+   * Indicates if the current GRIB data is being used outside its valid time
+   * range.
+   *
+   * This flag is set to true when:
+   * 1. The routing calculation has progressed beyond the time range covered by
+   * the loaded GRIB file
+   * 2. The AllowDataDeficient setting is enabled, permitting the use of
+   * potentially outdated weather data
+   * 3. Weather data from the GRIB file is being extrapolated or reused beyond
+   * its intended validity period
+   *
+   * When this flag is true, weather data is being used in a "data deficient"
+   * mode, meaning the wind and current information may be less accurate. Routes
+   * calculated using data-deficient mode should be treated as approximations
+   * rather than reliable forecasts.
+   *
+   * This flag is propagated to Position objects created during routing to
+   * indicate which segments of a route were calculated with potentially
+   * compromised weather data.
+   */
   bool grib_is_data_deficient;
   /**
    * Indicates the status of the polar computation.
@@ -562,7 +1143,7 @@ struct RouteMapConfiguration {
    * for the wind conditions.
    */
   PolarSpeedStatus polar_status;
-  bool wind_data_failed;
+  wxString wind_data_status;
   // Set to true if the route crossed land.
   bool land_crossing;
   // Set to true if the route crossed a boundary.
@@ -572,13 +1153,50 @@ struct RouteMapConfiguration {
 bool operator!=(const RouteMapConfiguration& c1,
                 const RouteMapConfiguration& c2);
 
+/**
+ * Manages the complete weather routing calculation process from start to
+ * destination.
+ *
+ * The RouteMap class serves as the primary controller for the entire weather
+ * routing algorithm. It manages a sequence of IsoChron objects, each
+ * representing positions reachable at successive time intervals. Together,
+ * these isochrones form an expanding "map" of possible routes from the starting
+ * point.
+ *
+ * RouteMap handles:
+ * - The overall routing computation process from start to finish
+ * - Management of configuration parameters for the routing calculation
+ * - Integration with weather data (GRIB files and climatology)
+ * - Error conditions and status reporting
+ * - Thread safety for the potentially long-running calculation
+ *
+ * The core algorithm works by repeatedly propagating from the current isochrone
+ * to create new ones until either the destination is reached or no further
+ * progress can be made. At each step, positions are evaluated based on vessel
+ * capabilities, weather conditions, land avoidance, and other configured
+ * constraints.
+ *
+ * A RouteMap instance maintains the complete state of a routing calculation,
+ * including the origin isochrones list, configuration settings, and status
+ * information.
+ */
 class RouteMap {
 public:
   RouteMap();
   virtual ~RouteMap();
 
+  /**
+   * Resolves a named position to its latitude and longitude coordinates.
+   *
+   * @param Name Position name to resolve
+   * @param lat [out] Latitude of the resolved position
+   * @param lon [out] Longitude of the resolved position
+   */
   static void PositionLatLon(wxString Name, double& lat, double& lon);
 
+  /**
+   * Resets the RouteMap to initial state, clearing all isochrones and results.
+   */
   void Reset();
 
 #define LOCKING_ACCESSOR(name, flag) \
@@ -588,30 +1206,93 @@ public:
     Unlock();                        \
     return ret;                      \
   }
+  /**
+   * Thread-safe accessor to check if the routing calculation has finished.
+   *
+   * @return true if the routing calculation is complete
+   */
   LOCKING_ACCESSOR(Finished, m_bFinished)
+  /**
+   * Thread-safe accessor to check if the destination was successfully reached.
+   *
+   * @return true if a valid route to the destination was found
+   */
   LOCKING_ACCESSOR(ReachedDestination, m_bReachedDestination)
+  /**
+   * Thread-safe accessor to check if the RouteMap is in a valid state.
+   *
+   * @return true if the RouteMap is properly configured and ready for
+   * calculation
+   */
   LOCKING_ACCESSOR(Valid, m_bValid)
-  LOCKING_ACCESSOR(GribFailed, m_bGribFailed)
-  LOCKING_ACCESSOR(NoData, m_bNoData)
+  /**
+   * Thread-safe accessor to check if any land crossing was detected.
+   *
+   * @return true if the route crosses land
+   */
   LOCKING_ACCESSOR(LandCrossing, m_bLandCrossing)
+  /**
+   * Thread-safe accessor to check if any boundary crossing was detected.
+   *
+   * @return true if the route crosses a boundary
+   */
   LOCKING_ACCESSOR(BoundaryCrossing, m_bBoundaryCrossing)
 
-  wxString GetPolarStatus() {
+  /**
+   * Thread-safe accessor to get the polar computation status.
+   *
+   * @return Status code indicating any issues with polar data
+   */
+  PolarSpeedStatus GetPolarStatus() {
     Lock();
     PolarSpeedStatus status = m_bPolarStatus;
     Unlock();
-    if (status != POLAR_SPEED_SUCCESS) {
-      return Polar::GetPolarStatusMessage(status);
-    }
-    return wxEmptyString;
+    return status;
   }
 
+  /**
+   * Thread-safe accessor to check if there was insufficient weather data for
+   * the calculation.
+   *
+   * @return true if weather data was missing or insufficient
+   */
+  wxString GetGribError() {
+    Lock();
+    wxString ret = m_bGribError;
+    Unlock();
+    return ret;
+  }
+
+  static wxString GetWeatherForecastStatusMessage(WeatherForecastStatus status);
+
+  /**
+   * Thread-safe accessor to get the weather forecast status.
+   *
+   * @return Status code indicating the state of weather data
+   */
+  WeatherForecastStatus GetWeatherForecastStatus() {
+    Lock();
+    WeatherForecastStatus status = m_bWeatherForecastStatus;
+    Unlock();
+    return status;
+  }
+
+  /**
+   * Thread-safe accessor to check if the RouteMap is empty.
+   *
+   * @return true if no isochrones have been generated
+   */
   bool Empty() {
     Lock();
     bool empty = origin.size() == 0;
     Unlock();
     return empty;
   }
+  /**
+   * Thread-safe accessor to check if GRIB data is needed.
+   *
+   * @return true if the calculation is waiting for GRIB data
+   */
   bool NeedsGrib() {
     Lock();
     bool needsgrib = m_bNeedsGrib;
@@ -625,12 +1306,22 @@ public:
   }
   void SetNewGrib(GribRecordSet* grib);
   void SetNewGrib(WR_GribRecordSet* grib);
+  /**
+   * Thread-safe accessor to get the time when new weather data is needed.
+   *
+   * @return Time when new weather data is required
+   */
   wxDateTime NewTime() {
     Lock();
     wxDateTime time = m_NewTime;
     Unlock();
     return time;
   }
+  /**
+   * Thread-safe accessor to get the starting time of the route.
+   *
+   * @return The configured start time
+   */
   wxDateTime StartTime() {
     Lock();
     wxDateTime time = m_Configuration.StartTime;
@@ -654,13 +1345,38 @@ public:
 
   void GetStatistics(int& isochrons, int& routes, int& invroutes,
                      int& skippositions, int& positions);
+  /**
+   * Performs one step of the routing propagation algorithm.
+   *
+   * This is the core computational method that advances the routing calculation
+   * by generating a new isochrone from the current one. It handles route
+   * merging, land avoidance, and all other configured constraints.
+   *
+   * @return true if propagation was successful and should continue
+   */
   bool Propagate();
 
+  /**
+   * Function pointer for accessing climatology data.
+   *
+   * This allows the routing algorithm to integrate with external climatology
+   * data sources.
+   */
   static bool (*ClimatologyData)(int setting, const wxDateTime&, double, double,
                                  double&, double&);
+  /**
+   * Function pointer for accessing wind atlas data from climatology.
+   *
+   * This provides statistical wind information for a given location and time.
+   */
   static bool (*ClimatologyWindAtlasData)(const wxDateTime&, double, double,
                                           int& count, double*, double*, double&,
                                           double&);
+  /**
+   * Function pointer for checking cyclone track crossings.
+   *
+   * This helps avoid areas with historical cyclone activity.
+   */
   static int (*ClimatologyCycloneTrackCrossings)(double lat1, double lon1,
                                                  double lat2, double lon2,
                                                  const wxDateTime& date,
@@ -668,7 +1384,18 @@ public:
 
   static OD_FindClosestBoundaryLineCrossing ODFindClosestBoundaryLineCrossing;
 
+  /**
+   * List of named positions available for routing.
+   *
+   * This static list provides access to saved positions that can be used
+   * as starting points or destinations.
+   */
   static std::list<RouteMapPosition> Positions;
+  /**
+   * Stops the routing calculation.
+   *
+   * Marks the calculation as finished to terminate any ongoing processing.
+   */
   void Stop() {
     Lock();
     m_bFinished = true;
@@ -679,6 +1406,11 @@ public:
     m_bFinished = false;
     Unlock();
   }
+  /**
+   * Loads the boat configuration from XML file.
+   *
+   * @return Error message if loading failed, or empty string on success
+   */
   wxString LoadBoat() {
     return m_Configuration.boat.OpenXML(m_Configuration.boatFileName);
   }
@@ -699,6 +1431,25 @@ public:
     Unlock();
   }
 
+  wxString GetWeatherForecastError() {
+    Lock();
+    wxString ret = m_bWeatherForecastError;
+    Unlock();
+    return ret;
+  }
+
+  void SetWeatherForecastError(wxString msg) {
+    Lock();
+    m_bWeatherForecastError = msg;
+    m_bValid = false;
+    m_bFinished = false;
+    Unlock();
+  }
+
+  /** Collect error information from all positions in the most recent isochron.
+   */
+  wxString GetRoutingErrorInfo();
+
 protected:
   void SetFinished(bool destination) {
     m_bReachedDestination = destination;
@@ -710,7 +1461,8 @@ protected:
       m_bPolarStatus = configuration.polar_status;
     }
 
-    if (configuration.wind_data_failed) m_bNoData = true;
+    if (configuration.wind_data_status != wxEmptyString)
+      m_bGribError = configuration.wind_data_status;
 
     if (configuration.boundary_crossing) m_bBoundaryCrossing = true;
 
@@ -718,8 +1470,29 @@ protected:
   }
 
   virtual void Clear();
+  /**
+   * Reduces a list of routes by merging overlapping ones.
+   *
+   * This is a key part of the routing algorithm that consolidates the
+   * potentially large number of routes generated during propagation into a
+   * minimal set.
+   *
+   * @param merged [out] Output list for the merged routes
+   * @param routelist Input list of routes to merge
+   * @param configuration Routing configuration
+   * @return true if reduction was successful
+   */
   bool ReduceList(IsoRouteList& merged, IsoRouteList& routelist,
                   RouteMapConfiguration& configuration);
+  /**
+   * Finds the closest position to given coordinates across all isochrones.
+   *
+   * @param lat Latitude to find closest position to
+   * @param lon Longitude to find closest position to
+   * @param t [out] Optional pointer to store time at closest position
+   * @param dist [out] Optional pointer to store distance to closest position
+   * @return Pointer to the closest position
+   */
   Position* ClosestPosition(double lat, double lon, wxDateTime* t = 0,
                             double* dist = 0);
 
@@ -728,18 +1501,57 @@ protected:
   virtual void Unlock() = 0;
   virtual bool TestAbort() = 0;
 
-  IsoChronList origin; /* list of route isos in order of time */
+  /**
+   * List of isochrones in chronological order.
+   *
+   * This is the core data structure that maintains all generated isochrones
+   * from the starting point outward.
+   */
+  IsoChronList origin;
   bool m_bNeedsGrib;
+  /**
+   * Shared reference to GRIB data.
+   */
   Shared_GribRecordSet m_SharedNewGrib;
   WR_GribRecordSet* m_NewGrib;
 
 private:
+  /** Helper method to collect errors from a position and its parents. */
+  void CollectPositionErrors(Position* position,
+                             std::vector<Position*>& failed_positions);
+
   RouteMapConfiguration m_Configuration;
   bool m_bFinished, m_bValid;
   bool m_bReachedDestination;
-  bool m_bGribFailed;
+  /**
+   * Stores the status code for weather forecast errors.
+   *
+   * This variable contains an enum value from WeatherForecastStatus indicating
+   * the specific reason why weather data (GRIB or climatology) was insufficient
+   * or unavailable for completing the routing calculation.
+   */
+  WeatherForecastStatus m_bWeatherForecastStatus;
+  /**
+   * Detailed error message for weather forecast issues.
+   *
+   * Contains a human-readable description of any weather forecast errors,
+   * including details such as the specific timestamp for which GRIB data
+   * was missing or insufficient.
+   *
+   * @see WeatherForecastStatus
+   */
+  wxString m_bWeatherForecastError;
+  /**
+   * Stores the status code for polar data errors.
+   *
+   * This variable contains an enum value from PolarSpeedStatus indicating any
+   * issues encountered when trying to use the vessel's polar performance data,
+   * such as wind angles outside the polar range or wind speeds that are too
+   * light or strong for the available data.
+   */
   PolarSpeedStatus m_bPolarStatus;
-  bool m_bNoData;
+  /**  */
+  wxString m_bGribError;
   bool m_bLandCrossing;
   bool m_bBoundaryCrossing;
 

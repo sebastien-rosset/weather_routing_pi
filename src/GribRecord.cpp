@@ -425,7 +425,7 @@ std::string GribRecord::makeKey(
     int levelValue) {  // Make data type key  sample:'11-100-850'
                        //	char ktmp[32];
   //	wxSnprintf((wxChar *)ktmp, 32, "%d-%d-%d", dataType, levelType,
-  //levelValue); 	return std::string(ktmp);
+  // levelValue); 	return std::string(ktmp);
 
   wxString k;
   k.Printf(_T("%d-%d-%d"), dataType, levelType, levelValue);
@@ -641,7 +641,7 @@ double GribRecord::getInterpolatedValue(double px, double py,
   return k2 * vx + (1 - k2) * vy;
 }
 
-bool GribRecord::getInterpolatedValues(double& M, double& A,
+bool GribRecord::getInterpolatedValues(double& magnitude, double& angle,
                                        const GribRecord* GRX,
                                        const GribRecord* GRY, double px,
                                        double py, bool numericalInterpolation) {
@@ -685,8 +685,8 @@ bool GribRecord::getInterpolatedValues(double& M, double& A,
     vy = GRY->getValue(i0, j0);
     if (vx == GRIB_NOTDEF || vy == GRIB_NOTDEF) return false;
 
-    M = sqrt(vx * vx + vy * vy);
-    A = atan2(-vx, -vy) * 180 / M_PI;
+    magnitude = sqrt(vx * vx + vy * vy);
+    angle = atan2(-vx, -vy) * 180 / M_PI;
     return true;
   }
 
@@ -744,10 +744,10 @@ bool GribRecord::getInterpolatedValues(double& M, double& A,
     double x1m = (1 - dx) * x01m + dx * x11m,
            x1a = interp_angle(x01a, x11a, dx, M_PI);
 
-    M = (1 - dy) * x0m + dy * x1m;
-    A = interp_angle(x0a, x1a, dy, M_PI);
-    A *= 180 / M_PI;  // degrees
-    A += 180;
+    magnitude = (1 - dy) * x0m + dy * x1m;
+    angle = interp_angle(x0a, x1a, dy, M_PI);
+    angle *= 180 / M_PI;  // degrees
+    angle += 180;
 
     return true;
   }

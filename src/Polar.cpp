@@ -25,6 +25,7 @@
 
 #include <wx/wx.h>
 #include <wx/filename.h>
+#include <wx/log.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -90,7 +91,7 @@ double interp_value(double x, double x1, double x2, double y1, double y2) {
   /*
       y = m*x+b, y1 = m*x1+b, y2 = m*x2+b
       y = m*x+b, y1 - m*x1=b, y2 = m*x2+y1 - m*x1
-      y = m*x+y1 - m*x1, y2 -y1= m*(x2 - x1)
+      y = m*(x-x1)+y1, y2 -y1= m*(x2 - x1)
       y = m*(x-x1)+y1, m = (y2 - y1)/(x2 - x1)
       y = (y2 - y1)*(x - x1)/(x2 - x1) + y1
   */
@@ -458,48 +459,48 @@ bool Polar::VMGAngle(SailingWindSpeed& ws1, SailingWindSpeed& ws2, float VW,
   return true;
 }
 
-double Polar::Speed(double polarAngle, double tws, PolarSpeedStatus* error,
+double Polar::Speed(double twa, double tws, PolarSpeedStatus* status,
                     bool bound, bool optimize_tacking) {
   // Initialize error code to success
-  if (error) *error = POLAR_SPEED_SUCCESS;
+  if (status) *status = POLAR_SPEED_SUCCESS;
   if (tws < 0) {
-    if (error) *error = POLAR_SPEED_NEGATIVE_WINDSPEED;
+    if (status) *status = POLAR_SPEED_NEGATIVE_WINDSPEED;
     return NAN;
   }
 
   if (!degree_steps.size() || !wind_speeds.size()) {
-    if (error) *error = POLAR_SPEED_NO_POLAR_DATA;
+    if (status) *status = POLAR_SPEED_NO_POLAR_DATA;
     return NAN;
   }
 
-  polarAngle = positive_degrees(polarAngle);
+  twa = positive_degrees(twa);
 
   // assume symmetric
-  if (polarAngle > 180) polarAngle = 360 - polarAngle;
+  if (twa > 180) twa = 360 - twa;
 
   if (!optimize_tacking) {
-    if (polarAngle < degree_steps[0]) {
+    if (twa < degree_steps[0]) {
       // Avoid upwind course (polar angle too low).
-      if (error) *error = POLAR_SPEED_ANGLE_TOO_LOW;
+      if (status) *status = POLAR_SPEED_ANGLE_TOO_LOW;
       return NAN;
-    } else if (polarAngle > degree_steps[degree_steps.size() - 1]) {
+    } else if (twa > degree_steps[degree_steps.size() - 1]) {
       // Avoid downwind no-go zone (polar angle too high).
-      if (error) *error = POLAR_SPEED_ANGLE_TOO_HIGH;
+      if (status) *status = POLAR_SPEED_ANGLE_TOO_HIGH;
       return NAN;
     }
   }
 
   if (bound) {
     if (tws < wind_speeds[0].tws) {
-      if (error) *error = POLAR_SPEED_WIND_TOO_LIGHT;
+      if (status) *status = POLAR_SPEED_WIND_TOO_LIGHT;
       return NAN;
     } else if (tws > wind_speeds[wind_speeds.size() - 1].tws) {
-      if (error) *error = POLAR_SPEED_WIND_TOO_STRONG;
+      if (status) *status = POLAR_SPEED_WIND_TOO_STRONG;
       return NAN;
     }
   }
 
-  unsigned int W1i = degree_step_index[(int)floor(polarAngle)];
+  unsigned int W1i = degree_step_index[(int)floor(twa)];
   unsigned int W2i = W1i + 1;
   if (W2i > degree_steps.size() - 1) W2i = W1i;
 
@@ -511,12 +512,12 @@ double Polar::Speed(double polarAngle, double tws, PolarSpeedStatus* error,
   SailingWindSpeed &ws1 = wind_speeds[VW1i], &ws2 = wind_speeds[VW2i];
 
   if (optimize_tacking) {
-    float vmgW = polarAngle;
+    float vmgW = twa;
     if (VMGAngle(ws1, ws2, tws, vmgW)) {
       // Recursively call Speed with optimized angle and project the result
       // onto the original course.
-      return Speed(vmgW, tws, error, bound, false) * cos(deg2rad(vmgW)) /
-             cos(deg2rad(polarAngle));
+      return Speed(vmgW, tws, status, bound, false) * cos(deg2rad(vmgW)) /
+             cos(deg2rad(twa));
     }
   }
 
@@ -528,12 +529,12 @@ double Polar::Speed(double polarAngle, double tws, PolarSpeedStatus* error,
   double VB1 = interp_value(tws, VW1, VW2, VB11, VB21);
   double VB2 = interp_value(tws, VW1, VW2, VB12, VB22);
 
-  double stw = interp_value(polarAngle, W1, W2, VB1, VB2);
+  double stw = interp_value(twa, W1, W2, VB1, VB2);
 
   if (stw < 0) {
     // with faulty polars, extrapolation, sometimes results in
     // negative boat speed.
-    if (error) *error = POLAR_SPEED_NEGATIVE_RESULT;
+    if (status) *status = POLAR_SPEED_NEGATIVE_RESULT;
     return NAN;
   }
   return stw;
@@ -808,7 +809,7 @@ void Polar::UpdateDegreeStepLookup() {
 
 // Determine if our current state is satisfied by the current cross over
 // contour
-bool Polar::InsideCrossOverContour(float H, float VW, bool optimize_tacking,
+bool Polar::InsideCrossOverContour(float twa, float tws, bool optimize_tacking,
                                    PolarSpeedStatus* status) {
   // Initialize status to success
   if (status) *status = POLAR_SPEED_SUCCESS;
@@ -821,28 +822,37 @@ bool Polar::InsideCrossOverContour(float H, float VW, bool optimize_tacking,
 
   if (optimize_tacking) {
     int VW1i, VW2i;
-    ClosestVWi(VW, VW1i, VW2i);
+    ClosestVWi(tws, VW1i, VW2i);
     SailingWindSpeed &ws1 = wind_speeds[VW1i], &ws2 = wind_speeds[VW2i];
-    VMGAngle(ws1, ws2, VW, H);
+    VMGAngle(ws1, ws2, tws, twa);
   }
-  if (VW < 0) {
+  if (tws < 0) {
     if (status) *status = POLAR_SPEED_NEGATIVE_WINDSPEED;
     return false;
   }
-  if (VW < wind_speeds[0].tws) {
+  if (tws < wind_speeds[0].tws) {
     if (status) *status = POLAR_SPEED_WIND_TOO_LIGHT;
     return false;
   }
-  if (VW > wind_speeds[wind_speeds.size() - 1].tws) {
+  if (tws > wind_speeds[wind_speeds.size() - 1].tws) {
     if (status) *status = POLAR_SPEED_WIND_TOO_STRONG;
     return false;
   }
-
   // Normalize heading for polar symmetry (0-180 degrees)
-  H = fabs(H);
-  if (H > 180.) H -= 180.;
+  twa = fabs(twa);
+  if (twa > 180.) twa -= 180.;
+
+  if (twa < degree_steps[0]) {
+    if (status) *status = POLAR_SPEED_ANGLE_TOO_LOW;
+    return false;
+  }
+  if (twa > degree_steps[degree_steps.size() - 1]) {
+    if (status) *status = POLAR_SPEED_ANGLE_TOO_HIGH;
+    return false;
+  }
+
   // yeah motor boat...
-  if (VW == 0.) VW = 0.01;
+  if (tws == 0.) tws = 0.01;
   // CrossOverRegion is a polygon that defines the valid combinations of wind
   // angle and wind speed for a specific sail configuration (polar). For
   // example:
@@ -850,8 +860,10 @@ bool Polar::InsideCrossOverContour(float H, float VW, bool optimize_tacking,
   // winds, but becomes unstable in stronger winds.
   // 2. A mainsail might need to be reefed at different wind speeds depending
   // on the point of sail.
-  if (!CrossOverRegion.Contains(H, VW)) {
+  if (!CrossOverRegion.Contains(twa, tws)) {
     if (status) *status = POLAR_SPEED_INVALID_SAIL_CONFIGURATION;
+    wxLogMessage("Outside cross over region: H=%f VW=%f. Polar=%s", twa, tws,
+                 wxFileName(FileName).GetFullName());
     return false;
   }
   return true;
@@ -1135,13 +1147,13 @@ wxString Polar::GetPolarStatusMessage(PolarSpeedStatus error) {
       return _("Wind too light");
 
     case POLAR_SPEED_WIND_TOO_STRONG:
-      return _("Wind too strong for current sail plan");
+      return _("Wind too strong for sail plan");
 
     case POLAR_SPEED_NEGATIVE_RESULT:
       return _("Invalid negative boat speed (faulty polar data)");
 
     case POLAR_SPEED_INVALID_SAIL_CONFIGURATION:
-      return _("No suitable sail configuration for these conditions");
+      return _("No suitable sail configuration for wind conditions");
 
     default:
       return _("Unknown error");
