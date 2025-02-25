@@ -154,7 +154,7 @@ void RouteMapOverlay::RouteAnalysis(PlugIn_Route *proute)
     data.time = configuration.StartTime;
     curtime = data.time;
     double dt = configuration.DeltaTime; //UsedDeltaTime;
-    // VBG, BG, VB, B, VW, W, VWG, WG, VC, C, WVHT;
+    // sog, cog, stw, ctw, VW, W, tws, twd, currentSpeed, currentDir, WVHT;
     // double VW_GUST;
     data.WVHT = 0;
     data.VW_GUST = 0;
@@ -180,7 +180,7 @@ void RouteMapOverlay::RouteAnalysis(PlugIn_Route *proute)
             ok = false;
             eta = dt;
         }
-        // ll_gc_ll_reverse(data.lat, data.lon, next->lat, next->lon, &data.BG, &data.VBG);
+        // ll_gc_ll_reverse(data.lat, data.lon, next->lat, next->lon, &data.cog, &data.sog);
         curtime += wxTimeSpan(0, 0, eta);
         if (!configuration.wind_data_failed) {
             data.GetPlotData(next, eta, configuration, data);
@@ -680,7 +680,7 @@ int RouteMapOverlay::sailingConditionLevel(const PlotData &plot) const
     // conditions as if you sail downwind (impact of waves, heel, and more).
     // Use a normal distribution to set the maximum difficulty at 35° upwind,
     // and reduce when we go downwind.
-    double AW = heading_resolve(plot.B-plot.W);
+    double AW = heading_resolve(plot.ctw-plot.W);
     double teta = 30;
     double mu = 35;
     double amp = 20;
@@ -894,14 +894,14 @@ void RouteMapOverlay::RenderWindBarbsOnRoute(piDC &dc, PlugIn_ViewPort &vp, int 
         WR_GetCanvasPixLL(&nvp, &p, it->lat, it->lon);
 
         // available
-        //   WG VWG : winds over ground
+        //   twd tws : winds over ground
         //   W VW : winds over water
-        //   C VC : current
+        //   currentDir currentSpeed : current
         //
-        //   BG VBG : boat speed over ground
-        //   B  VB  : boat speed over water
+        //   cog sog : boat speed over ground
+        //   ctw  stw  : boat speed over water
         float windSpeed = it->VW;
-        float windDirection = it->W; // heading_resolve(it->B - it->W);
+        float windDirection = it->W; // heading_resolve(it->ctw - it->W);
 
         // By default, display true wind
         float finalWindSpeed = windSpeed;
@@ -909,13 +909,13 @@ void RouteMapOverlay::RenderWindBarbsOnRoute(piDC &dc, PlugIn_ViewPort &vp, int 
 
         if (apparentWind)
         {
-            finalWindSpeed = Polar::VelocityApparentWind(it->VB,
-                                                         heading_resolve(it->B - windDirection),
+            finalWindSpeed = Polar::VelocityApparentWind(it->stw,
+                                                         heading_resolve(it->ctw - windDirection),
                                                          windSpeed);
             finalWindDirection = heading_resolve(
-                it->B -
-                Polar::DirectionApparentWind(finalWindSpeed, it->VB,
-                                             heading_resolve(it->B - windDirection),
+                it->ctw -
+                Polar::DirectionApparentWind(finalWindSpeed, it->stw,
+                                             heading_resolve(it->ctw - windDirection),
                                              it->VW));
         }
 
@@ -1475,18 +1475,18 @@ double RouteMapOverlay::RouteInfo(enum RouteInfoType type, bool cursor_route)
             lon0 = it->lon;
         } break;
         case AVGSPEED:
-            total += it->VB;
+            total += it->stw;
             break;
         case MAXSPEED:
-            if(total < it->VB)
-                total = it->VB;
+            if(total < it->stw)
+                total = it->stw;
             break;
         case AVGSPEEDGROUND:
-            total += it->VBG;
+            total += it->sog;
             break;
         case MAXSPEEDGROUND:
-            if(total < it->VBG)
-               total = it->VBG;
+            if(total < it->sog)
+               total = it->sog;
             break;
         case AVGWIND:
             total += it->VW;
@@ -1500,11 +1500,11 @@ double RouteMapOverlay::RouteInfo(enum RouteInfoType type, bool cursor_route)
                 total = it->VW_GUST;
             break;
         case AVGCURRENT:
-            total += it->VC;
+            total += it->currentSpeed;
             break;
         case MAXCURRENT:
-            if(total < it->VC)
-                total = it->VC;
+            if(total < it->currentSpeed)
+                total = it->currentSpeed;
             break;
         case AVGSWELL:
             total += it->WVHT;
@@ -1514,11 +1514,11 @@ double RouteMapOverlay::RouteInfo(enum RouteInfoType type, bool cursor_route)
                 total = it->WVHT;
             break;
         case PERCENTAGE_UPWIND:
-            if(fabs(heading_resolve(it->B - it->W)) < 90)
+            if(fabs(heading_resolve(it->ctw - it->W)) < 90)
                 total++;
             break;
         case PORT_STARBOARD:
-            if(heading_resolve(it->B - it->W) > 0)
+            if(heading_resolve(it->ctw - it->W) > 0)
                 total++;
             break;
         // CUSTOMIZATION

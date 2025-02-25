@@ -70,10 +70,10 @@ void EditPolarDialog::OnPolarGridChanged( wxGridEvent& event )
     wxString str = m_gPolar->GetCellValue(event.GetRow(), event.GetCol());
     if(str == "0")
         str = "";
-    double VB;
-    if(!str.ToDouble(&VB))
-        VB = NAN;
-    GetPolar()->wind_speeds[event.GetCol()].orig_speeds[event.GetRow()] = VB;
+    double stw;
+    if(!str.ToDouble(&stw))
+        stw = NAN;
+    GetPolar()->wind_speeds[event.GetCol()].orig_speeds[event.GetRow()] = stw;
     GetPolar()->UpdateSpeeds();
     m_BoatDialog->Refresh();
 }
@@ -132,19 +132,19 @@ void EditPolarDialog::OnAddMeasurement( wxCommandEvent& event )
 //        info.SetData(i);
     long idx = m_lMeasurements->InsertItem(info);
 
-    double windspeed, winddirection, VB;
+    double windspeed, winddirection, stw;
 
     m_tWindSpeed->GetValue().ToDouble(&windspeed);
     m_tWindDirection->GetValue().ToDouble(&winddirection);
 
-    m_tBoatSpeed->GetValue().ToDouble(&VB);
-    PolarMeasurement m(windspeed, winddirection, VB, m_rbApparentWind->GetValue());
+    m_tBoatSpeed->GetValue().ToDouble(&stw);
+    PolarMeasurement m(windspeed, winddirection, stw, m_rbApparentWind->GetValue());
 
-    m_lMeasurements->SetItem(idx, spTRUE_WIND_SPEED, dtos(m.VW()));
-    m_lMeasurements->SetItem(idx, spTRUE_WIND_DIRECTION, dtos(m.W()));
-    m_lMeasurements->SetItem(idx, spAPPARENT_WIND_SPEED, dtos(m.VA));
-    m_lMeasurements->SetItem(idx, spAPPARENT_WIND_DIRECTION, dtos(m.A));
-    m_lMeasurements->SetItem(idx, spBOAT_SPEED, dtos(m.VB));
+    m_lMeasurements->SetItem(idx, spTRUE_WIND_SPEED, dtos(m.getTWS()));
+    m_lMeasurements->SetItem(idx, spTRUE_WIND_DIRECTION, dtos(m.getTWA()));
+    m_lMeasurements->SetItem(idx, spAPPARENT_WIND_SPEED, dtos(m.aws));
+    m_lMeasurements->SetItem(idx, spAPPARENT_WIND_DIRECTION, dtos(m.awa));
+    m_lMeasurements->SetItem(idx, spBOAT_SPEED, dtos(m.stw));
     m_lMeasurements->SetItem(idx, spETA, dtos(m.eta));
 }
 
@@ -198,7 +198,7 @@ void EditPolarDialog::RebuildTrueWindSpeeds()
 
     for(unsigned int i = 0; i<GetPolar()->wind_speeds.size(); i++)
         m_lTrueWindSpeeds->Append
-            (wxString::Format(_T("%4.1f"), GetPolar()->wind_speeds[i].VW));
+            (wxString::Format(_T("%4.1f"), GetPolar()->wind_speeds[i].tws));
 }
 
 void EditPolarDialog::RebuildGrid()
@@ -219,7 +219,7 @@ void EditPolarDialog::RebuildGrid()
     m_gPolar->InsertCols(0, GetPolar()->wind_speeds.size());
     for(unsigned int i = 0; i<GetPolar()->wind_speeds.size(); i++) {
         m_gPolar->SetColLabelValue
-            ( i, wxString::Format(_T("%4.1f"), GetPolar()->wind_speeds[i].VW));
+            ( i, wxString::Format(_T("%4.1f"), GetPolar()->wind_speeds[i].tws));
 
         for(unsigned int j = 0; j<GetPolar()->degree_steps.size(); j++) {
             double v = GetPolar()->wind_speeds[i].orig_speeds[j];

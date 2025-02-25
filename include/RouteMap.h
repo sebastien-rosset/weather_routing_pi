@@ -54,39 +54,72 @@ public:
     bool grib_is_data_deficient;
 
     bool GetPlotData(RoutePoint *next, double dt, RouteMapConfiguration &configuration, PlotData &data);
-    // @brief Return the wind data at the route point.
+    // Return the wind data at the route point.
     bool GetWindData(RouteMapConfiguration &configuration, double &W, double &VW, int &data_mask);
-    // @brief Return the current data at the route point.
+    // Return the current data at the route point.
     bool GetCurrentData(RouteMapConfiguration &configuration, double &C, double &VC, int &data_mask);
 
-    // @brief Return true if the route point crosses land.
+    // Return true if the route point crosses land.
     bool CrossesLand(double dlat, double dlon);
-    // @brief Return true if the route point enters a boundary.
+    // Return true if the route point enters a boundary.
     bool EntersBoundary(double dlat, double dlon);
-    // @brief Propagate the route point to a specific point.
+    /**
+     * Propagates from current position to a specific target point.
+     *
+     * Attempts to find a valid route from the current position to the specified
+     * lat/lon coordinates within the constraints of the configuration.
+     *
+     * @param dlat Target latitude
+     * @param dlon Target longitude 
+     * @param configuration Route configuration parameters
+     * @param H [out] Final heading to reach target
+     * @param data_mask [out] Mask indicating data sources used
+     * @param end If true, indicates this is the final destination point
+     *
+     * @return Time in seconds to reach target point, or NAN if not possible
+     */
     double PropagateToPoint(double dlat, double dlon, RouteMapConfiguration &cf, double &H, int &data_mask, bool end = true);
 };
 
 /*
  * A RoutePoint that has a time associated with it, along with navigation and weather data.
-*/
+ *
+ * Variable name mapping from old to new:
+ * - delta    → timeInterval   : Time from previous position (seconds)
+ * - VBG      → sog            : Speed Over Ground (knots)
+ * - BG       → cog            : Course Over Ground (degrees)
+ * - VB       → stw            : Speed Through Water (knots)
+ * - B        → ctw            : Course Through Water (degrees)
+ * - VW       → twsWater       : True wind speed over water (knots)
+ * - W        → twdWater       : True wind direction over water (degrees)
+ * - VWG      → tws            : True wind speed over ground (knots)
+ * - WG       → twd            : True wind direction over ground (degrees)
+ * - VC       → currentSpeed   : Current speed (knots)
+ * - C        → currentDir     : Current direction (degrees)
+ * - WVHT     → swellHeight    : Significant wave height (meters)
+ * - VW_GUST  → gustSpeed      : Gust wind speed (knots)
+ * - VA       → aws            : Apparent wind speed (knots)
+ * - A        → awa            : Apparent wind angle (degrees)
+ */
 class PlotData : public RoutePoint
 {
 public:
     wxDateTime time; // The time when the boat reaches this position, based on the route calculation.
     double delta;    // The time in seconds from the previous position to this position.
-    double VBG;      // Velocity of boat over ground, in knots.
-    double BG;       // Boat direction over ground.
-    double VB;       // Velocity of boat over water, in knots.
-    double B;        // Boat direction over water.
-    double VW;       // Velocity of wind over water, in knots.
-    double W;        // Wind direction over water.
-    double VWG;      // Velocity of wind over ground, in knots.
-    double WG;       // Wind direction over ground.
-    double VC;       // Velocity of current over ground, in knots.
-    double C;        // Sea current direction over ground.
-    double WVHT;     // Swell height, in meters.
-    double VW_GUST;  // Gust wind speed, in knots.
+    double sog;      // Speed of boat over ground (knots).
+    double cog;      // Course of boat over ground (degrees).
+    double stw;      // Speed of boat through water (knots).
+    double ctw;      // Course of boat through water (degrees).
+    /** Wind speed relative to the water's frame of reference in knots. */
+    double VW;
+    /** Relative angle between vessel's course through water (CTW) and the wind direction in degrees. */
+    double W;
+    double tws;      // Velocity of wind over ground (knots).
+    double twd;       // Wind direction over ground.
+    double currentSpeed;      // Velocity of current over ground (knots).
+    double currentDir;        // Sea current direction over ground.
+    double WVHT;     // Swell height (meters).
+    double VW_GUST;  // Gust wind speed (knots).
 };
 
 class SkipPosition;
@@ -102,6 +135,19 @@ public:
 
     SkipPosition *BuildSkipList();
 
+    /**
+     * Propagates a position forward in time, generating new possible positions.
+     *
+     * This is a key routing function that expands the isochron by calculating all possible
+     * new positions reachable from the current position after the configured time step.
+     * It checks various constraints like wind, currents, land avoidance etc.
+     *
+     * @param routelist List to store the generated routes
+     * @param configuration Route configuration parameters 
+     *
+     * @return true if propagation was successful and new routes were added,
+     *         false if no valid propagation was possible
+     */
     bool Propagate(IsoRouteList &routelist, RouteMapConfiguration &configuration);
 
     double Distance(Position *p);
@@ -569,8 +615,12 @@ private:
  
     RouteMapConfiguration m_Configuration;
     bool m_bFinished, m_bValid;
-    bool m_bReachedDestination, m_bGribFailed, m_bPolarFailed, m_bNoData;
-    bool m_bLandCrossing, m_bBoundaryCrossing;
+    bool m_bReachedDestination;
+    bool m_bGribFailed;
+    bool m_bPolarFailed;
+    bool m_bNoData;
+    bool m_bLandCrossing;
+    bool m_bBoundaryCrossing;
 
     wxString m_ErrorMsg;
 

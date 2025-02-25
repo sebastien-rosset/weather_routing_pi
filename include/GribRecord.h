@@ -198,7 +198,25 @@ class GribRecord
         // Value for one point interpolated
         double  getInterpolatedValue(double px, double py, bool numericalInterpolation=true, bool dir=false) const;
 
-        // Value for polar interpolation of vectors
+        /**
+         * Interpolates vector values from two GRIB records at a specified point.
+         *
+         * This function calculates the magnitude and angle of a vector by interpolating 
+         * X and Y component values from two GRIB records at the given geographic coordinates.
+         * It handles cases where the requested point might cross the date line by adjusting 
+         * the longitude if needed.
+         *
+         * @param M [out] Magnitude of the interpolated vector (calculated from X and Y components)
+         * @param A [out] Angle of the interpolated vector in degrees (0-360, meteorological convention)
+         * @param GRX The GRIB record containing X component values (e.g., U wind component)
+         * @param GRY The GRIB record containing Y component values (e.g., V wind component)
+         * @param px Longitude of the point to interpolate at (degrees)
+         * @param py Latitude of the point to interpolate at (degrees)
+         * @param numericalInterpolation If true, uses bilinear interpolation; if false, uses nearest neighbor
+         *
+         * @return true if interpolation was successful, false if the point is outside map boundaries
+         *         or if insufficient valid data points exist for interpolation
+         */
         static bool getInterpolatedValues(double &M, double &A,
                                           const GribRecord *GRX, const GribRecord *GRY,
                                           double px, double py, bool numericalInterpolation=true);
