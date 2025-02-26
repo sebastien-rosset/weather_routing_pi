@@ -138,6 +138,30 @@ public:
    */
   void GenerateCrossOverChart(void* arg = 0,
                               void (*status)(void*, int, int) = 0);
+  /**
+   * Attempts to find the best polar for light wind conditions.
+   *
+   * This function selects the most appropriate polar when the wind speed is
+   * below the minimum defined in any polar. It considers both the compatibility
+   * with the desired heading and how close the minimum wind speed is to our
+   * actual wind.
+   *
+   * @param curpolar Index of the current polar being used, or -1 if no polar is
+   * selected yet
+   * @param VW True wind speed in knots (below minimum in polars)
+   * @param H Heading relative to true wind direction in degrees
+   * @param Swell Swell height in meters
+   * @param optimize_tacking Whether to optimize the tacking angle for upwind
+   * sailing
+   * @param status Pointer to a PolarSpeedStatus variable to receive detailed
+   * status
+   *
+   * @return The index of the best polar to use, or -1 if no valid polar was
+   * found
+   */
+  int FindBestPolarForLightWind(int curpolar, double VW, double H, double Swell,
+                                bool optimize_tacking,
+                                PolarSpeedStatus* status = nullptr);
 
 private:
   Point Interp(const Point& p0, const Point& p1, int q, bool q0, bool q1);

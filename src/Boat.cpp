@@ -173,6 +173,18 @@ int Boat::TrySwitchPolar(int curpolar, double VW, double H, double Swell,
         Polars[i].InsideCrossOverContour(H, VW, optimize_tacking, status))
       return i;
 
+  // If we've reached here, no polar was found using standard checks.
+  // Let's check if this is due to light wind and try to find the best polar.
+  if (status && *status == POLAR_SPEED_WIND_TOO_LIGHT) {
+    int idx = FindBestPolarForLightWind(curpolar, VW, H, Swell,
+                                        optimize_tacking, status);
+    if (idx >= 0) {
+      // We still set the status to POLAR_SPEED_WIND_TOO_LIGHT to help the
+      // caller understand why the polar was changed.
+      return idx;
+    }
+  }
+
   return -1;  // no valid polar
 }
 
@@ -408,4 +420,65 @@ void Boat::GenerateSegments(float H, float VW, float step, bool q[4],
       }
     }
   }
+}
+
+int Boat::FindBestPolarForLightWind(int curpolar, double VW, double H,
+                                    double Swell, bool optimize_tacking,
+                                    PolarSpeedStatus* status) {
+  int bestPolar = -1;
+  double bestScore = -1;
+
+  // Try each polar to find the most appropriate one
+  for (int i = 0; i < (int)Polars.size(); i++) {
+    Polar& polar = Polars[i];
+
+    // Skip polars with no data
+    if (polar.degree_steps.empty() || polar.wind_speeds.empty()) continue;
+
+    // Get min wind speed for this polar
+    double minWindSpeed = polar.wind_speeds[0].tws;
+
+    // Check if the heading is within this polar's range
+    double heading = positive_degrees(H);
+    if (heading > 180) heading = 360 - heading;  // Assume symmetric
+
+    // Skip polars where heading is outside the range
+    if (!polar.degree_steps.empty() &&
+        (heading < polar.degree_steps[0] ||
+         heading > polar.degree_steps[polar.degree_steps.size() - 1])) {
+      // Not compatible with desired heading
+      continue;
+    }
+
+    // Check if this polar is inside its crossover contour for the given wind
+    // We try with light wind, so we don't check the wind_too_light error
+    PolarSpeedStatus polar_status;
+    if (!polar.InsideCrossOverContour(heading, VW, optimize_tacking,
+                                      &polar_status)) {
+      // If the error is something other than light wind, skip this polar
+      if (polar_status != POLAR_SPEED_WIND_TOO_LIGHT) continue;
+    }
+
+    // Calculate score based on how close minimum wind is to our actual wind
+    // The closer, the better (but we prefer polars with min wind > actual wind)
+    double windRatio = VW / minWindSpeed;
+    double windScore = (windRatio <= 1.0) ? windRatio : (2.0 - windRatio);
+
+    // Prefer the current polar if it's suitable (with a slight bonus)
+    if (i == curpolar) {
+      windScore *= 1.1;
+    }
+
+    // Polars specifically designed for lighter winds are preferred
+    if (windScore > bestScore) {
+      bestScore = windScore;
+      bestPolar = i;
+    }
+  }
+
+  if (bestPolar == -1 && status) {
+    *status = POLAR_SPEED_WIND_TOO_LIGHT;
+  }
+
+  return bestPolar;
 }

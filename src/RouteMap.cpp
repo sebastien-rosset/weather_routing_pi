@@ -725,14 +725,20 @@ bool RoutePoint::GetCurrentData(RouteMapConfiguration& configuration,
  * @param sog Boat speed over ground [out]
  * @param dist Distance traveled over ground (nm) [out]
  * @param newpolar Index of the polar to use from the boat's polar array
+ * @param bound If true, returns NAN when wind speed is outside the range
+ * defined in the polar data. If false, extrapolates the boat speed when wind
+ * speed is outside the polar data range.
  *
  * @return true if computation successful, false if NaN values detected
  */
-static inline bool ComputeBoatSpeed(
-    RouteMapConfiguration& configuration, double timeseconds, double twd,
-    double tws, double W, double VW, double currentDir, double currentSpeed,
-    double& hdg, climatology_wind_atlas& atlas, int data_mask, double& ctw,
-    double& stw, double& cog, double& sog, double& dist, int newpolar) {
+static inline bool ComputeBoatSpeed(RouteMapConfiguration& configuration,
+                                    double timeseconds, double twd, double tws,
+                                    double W, double VW, double currentDir,
+                                    double currentSpeed, double& hdg,
+                                    climatology_wind_atlas& atlas,
+                                    int data_mask, double& ctw, double& stw,
+                                    double& cog, double& sog, double& dist,
+                                    int newpolar, bool bound = true) {
   Polar& polar = configuration.boat.Polars[newpolar];
   PolarSpeedStatus polar_status;
   if ((data_mask & Position::CLIMATOLOGY_WIND) &&
@@ -750,11 +756,11 @@ static inline bool ComputeBoatSpeed(
       double VBc, mind = polar.MinDegreeStep();
       // if tacking
       if (fabs(dir) < mind)
-        VBc = polar.Speed(mind, atlas.VW[i], &polar_status, true,
+        VBc = polar.Speed(mind, atlas.VW[i], &polar_status, bound,
                           configuration.OptimizeTacking) *
               cos(deg2rad(mind)) / cos(deg2rad(dir));
       else
-        VBc = polar.Speed(dir, atlas.VW[i], &polar_status, true,
+        VBc = polar.Speed(dir, atlas.VW[i], &polar_status, bound,
                           configuration.OptimizeTacking);
       // Accumulate weighted boat speed based on probability of each wind
       // direction
@@ -767,7 +773,7 @@ static inline bool ComputeBoatSpeed(
   } else {
     // Direct polar lookup - get boat speed from polar data for current heading
     // and wind speed.
-    stw = polar.Speed(hdg, VW, &polar_status, true,
+    stw = polar.Speed(hdg, VW, &polar_status, bound,
                       configuration.OptimizeTacking);
   }
 
@@ -829,7 +835,7 @@ bool rk_step(Position* p, double timeseconds, double cog, double dist, double H,
   double stw, sog;  // outputs
   if (!ComputeBoatSpeed(configuration, timeseconds, twd, tws, W, VW, currentDir,
                         currentSpeed, H, atlas, data_mask, ctw, stw, rk_BG, sog,
-                        rk_dist, newpolar))
+                        rk_dist, newpolar, true /* check bounds */))
     return false;
 
   return true;
@@ -938,6 +944,10 @@ bool Position::Propagate(IsoRouteList& routelist,
         configuration.polar_status = status;
         continue;
       }
+      // In light winds, TrySwitchPolar() may return a polar where the heading
+      // and wind are not in the sail plan, but this is the best we can do. This
+      // is not an error, the boat will just not move in this direction, and
+      // perhaps the wind will pick up later.
       if (polar == -1) polar = newpolar;
 
       /* did we tack thru the wind? apply penalty */
@@ -946,10 +956,13 @@ bool Position::Propagate(IsoRouteList& routelist,
         timeseconds -= configuration.TackingTime;
         tacked = true;
       }
+      bool bound = (status != PolarSpeedStatus::POLAR_SPEED_WIND_TOO_LIGHT);
+      // In light winds, we don't want to check the polar bounds, because
+      // we already know the wind is too light for the polar.
 
       if (!ComputeBoatSpeed(configuration, timeseconds, twd, tws, W, VW,
                             currentDir, currentSpeed, H, atlas, data_mask, ctw,
-                            stw, cog, sog, dist, newpolar))
+                            stw, cog, sog, dist, newpolar, bound))
         continue;
 
       double dlat, dlon;
@@ -1196,6 +1209,10 @@ double RoutePoint::PropagateToPoint(double dlat, double dlon,
 
     newpolar = configuration.boat.TrySwitchPolar(
         polar, VW, H, S, configuration.OptimizeTacking, &status);
+    // In light winds, TrySwitchPolar() may return a polar where the heading
+    // and wind are not in the sail plan, but this is the best we can do. This
+    // is not an error, the boat will just not move in this direction, and
+    // perhaps the wind will pick up later.
     if (newpolar == -1) {
       configuration.polar_status = status;
       configuration.OptimizeTacking = old;
