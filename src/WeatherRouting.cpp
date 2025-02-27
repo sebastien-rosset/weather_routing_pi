@@ -204,18 +204,20 @@ WeatherRouting::WeatherRouting(wxWindow* parent, weather_routing_pi& plugin)
 #ifndef __OCPN__ANDROID__
   if (confVersion < PLUGIN_VERSION_MAJOR * 100 + PLUGIN_VERSION_MINOR) {
     wxString title = _("New or updated data available");
-    wxString message = _(
-        "A new version of the Weather Route plugin has been installed.\n\n"
-        "\"Import new boats and polars\" will overwrite the standard boats\n"
-        "and polars with newer data. If you have modified this data and not\n"
-        "changed the names, your modifications will be overwritten, so be\n"
-        "sure to backup your changes. If you have added new polars or boats\n"
-        "with exclusive names, they will be kept untouched.\n\n"
-        "\"Import example configurations\" will overwrite your route\n"
-        "configurations with a sample set showing you how WeatherRouting\n"
-        "works. Backup your existing configurations if you need.\n\n"
-        "Pressing \"OK\" will apply the selected changes, pressing \"Cancel\"\n"
-        "will do nothing and you will be asked again on the next launch.");
+    wxString message =
+        _("A new version of the Weather Route plugin has been installed.\n\n"
+          "\"Import new boats and polars\" will overwrite the standard boats\n"
+          "and polars with newer data. If you have modified this data and not\n"
+          "changed the names, your modifications will be overwritten, so be\n"
+          "sure to backup your changes. If you have added new polars or boats\n"
+          "with exclusive names, they will be kept untouched.\n\n");
+    message +=
+    _("Import example configurations will overwrite your route\n"
+    "configurations with a sample set showing you how WeatherRouting\n"
+    "works. Backup your existing configurations if you need.\n\n"
+    "Pressing \"OK\" will apply the selected changes, pressing \"Cancel\"\n"
+    "will do nothing and you will be asked again on the next launch.");
+
     wxString confDlgChoices[3] = {_("Import new boats and polars"),
                                   _("Import example configurations")};
 
