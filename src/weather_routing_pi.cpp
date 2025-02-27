@@ -269,12 +269,13 @@ void weather_routing_pi::SetPluginMessage(wxString& message_id,
       int grib_max = 1000 * GRIB_MAX_MAJOR + GRIB_MAX_MINOR;
 
       if (grib_version < grib_min || grib_version > grib_max) {
+        wxString ver = _("Use versions");
         wxMessageDialog mdlg(
             m_parent_window,
             _("Grib plugin version not supported.") + _T("\n\n") +
-                wxString::Format(_("Use versions %d.%d to %d.%d"),
-                                 GRIB_MIN_MAJOR, GRIB_MIN_MINOR, GRIB_MAX_MAJOR,
-                                 GRIB_MAX_MINOR),
+                wxString::Format("%s %d.%d to %d.%d", ver,
+                                 GRIB_MIN_MAJOR, GRIB_MIN_MINOR,
+                                 GRIB_MAX_MAJOR, GRIB_MAX_MINOR),
             _("Weather Routing"), wxOK | wxICON_WARNING);
         mdlg.ShowModal();
       }
@@ -319,14 +320,15 @@ void weather_routing_pi::SetPluginMessage(wxString& message_id,
 
       if (climatology_version < climatology_min ||
           climatology_version > climatology_max) {
+        wxString ver = _("Use versions");
         wxMessageDialog mdlg(
             m_parent_window,
             _("Climatology plugin version not supported, no climatology "
               "data.") +
                 _T("\n\n") +
-                wxString::Format(_("Use versions %d.%d to %d.%d"),
-                                 CLIMATOLOGY_MIN_MAJOR, CLIMATOLOGY_MIN_MINOR,
-                                 CLIMATOLOGY_MAX_MAJOR, CLIMATOLOGY_MAX_MINOR),
+                wxString::Format("%s %d.%d to %d.%d", ver,
+                                CLIMATOLOGY_MIN_MAJOR, CLIMATOLOGY_MIN_MINOR,
+                                CLIMATOLOGY_MAX_MAJOR, CLIMATOLOGY_MAX_MINOR),
             _("Weather Routing"), wxOK | wxICON_WARNING);
         mdlg.ShowModal();
         return;

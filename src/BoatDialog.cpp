@@ -1045,7 +1045,8 @@ wxString BoatDialog::FormatVMG(double W, double VW) {
   PolarSpeedStatus error;
   double A = positive_degrees(
       Polar::DirectionApparentWind(polar.Speed(W, VW, &error, true), W, VW));
-  return wxString::Format(_("%.1f True %.1f Apparent"), W, A);
+  wxString tr = _("True"), ap = _("Apparent");
+  return wxString::Format("%.1f %s %.1f %s", W, tr, A, ap);
 }
 
 void BoatDialog::UpdateVMG() {
