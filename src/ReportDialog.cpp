@@ -422,13 +422,20 @@ void ReportDialog::GenerateRoutesReport() {
 }
 
 void ReportDialog::OnInformation(wxCommandEvent& event) {
-  wxMessageDialog mdlg(this, _("\
-Weather Routing Reports gives an overview of a given route based on multiple configurations.\n\n\
-For example using the configuration batch dialog, it is possible to easily generate multiple \
-otherwise identical configurations which have different starting times. \
-Once all of these configurations are computed, they become available to the report generator. \
-An overview can be given of the best times, expected speed, and weather conditions. \
-If climatology is available, cyclone risk and additional weather conditions may be described."),
-                       _("Weather Routing Report"), wxOK | wxICON_INFORMATION);
+  wxString mes =
+  _("Weather Routing Reports gives an overview of a given route based on \
+  multiple configurations.\n\n\
+  For example using the configuration batch dialog, it is possible to \
+  easily generate multiple otherwise identical configurations which \
+  have different starting times.");
+  mes +=
+      _("\
+  Once all of these configurations are computed, they become available \
+  to the report generator. An overview can be given of the best times, \
+  expected speed, and weather conditions. If climatology is available, \
+  cyclone risk and additional weather conditions may be described.");
+
+  wxMessageDialog mdlg(this, mes, _("Weather Routing Report"),
+      wxOK | wxICON_INFORMATION);
   mdlg.ShowModal();
 }
