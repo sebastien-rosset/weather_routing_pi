@@ -1502,6 +1502,19 @@ protected:
   virtual bool TestAbort() = 0;
 
   /**
+   * Determines the time step for the next isochrone generation based on current
+   * routing conditions.
+   *
+   * This function dynamically adjusts the time step to provide more detailed
+   * isochrones in critical areas:
+   * 1. Near the starting point
+   * 2. Approaching the destination
+   *
+   * @return The calculated time step in seconds to use for the next isochrone.
+   */
+  double DetermineDeltaTime();
+
+  /**
    * List of isochrones in chronological order.
    *
    * This is the core data structure that maintains all generated isochrones
