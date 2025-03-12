@@ -217,9 +217,9 @@ public:
    * geographic coordinates. It handles cases where the requested point might
    * cross the date line by adjusting the longitude if needed.
    *
-   * @param M [out] Magnitude of the interpolated vector (calculated from X and
-   * Y components)
-   * @param A [out] Angle of the interpolated vector in degrees (0-360,
+   * @param magnitude [out] Magnitude of the interpolated vector (calculated
+   * from X and Y components)
+   * @param angle [out] Angle of the interpolated vector in degrees (0-360,
    * meteorological convention)
    * @param GRX The GRIB record containing X component values (e.g., U wind
    * component)
@@ -233,7 +233,8 @@ public:
    * @return true if interpolation was successful, false if the point is outside
    * map boundaries or if insufficient valid data points exist for interpolation
    */
-  static bool getInterpolatedValues(double& M, double& A, const GribRecord* GRX,
+  static bool getInterpolatedValues(double& magnitude, double& angle,
+                                    const GribRecord* GRX,
                                     const GribRecord* GRY, double px, double py,
                                     bool numericalInterpolation = true);
 

@@ -776,6 +776,7 @@ protected:
   wxGrid* m_gPolar;
   wxStaticText* m_staticText1351;
   wxPanel* m_panel20;
+  // The angle between the boat's heading and the True Wind Direction.
   wxTextCtrl* m_tTrueWindAngle;
   wxListBox* m_lTrueWindAngles;
   wxButton* m_bAddTrueWindAngle;

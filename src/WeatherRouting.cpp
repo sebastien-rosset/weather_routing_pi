@@ -2258,28 +2258,38 @@ void WeatherRoute::Update(WeatherRouting* wr, bool stateonly) {
         State = _("Complete");
       else {
         State = _T("");
-        if (routemapoverlay->GribFailed()) {
+        bool needsComma = false;
+        wxString weatherStatus = routemapoverlay->GetWeatherForecastError();
+        if (weatherStatus != wxEmptyString) {
+          if (needsComma) State += _T(", ");
           State += _("Grib");
           State += _T(": ");
-          State += _("Failed");
+          State += weatherStatus;
+          needsComma = true;
         }
-        wxString polarStatus = routemapoverlay->GetPolarStatus();
-        if (polarStatus != wxEmptyString) {
+        PolarSpeedStatus polarStatus = routemapoverlay->GetPolarStatus();
+        if (polarStatus != POLAR_SPEED_SUCCESS) {
+          if (needsComma) State += _T(", ");
           State += _("Polar");
           State += _T(": ");
-          State += polarStatus;
+          State += Polar::GetPolarStatusMessage(polarStatus);
+          needsComma = true;
         }
-        if (routemapoverlay->NoData()) {
-          State += _("No Data");
-          State += _T(": ");
-          State += _("Failed");
+        wxString gribError = routemapoverlay->GetGribError();
+        if (gribError != wxEmptyString) {
+          if (needsComma) State += _T(", ");
+          State += gribError;
+          needsComma = true;
         }
         if (routemapoverlay->LandCrossing()) {
+          if (needsComma) State += _T(", ");
           State += _("Land");
           State += _T(": ");
           State += _("Failed");
+          needsComma = true;
         }
         if (routemapoverlay->BoundaryCrossing()) {
+          if (needsComma) State += _T(", ");
           State += _("Boundary");
           State += _T(": ");
           State += _("Failed");
@@ -2752,7 +2762,7 @@ void WeatherRouting::ExportRoute(RouteMapOverlay& routemapoverlay) {
 
 void WeatherRouting::Start(RouteMapOverlay* routemapoverlay) {
   if (!routemapoverlay ||
-      (routemapoverlay->Finished() && !routemapoverlay->GribFailed()))
+      (routemapoverlay->Finished() && routemapoverlay->GetWeatherForecastStatus() == WEATHER_FORECAST_SUCCESS))
     return;
 
   RouteMapConfiguration configuration = routemapoverlay->GetConfiguration();
