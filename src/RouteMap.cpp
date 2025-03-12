@@ -3077,7 +3077,7 @@ bool RouteMap::Propagate() {
 
   // request the next grib
   // in a different thread (grib record averaging going in parallel)
-  delta = configuration.DeltaTime;
+  delta = DetermineDeltaTime();
   m_NewTime += wxTimeSpan(0, 0, delta);
   m_bNeedsGrib = configuration.UseGrib;
 
@@ -3172,6 +3172,67 @@ bool RouteMap::Propagate() {
   Unlock();
 
   return true;
+}
+
+double RouteMap::DetermineDeltaTime() {
+  double deltaTime = m_Configuration.DeltaTime;
+
+  // Find the closest position to source and destination in the last isochron.
+  double minDistToEnd = INFINITY;
+  double maxDistFromStart = -INFINITY;
+
+  // Reduced time step when leaving source or approaching destination.
+  if (!origin.empty()) {
+    // Get the last isochron
+    IsoChron* lastIsochron = origin.back();
+
+    // Count positions and failed propagations for adaptive time step.
+    int totalPositions = 0;
+    int failedPropagations = 0;
+
+    for (IsoRouteList::iterator it = lastIsochron->routes.begin();
+         it != lastIsochron->routes.end(); ++it) {
+      Position* pos = (*it)->skippoints->point;
+      do {
+        totalPositions++;
+
+        // If this position failed to propagate (has no child positions in the
+        // next isochron) We'd need a way to track this information
+        if (pos->propagation_error != PROPAGATION_NO_ERROR &&
+            pos->propagation_error != PROPAGATION_ALREADY_PROPAGATED) {
+          failedPropagations++;
+        }
+
+        double distFromSource =
+            DistGreatCircle(pos->lat, pos->lon, m_Configuration.StartLat,
+                            m_Configuration.StartLon);
+        double distToDest = DistGreatCircle(
+            pos->lat, pos->lon, m_Configuration.EndLat, m_Configuration.EndLon);
+        minDistToEnd = std::min(minDistToEnd, distToDest);
+        maxDistFromStart = std::max(maxDistFromStart, distFromSource);
+        pos = pos->next;
+      } while (pos != (*it)->skippoints->point);
+    }
+
+    const double proximityThreshold = 40.0;  // nautical miles
+
+    double startReductionFactor = 1.0;
+    double endReductionFactor = 1.0;
+    if (maxDistFromStart < proximityThreshold) {
+      startReductionFactor = 0.1;
+    }
+    if (minDistToEnd < proximityThreshold) {
+      endReductionFactor = 0.1;
+    }
+    deltaTime *= std::min(startReductionFactor, endReductionFactor);
+  } else {
+    // For the first step, use 1/4 of the deltaTime.
+    deltaTime = m_Configuration.DeltaTime * 0.1;
+  }
+
+  // Ensure delta time doesn't go below a reasonable minimum
+  const double minDeltaTime = 60.0;  // 1 minute in seconds
+  return std::max(deltaTime, minDeltaTime);
 }
 
 Position* RouteMap::ClosestPosition(double lat, double lon, wxDateTime* t,
