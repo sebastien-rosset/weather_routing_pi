@@ -712,10 +712,10 @@ wxColour RouteMapOverlay::sailingConditionColor(int level) {
 }
 
 wxString RouteMapOverlay::sailingConditionText(int level) {
-  if (level == 1) return _T("Good");
-  if (level == 2) return _T("Bumpy");
-  if (level == 3) return _T("Difficult");
-  return _T("N/A");
+  if (level == 1) return _("Good");
+  if (level == 2) return _("Bumpy");
+  if (level == 3) return _("Difficult");
+  return _("N/A");
 }
 
 // -----------------------------------------------------
