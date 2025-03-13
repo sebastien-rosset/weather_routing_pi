@@ -542,7 +542,7 @@ SkipPosition* Position::BuildSkipList() {
  *
  * This data structure holds statistical wind data typically derived from
  * historical weather patterns. The data is organized into 8 directional sectors
- * (at 45Â° intervals), storing both wind speeds and frequency of occurrence.
+ * (at 45° intervals), storing both wind speeds and frequency of occurrence.
  */
 struct climatology_wind_atlas {
   double W[8];  //!< Probability/weight of wind occurring in each direction
@@ -951,8 +951,9 @@ bool Position::Propagate(IsoRouteList& routelist,
                            windSpeedOverWater, currentDir, currentSpeed, atlas,
                            data_mask)) {
     propagation_error = PROPAGATION_WIND_DATA_FAILED;
-    configuration.wind_data_status = wxString::Format(
-        _("No wind data for position (lat=%f,lon=%f) at %s"), lat, lon,
+    wxString txt = _("No wind data for this position at that time");
+    configuration.wind_data_status =
+        wxString::Format("%s (lat=%f,lon=%f) : %s", txt, lat, lon,
         configuration.time.Format("%Y-%m-%d %H:%M:%S"));
     return false;
   }
@@ -1288,10 +1289,12 @@ double RoutePoint::PropagateToPoint(double dlat, double dlon,
   if (!ReadWindAndCurrents(configuration, this, twd, tws, windDirOverWater,
                            windSpeedOverWater, currentDir, currentSpeed, atlas,
                            data_mask)) {
-    if (!end)
-      configuration.wind_data_status = wxString::Format(
-          "No wind data for position (lat=%f,lon=%f) at %s", lat, lon,
-          configuration.time.Format("%Y-%m-%d %H:%M:%S"));
+    if (!end) {
+      wxString txt = _("No wind data for this position at that time");
+      configuration.wind_data_status =
+          wxString::Format("%s (lat=%f,lon=%f) %s", txt, lat, lon,
+                           configuration.time.Format("%Y-%m-%d %H:%M:%S"));
+    }
     return NAN;
   }
 
@@ -1438,26 +1441,26 @@ int Position::SailChanges() {
 }
 
 wxString Position::GetErrorText(PropagationError error) {
-  static wxString error_texts[] = {"No error",
-                                   "Already propagated",
-                                   "Exceeded maximum swell",
-                                   "Exceeded maximum latitude",
-                                   "Wind data retrieval failed",
-                                   "Exceeded maximum wind speed",
-                                   "Exceeded wind vs current threshold",
-                                   "Angle outside search limits",
-                                   "Polar constraints not met",
-                                   "Boat speed computation failed",
-                                   "Exceeded maximum apparent wind",
-                                   "Land intersection detected",
-                                   "Boundary intersection detected",
-                                   "Cyclone track crossing detected",
-                                   "No valid angles found"};
+  static wxString error_texts[] = {_("No error"),
+                                   _("Already propagated"),
+                                   _("Exceeded maximum swell"),
+                                   _("Exceeded maximum latitude"),
+                                   _("Wind data retrieval failed"),
+                                   _("Exceeded maximum wind speed"),
+                                   _("Exceeded wind vs current threshold"),
+                                   _("Angle outside search limits"),
+                                   _("Polar constraints not met"),
+                                   _("Boat speed computation failed"),
+                                   _("Exceeded maximum apparent wind"),
+                                   _("Land intersection detected"),
+                                   _("Boundary intersection detected"),
+                                   _("Cyclone track crossing detected"),
+                                   _("No valid angles found")};
 
   if (error >= 0 && error <= PROPAGATION_ANGLE_ERROR)
     return error_texts[error];
   else
-    return "Unknown error";
+    return _("Unknown error");
 }
 
 void Position::ResetErrorTracking() {
@@ -1474,18 +1477,20 @@ wxString Position::GetDetailedErrorInfo() const {
   wxString info;
 
   if (propagation_error != PROPAGATION_NO_ERROR) {
-    info += wxString::Format("Position propagation failed: %s\n",
-                             GetErrorText(propagation_error));
+    wxString txt = _("Position propagation failed");
+    info += wxString::Format("%s: %s\n", txt, GetErrorText(propagation_error));
 
     // Add position coordinates
-    info += wxString::Format("  Position: %.6f, %.6f\n", lat, lon);
+    wxString ptxt = _("Position");
+    info += wxString::Format("  %s: %.6f, %.6f\n", ptxt, lat, lon);
 
     // Add wind and current data if available
     if (parent) {
+      wxString s1 = _("Heading from parent"), s2 = _("Bearing from parent");
       info +=
-          wxString::Format("  Heading from parent: %.1fÂ°\n", parent_heading);
+          wxString::Format("  %s: %.1f°\n", s1, parent_heading);
       info +=
-          wxString::Format("  Bearing from parent: %.1fÂ°\n", parent_bearing);
+          wxString::Format("  %s: %.1f°\n", s2, parent_bearing);
     }
   }
 
@@ -3111,16 +3116,18 @@ bool RouteMap::Propagate() {
       m_bFinished = true;
       if (!configuration.grib) {
         m_bWeatherForecastStatus = WEATHER_FORECAST_NO_GRIB_DATA;
-        m_bWeatherForecastError =
-            wxString::Format(_("The isochrone has reached timestamp %s beyond "
-                               "the available data in the GRIB file"),
+        wxString txt =
+            _("The isochrone has reached beyond the data available in the GRIB "
+            "file at the time:");
+        m_bWeatherForecastError = wxString::Format("%s %s", txt,
                              configuration.time.Format("%Y-%m-%d %H:%M:%S"));
       } else if (!configuration.grib->m_GribRecordPtrArray[Idx_WIND_VX] ||
                  !configuration.grib->m_GribRecordPtrArray[Idx_WIND_VY]) {
         m_bWeatherForecastStatus = WEATHER_FORECAST_NO_WIND_DATA;
+        wxString txt =
+            _("GRIB data does not contain wind information for the time:");
         m_bWeatherForecastError = wxString::Format(
-            _("GRIB data for time %s does not contain wind information."),
-            configuration.time.Format("%Y-%m-%d %H:%M:%S"));
+            "%s %s", txt, configuration.time.Format("%Y-%m-%d %H:%M:%S"));
       } else if (!RouteMap::ClimatologyData) {
         m_bWeatherForecastStatus = WEATHER_FORECAST_NO_CLIMATOLOGY_DATA;
         m_bWeatherForecastError =
@@ -3129,8 +3136,8 @@ bool RouteMap::Propagate() {
       } else if (m_Configuration.ClimatologyType <=
                  RouteMapConfiguration::CURRENTS_ONLY) {
         m_bWeatherForecastStatus = WEATHER_FORECAST_CLIMATOLOGY_DISABLED;
-        m_bWeatherForecastError = _(
-            "Climatology is disabled in the configuration but is required for "
+        m_bWeatherForecastError =
+            _("Climatology is disabled in the configuration but is required for "
             "this route");
       } else {
         m_bWeatherForecastStatus = WEATHER_FORECAST_OTHER_ERROR;
@@ -3399,7 +3406,7 @@ wxString RouteMap::GetRoutingErrorInfo() {
   Lock();
 
   if (origin.empty()) {
-    info = "No routing data available.";
+    info = _("No routing data available.");
     Unlock();
     return info;
   }
@@ -3427,22 +3434,22 @@ wxString RouteMap::GetRoutingErrorInfo() {
 
   if (failed_positions.empty()) {
     if (m_bReachedDestination) {
-      info = "Route calculation completed successfully.";
+      info = _("Route calculation completed successfully.");
     } else {
       info =
-          "Route calculation terminated without finding a path to "
-          "destination.";
+          _("Route calculation terminated without finding a path to "
+          "destination.");
 
       if (m_bLandCrossing) {
         info +=
-            "\nLand crossing detected - the destination may be unreachable "
-            "by water.";
+            _("\nLand crossing detected - the destination may be unreachable "
+            "by water.");
       }
 
       if (m_bBoundaryCrossing) {
         info +=
-            "\nBoundary crossing detected - the destination may be inside a "
-            "boundary area.";
+            _("\nBoundary crossing detected - the destination may be inside a "
+            "boundary area.");
       }
 
       if (m_bGribError != wxEmptyString) {
@@ -3451,7 +3458,7 @@ wxString RouteMap::GetRoutingErrorInfo() {
     }
   } else {
     // Report the most common propagation errors
-    info = "Route calculation failed to reach destination. Common issues:\n";
+    info = _("Route calculation failed to reach destination. Common issues:\n");
 
     // Sort errors by frequency
     std::vector<std::pair<PropagationError, int>> sorted_errors;
@@ -3468,11 +3475,12 @@ wxString RouteMap::GetRoutingErrorInfo() {
     for (size_t i = 0; i < std::min(size_t(5), sorted_errors.size()); i++) {
       wxString error = Position::GetErrorText(sorted_errors[i].first);
       int count = sorted_errors[i].second;
-      info += wxString::Format("  * %s: %d occurrences\n", error, count);
+      wxString txt = _("occurrences");
+      info += wxString::Format("  * %s: %d %s\n", error, count, txt);
     }
 
     // Detailed analysis of a few positions
-    info += "\nSample position analysis:\n";
+    info += _("\nSample position analysis:\n");
 
     // Sort failed positions by error type for better readability
     std::sort(failed_positions.begin(), failed_positions.end(),
@@ -3483,29 +3491,30 @@ wxString RouteMap::GetRoutingErrorInfo() {
     // Show details for up to 3 positions
     for (size_t i = 0; i < std::min(size_t(3), failed_positions.size()); i++) {
       Position* pos = failed_positions[i];
+      wxString txt = _("Position");
       info +=
-          wxString::Format(_("Position %.6f, %.6f - %s\n"), pos->lat, pos->lon,
+          wxString::Format("%s %.6f, %.6f - %s\n", txt, pos->lat, pos->lon,
                            Position::GetErrorText(pos->propagation_error));
     }
 
     // General route advice based on errors
     if (error_counts[PROPAGATION_LAND_INTERSECTION] > 0) {
       info +=
-          "\nRoute appears to be blocked by land. Consider increasing "
-          "MaxDivertedCourse or checking if destination is reachable by "
-          "water.";
+          _("\nRoute appears to be blocked by land. Consider increasing "
+            "MaxDivertedCourse or checking if destination is reachable by "
+            "water.");
     }
 
     if (error_counts[PROPAGATION_EXCEEDED_MAX_WIND] > 0) {
       info +=
-          "\nMaximum wind constraints preventing progress. Consider "
-          "increasing MaxTrueWindKnots if conditions permit.";
+          _("\nMaximum wind constraints preventing progress. Consider "
+            "increasing MaxTrueWindKnots if conditions permit.");
     }
 
     if (error_counts[PROPAGATION_BOAT_SPEED_COMPUTATION_FAILED] > 0) {
       info +=
-          "\nPolar data constraints preventing progress. Check if your polar "
-          "data is appropriate for the conditions.";
+          _("\nPolar data constraints preventing progress. Check if your polar "
+            "data is appropriate for the conditions.");
     }
   }
 
