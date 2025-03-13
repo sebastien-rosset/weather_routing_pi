@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: weather_routing_pi 1.15.21.20\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-02-27 22:25+0100\n"
+"POT-Creation-Date: 2025-03-12 14:05+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -26,8 +26,8 @@ msgstr ""
 #: src/WeatherRouting.cpp:1730 src/WeatherRouting.cpp:1787
 #: src/WeatherRouting.cpp:1825 src/WeatherRouting.cpp:1845
 #: src/WeatherRouting.cpp:1956 src/WeatherRouting.cpp:1965
-#: src/WeatherRouting.cpp:2053 src/WeatherRouting.cpp:2549
-#: src/WeatherRouting.cpp:2579 src/WeatherRouting.cpp:2630
+#: src/WeatherRouting.cpp:2053 src/WeatherRouting.cpp:2559
+#: src/WeatherRouting.cpp:2589 src/WeatherRouting.cpp:2640
 #: src/weather_routing_pi.cpp:138 src/weather_routing_pi.cpp:143
 #: src/weather_routing_pi.cpp:279 src/weather_routing_pi.cpp:332
 msgid "Weather Routing"
@@ -83,7 +83,7 @@ msgstr ""
 msgid "New Weather Routing Position"
 msgstr ""
 
-#: include/WeatherRoutingUI.h:862 src/EditPolarDialog.cpp:48
+#: include/WeatherRoutingUI.h:863 src/EditPolarDialog.cpp:48
 msgid "Edit Polar"
 msgstr ""
 
@@ -118,13 +118,14 @@ msgstr ""
 
 #: src/BoatDialog.cpp:108 src/BoatDialog.cpp:722 src/BoatDialog.cpp:774
 #: src/BoatDialog.cpp:851 src/BoatDialog.cpp:857 src/BoatDialog.cpp:913
-#: src/WeatherRouting.cpp:2741 src/WeatherRouting.cpp:2745
+#: src/WeatherRouting.cpp:2751 src/WeatherRouting.cpp:2755
 msgid "OpenCPN Weather Routing Plugin"
 msgstr ""
 
 #: src/BoatDialog.cpp:122 src/BoatDialog.cpp:123 src/BoatDialog.cpp:124
 #: src/BoatDialog.cpp:125 src/BoatDialog.cpp:126 src/BoatDialog.cpp:127
-#: src/PlotDialog.cpp:65 src/Utilities.cpp:104 src/WeatherRoutingUI.cpp:3978
+#: src/PlotDialog.cpp:65 src/RouteMapOverlay.cpp:719 src/Utilities.cpp:104
+#: src/WeatherRoutingUI.cpp:3978
 msgid "N/A"
 msgstr ""
 
@@ -230,47 +231,47 @@ msgstr ""
 msgid "State"
 msgstr ""
 
-#: src/Polar.cpp:196
+#: src/Polar.cpp:197
 msgid " line "
 msgstr ""
 
-#: src/Polar.cpp:204
+#: src/Polar.cpp:205
 msgid "Boat polar failed"
 msgstr ""
 
-#: src/Polar.cpp:221
+#: src/Polar.cpp:222
 msgid "Failed to open."
 msgstr ""
 
-#: src/Polar.cpp:225
+#: src/Polar.cpp:226
 msgid "Failed to read."
 msgstr ""
 
-#: src/Polar.cpp:229
+#: src/Polar.cpp:230
 msgid "Invalid data."
 msgstr ""
 
-#: src/Polar.cpp:238
+#: src/Polar.cpp:239
 msgid "Unrecognized format."
 msgstr ""
 
-#: src/Polar.cpp:246
+#: src/Polar.cpp:247
 msgid "Invalid wind speeds.  Wind speeds must be increasing."
 msgstr ""
 
-#: src/Polar.cpp:248
+#: src/Polar.cpp:249
 msgid "Too many wind speeds."
 msgstr ""
 
-#: src/Polar.cpp:260
+#: src/Polar.cpp:261
 msgid "Wind direction out of range."
 msgstr ""
 
-#: src/Polar.cpp:265
+#: src/Polar.cpp:266
 msgid "Wind direction out of order."
 msgstr ""
 
-#: src/Polar.cpp:289
+#: src/Polar.cpp:290
 msgid ""
 "Warning: 0 values found in polar.\n"
 "These measurements will be interpolated.\n"
@@ -278,51 +279,51 @@ msgid ""
 "To specify course as 'invalid' use 0.0 rather than 0\n"
 msgstr ""
 
-#: src/Polar.cpp:299
+#: src/Polar.cpp:300
 msgid "Too few measurements."
 msgstr ""
 
-#: src/Polar.cpp:305
+#: src/Polar.cpp:306
 msgid "Too many measurements."
 msgstr ""
 
-#: src/Polar.cpp:1120
+#: src/Polar.cpp:1132
 msgid "Calculation successful"
 msgstr ""
 
-#: src/Polar.cpp:1123
+#: src/Polar.cpp:1135
 msgid "Invalid negative wind speed"
 msgstr ""
 
-#: src/Polar.cpp:1126
+#: src/Polar.cpp:1138
 msgid "No polar data available"
 msgstr ""
 
-#: src/Polar.cpp:1129
+#: src/Polar.cpp:1141
 msgid "Sailing too close to the wind"
 msgstr ""
 
-#: src/Polar.cpp:1132
+#: src/Polar.cpp:1144
 msgid "Sailing too far downwind"
 msgstr ""
 
-#: src/Polar.cpp:1135
+#: src/Polar.cpp:1147
 msgid "Wind too light"
 msgstr ""
 
-#: src/Polar.cpp:1138
-msgid "Wind too strong for current sail plan"
+#: src/Polar.cpp:1150
+msgid "Wind too strong for sail plan"
 msgstr ""
 
-#: src/Polar.cpp:1141
+#: src/Polar.cpp:1153
 msgid "Invalid negative boat speed (faulty polar data)"
 msgstr ""
 
-#: src/Polar.cpp:1144
-msgid "No suitable sail configuration for these conditions"
+#: src/Polar.cpp:1156
+msgid "No suitable sail configuration for wind conditions"
 msgstr ""
 
-#: src/Polar.cpp:1147
+#: src/Polar.cpp:1159 src/RouteMap.cpp:1463 src/RouteMap.cpp:3384
 msgid "Unknown error"
 msgstr ""
 
@@ -522,24 +523,219 @@ msgstr ""
 msgid "Weather Routing Report"
 msgstr ""
 
-#: src/RouteMapOverlay.cpp:102
+#: src/RouteMap.cpp:954 src/RouteMap.cpp:1293
+msgid "No wind data for this position at that time"
+msgstr ""
+
+#: src/RouteMap.cpp:1444
+msgid "No error"
+msgstr ""
+
+#: src/RouteMap.cpp:1445
+msgid "Already propagated"
+msgstr ""
+
+#: src/RouteMap.cpp:1446
+msgid "Exceeded maximum swell"
+msgstr ""
+
+#: src/RouteMap.cpp:1447
+msgid "Exceeded maximum latitude"
+msgstr ""
+
+#: src/RouteMap.cpp:1448
+msgid "Wind data retrieval failed"
+msgstr ""
+
+#: src/RouteMap.cpp:1449
+msgid "Exceeded maximum wind speed"
+msgstr ""
+
+#: src/RouteMap.cpp:1450
+msgid "Exceeded wind vs current threshold"
+msgstr ""
+
+#: src/RouteMap.cpp:1451
+msgid "Angle outside search limits"
+msgstr ""
+
+#: src/RouteMap.cpp:1452
+msgid "Polar constraints not met"
+msgstr ""
+
+#: src/RouteMap.cpp:1453
+msgid "Boat speed computation failed"
+msgstr ""
+
+#: src/RouteMap.cpp:1454
+msgid "Exceeded maximum apparent wind"
+msgstr ""
+
+#: src/RouteMap.cpp:1455
+msgid "Land intersection detected"
+msgstr ""
+
+#: src/RouteMap.cpp:1456
+msgid "Boundary intersection detected"
+msgstr ""
+
+#: src/RouteMap.cpp:1457
+msgid "Cyclone track crossing detected"
+msgstr ""
+
+#: src/RouteMap.cpp:1458
+msgid "No valid angles found"
+msgstr ""
+
+#: src/RouteMap.cpp:1480
+msgid "Position propagation failed"
+msgstr ""
+
+#: src/RouteMap.cpp:1484 src/RouteMap.cpp:3494 src/WeatherRoutingUI.cpp:2679
+#: src/WeatherRoutingUI.cpp:4531 src/WeatherRoutingUI.cpp:4637
+msgid "Position"
+msgstr ""
+
+#: src/RouteMap.cpp:1489
+msgid "Bearing from parent"
+msgstr ""
+
+#: src/RouteMap.cpp:1489
+msgid "Heading from parent"
+msgstr ""
+
+#: src/RouteMap.cpp:3120
+msgid ""
+"The isochrone has reached beyond the data available in the GRIB file at the "
+"time:"
+msgstr ""
+
+#: src/RouteMap.cpp:3128
+msgid "GRIB data does not contain wind information for the time:"
+msgstr ""
+
+#: src/RouteMap.cpp:3134
+msgid "Climatology data is not available but is required for this configuration"
+msgstr ""
+
+#: src/RouteMap.cpp:3140
+msgid ""
+"Climatology is disabled in the configuration but is required for this route"
+msgstr ""
+
+#: src/RouteMap.cpp:3144
+msgid "Unknown weather forecast error occurred"
+msgstr ""
+
+#: src/RouteMap.cpp:3374
+msgid "GRIB has no data"
+msgstr ""
+
+#: src/RouteMap.cpp:3376
+msgid "GRIB does not contain wind data"
+msgstr ""
+
+#: src/RouteMap.cpp:3378
+msgid "No climatology data available"
+msgstr ""
+
+#: src/RouteMap.cpp:3380
+msgid "Climatology is disabled"
+msgstr ""
+
+#: src/RouteMap.cpp:3382
+msgid "Other GRIB error"
+msgstr ""
+
+#: src/RouteMap.cpp:3409
+msgid "No routing data available."
+msgstr ""
+
+#: src/RouteMap.cpp:3437
+msgid "Route calculation completed successfully."
+msgstr ""
+
+#: src/RouteMap.cpp:3440
+msgid "Route calculation terminated without finding a path to destination."
+msgstr ""
+
+#: src/RouteMap.cpp:3445
+msgid ""
+"\n"
+"Land crossing detected - the destination may be unreachable by water."
+msgstr ""
+
+#: src/RouteMap.cpp:3451
+msgid ""
+"\n"
+"Boundary crossing detected - the destination may be inside a boundary area."
+msgstr ""
+
+#: src/RouteMap.cpp:3461
+msgid "Route calculation failed to reach destination. Common issues:\n"
+msgstr ""
+
+#: src/RouteMap.cpp:3478
+msgid "occurrences"
+msgstr ""
+
+#: src/RouteMap.cpp:3483
+msgid ""
+"\n"
+"Sample position analysis:\n"
+msgstr ""
+
+#: src/RouteMap.cpp:3503
+msgid ""
+"\n"
+"Route appears to be blocked by land. Consider increasing MaxDivertedCourse or "
+"checking if destination is reachable by water."
+msgstr ""
+
+#: src/RouteMap.cpp:3510
+msgid ""
+"\n"
+"Maximum wind constraints preventing progress. Consider increasing "
+"MaxTrueWindKnots if conditions permit."
+msgstr ""
+
+#: src/RouteMap.cpp:3516
+msgid ""
+"\n"
+"Polar data constraints preventing progress. Check if your polar data is "
+"appropriate for the conditions."
+msgstr ""
+
+#: src/RouteMapOverlay.cpp:103
 msgid "error, thread already created\n"
 msgstr ""
 
-#: src/RouteMapOverlay.cpp:115
+#: src/RouteMapOverlay.cpp:116
 msgid ""
 "Configuration specifies cyclone track avoidance and Climatology cyclone data "
 "is not available"
 msgstr ""
 
-#: src/RouteMapOverlay.cpp:123
+#: src/RouteMapOverlay.cpp:124
 msgid ""
 "Configuration specifies boundary exclusion but ocpn_draw_pi boundary data not "
 "available"
 msgstr ""
 
-#: src/RouteMapOverlay.cpp:130
+#: src/RouteMapOverlay.cpp:131
 msgid "Configuration does not allow grib or climatology wind data"
+msgstr ""
+
+#: src/RouteMapOverlay.cpp:716
+msgid "Good"
+msgstr ""
+
+#: src/RouteMapOverlay.cpp:717
+msgid "Bumpy"
+msgstr ""
+
+#: src/RouteMapOverlay.cpp:718
+msgid "Difficult"
 msgstr ""
 
 #: src/SettingsDialog.cpp:153 src/WeatherRouting.cpp:83
@@ -732,7 +928,7 @@ msgid "Cursor outside computed route map"
 msgstr ""
 
 #: src/WeatherRouting.cpp:853 src/WeatherRouting.cpp:1005
-#: src/WeatherRouting.cpp:2262 src/WeatherRoutingUI.cpp:1341
+#: src/WeatherRouting.cpp:2265 src/WeatherRoutingUI.cpp:1341
 msgid "Grib"
 msgstr ""
 
@@ -821,73 +1017,68 @@ msgstr ""
 msgid "Complete"
 msgstr ""
 
-#: src/WeatherRouting.cpp:2264 src/WeatherRouting.cpp:2275
-#: src/WeatherRouting.cpp:2280 src/WeatherRouting.cpp:2285
-msgid "Failed"
-msgstr ""
-
-#: src/WeatherRouting.cpp:2268 src/WeatherRoutingUI.cpp:3377
+#: src/WeatherRouting.cpp:2273 src/WeatherRoutingUI.cpp:3377
 #: src/WeatherRoutingUI.cpp:4541 src/WeatherRoutingUI.cpp:4731
 msgid "Polar"
 msgstr ""
 
-#: src/WeatherRouting.cpp:2273
-msgid "No Data"
-msgstr ""
-
-#: src/WeatherRouting.cpp:2278
+#: src/WeatherRouting.cpp:2286
 msgid "Land"
 msgstr ""
 
-#: src/WeatherRouting.cpp:2283
+#: src/WeatherRouting.cpp:2288 src/WeatherRouting.cpp:2295
+msgid "Failed"
+msgstr ""
+
+#: src/WeatherRouting.cpp:2293
 msgid "Boundary"
 msgstr ""
 
-#: src/WeatherRouting.cpp:2294
+#: src/WeatherRouting.cpp:2304
 msgid "Waiting..."
 msgstr ""
 
-#: src/WeatherRouting.cpp:2297
+#: src/WeatherRouting.cpp:2307
 msgid "Not Computed"
 msgstr ""
 
-#: src/WeatherRouting.cpp:2548
+#: src/WeatherRouting.cpp:2558
 msgid "No Weather Route selected"
 msgstr ""
 
-#: src/WeatherRouting.cpp:2578 src/WeatherRouting.cpp:2629
+#: src/WeatherRouting.cpp:2588 src/WeatherRouting.cpp:2639
 msgid "Empty Route, nothing to export\n"
 msgstr ""
 
-#: src/WeatherRouting.cpp:2590
+#: src/WeatherRouting.cpp:2600
 msgid "Weather Route "
 msgstr ""
 
-#: src/WeatherRouting.cpp:2600
+#: src/WeatherRouting.cpp:2610
 msgid "Weather Route Point"
 msgstr ""
 
-#: src/WeatherRouting.cpp:2610 src/WeatherRouting.cpp:2705
+#: src/WeatherRouting.cpp:2620 src/WeatherRouting.cpp:2715
 msgid "Weather Route Destination"
 msgstr ""
 
-#: src/WeatherRouting.cpp:2740
+#: src/WeatherRouting.cpp:2750
 msgid "GPX Route file created"
 msgstr ""
 
-#: src/WeatherRouting.cpp:2744
+#: src/WeatherRouting.cpp:2754
 msgid "GPX Route file export failed"
 msgstr ""
 
-#: src/WeatherRouting.cpp:2761
+#: src/WeatherRouting.cpp:2771
 msgid "Zero Time Step"
 msgstr ""
 
-#: src/WeatherRouting.cpp:2769
+#: src/WeatherRouting.cpp:2779
 msgid "inside exclusion boundary"
 msgstr ""
 
-#: src/WeatherRouting.cpp:2776
+#: src/WeatherRouting.cpp:2786
 msgid "lies outside of Max Latitude constraint"
 msgstr ""
 
@@ -1339,11 +1530,6 @@ msgstr ""
 
 #: src/WeatherRoutingUI.cpp:1738
 msgid "Advanced"
-msgstr ""
-
-#: src/WeatherRoutingUI.cpp:2679 src/WeatherRoutingUI.cpp:4531
-#: src/WeatherRoutingUI.cpp:4637
-msgid "Position"
 msgstr ""
 
 #: src/WeatherRoutingUI.cpp:2688
