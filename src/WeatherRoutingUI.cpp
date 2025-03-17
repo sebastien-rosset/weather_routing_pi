@@ -1133,9 +1133,10 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   fgSizer110->SetFlexibleDirection(wxBOTH);
   fgSizer110->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
 
-  m_staticText20 = new wxStaticText(sbConstraints->GetStaticBox(), wxID_ANY,
-                                    _("Max Diverted Course"), wxDefaultPosition,
-                                    wxDefaultSize, 0);
+  m_staticText20 =
+      new wxStaticText(sbConstraints->GetStaticBox(), wxID_ANY,
+                       _("Max Diverted Course") /* MaxDivertedCourse */,
+                       wxDefaultPosition, wxDefaultSize, 0);
   m_staticText20->Wrap(-1);
   fgSizer110->Add(m_staticText20, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
@@ -1153,9 +1154,9 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_staticText1181->Wrap(-1);
   fgSizer110->Add(m_staticText1181, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
-  m_staticText23 =
-      new wxStaticText(sbConstraints->GetStaticBox(), wxID_ANY,
-                       _("Max True Wind"), wxDefaultPosition, wxDefaultSize, 0);
+  m_staticText23 = new wxStaticText(sbConstraints->GetStaticBox(), wxID_ANY,
+                                    _("Max True Wind") /* MaxTrueWindKnots */,
+                                    wxDefaultPosition, wxDefaultSize, 0);
   m_staticText23->Wrap(-1);
   fgSizer110->Add(m_staticText23, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
@@ -1173,9 +1174,10 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_staticText128->Wrap(-1);
   fgSizer110->Add(m_staticText128, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
-  m_staticText136 = new wxStaticText(sbConstraints->GetStaticBox(), wxID_ANY,
-                                     _("Max Apparent Wind"), wxDefaultPosition,
-                                     wxDefaultSize, 0);
+  m_staticText136 =
+      new wxStaticText(sbConstraints->GetStaticBox(), wxID_ANY,
+                       _("Max Apparent Wind") /* MaxApparentWindKnots */,
+                       wxDefaultPosition, wxDefaultSize, 0);
   m_staticText136->Wrap(-1);
   fgSizer110->Add(m_staticText136, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
@@ -1193,9 +1195,9 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_staticText1282->Wrap(-1);
   fgSizer110->Add(m_staticText1282, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
-  m_staticText27 =
-      new wxStaticText(sbConstraints->GetStaticBox(), wxID_ANY, _("Max Swell"),
-                       wxDefaultPosition, wxDefaultSize, 0);
+  m_staticText27 = new wxStaticText(sbConstraints->GetStaticBox(), wxID_ANY,
+                                    _("Max Swell") /* MaxSwellMeters */,
+                                    wxDefaultPosition, wxDefaultSize, 0);
   m_staticText27->Wrap(-1);
   fgSizer110->Add(m_staticText27, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
