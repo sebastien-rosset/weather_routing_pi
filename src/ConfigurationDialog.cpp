@@ -200,7 +200,6 @@ void ConfigurationDialog::SetConfigurations(
 
   SET_SPIN_VALUE(TimeStepHours, (int)((*it).DeltaTime / 3600));
   SET_SPIN_VALUE(TimeStepMinutes, ((int)(*it).DeltaTime / 60) % 60);
-  SET_SPIN_VALUE(TimeStepSeconds, (int)(*it).DeltaTime % 60);
 
   SET_CONTROL(boatFileName, m_tBoat, SetValue, wxString, _T(""));
   long l = m_tBoat->GetValue().Length();
@@ -423,15 +422,11 @@ void ConfigurationDialog::Update() {
         std::find(m_edited_controls.begin(), m_edited_controls.end(),
                   (wxObject*)m_sTimeStepHours) != m_edited_controls.end() ||
         std::find(m_edited_controls.begin(), m_edited_controls.end(),
-                  (wxObject*)m_sTimeStepMinutes) != m_edited_controls.end() ||
-        std::find(m_edited_controls.begin(), m_edited_controls.end(),
-                  (wxObject*)m_sTimeStepSeconds) != m_edited_controls.end()) {
+                  (wxObject*)m_sTimeStepMinutes) != m_edited_controls.end()) {
       configuration.DeltaTime = 60 * (60 * m_sTimeStepHours->GetValue() +
-                                      m_sTimeStepMinutes->GetValue()) +
-                                m_sTimeStepSeconds->GetValue();
+                                      m_sTimeStepMinutes->GetValue());
       m_sTimeStepHours->SetForegroundColour(wxColour(0, 0, 0));
       m_sTimeStepMinutes->SetForegroundColour(wxColour(0, 0, 0));
-      m_sTimeStepSeconds->SetForegroundColour(wxColour(0, 0, 0));
     }
 
     if (m_cIntegrator->GetValue() == _T("Newton"))

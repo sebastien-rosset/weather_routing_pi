@@ -1273,19 +1273,6 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_staticText111->Wrap(-1);
   fgSizer921->Add(m_staticText111, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
-  m_sTimeStepSeconds = new wxSpinCtrl(
-      sbTime_Step->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition,
-      wxSize(-1, -1), wxALIGN_RIGHT | wxSP_ARROW_KEYS, 0, 60, 1);
-  m_sTimeStepSeconds->SetMaxSize(wxSize(140, -1));
-
-  fgSizer921->Add(m_sTimeStepSeconds, 0, wxALL, 5);
-
-  m_staticText112 =
-      new wxStaticText(sbTime_Step->GetStaticBox(), wxID_ANY, _("s"),
-                       wxDefaultPosition, wxDefaultSize, 0);
-  m_staticText112->Wrap(-1);
-  fgSizer921->Add(m_staticText112, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
-
   sbTime_Step->Add(fgSizer921, 1, wxEXPAND, 5);
 
   fgSizer112->Add(sbTime_Step, 1, wxEXPAND | wxALL, 5);
@@ -1927,12 +1914,6 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_sTimeStepMinutes->Connect(
       wxEVT_COMMAND_SPINCTRL_UPDATED,
       wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
-  m_sTimeStepSeconds->Connect(
-      wxEVT_MOTION, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
-      NULL, this);
-  m_sTimeStepSeconds->Connect(
-      wxEVT_COMMAND_SPINCTRL_UPDATED,
-      wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
   m_cbDetectLand->Connect(
       wxEVT_COMMAND_CHECKBOX_CLICKED,
       wxCommandEventHandler(ConfigurationDialogBase::OnUpdate), NULL, this);
@@ -2378,12 +2359,6 @@ ConfigurationDialogBase::~ConfigurationDialogBase() {
       wxEVT_MOTION, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
       NULL, this);
   m_sTimeStepMinutes->Disconnect(
-      wxEVT_COMMAND_SPINCTRL_UPDATED,
-      wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
-  m_sTimeStepSeconds->Disconnect(
-      wxEVT_MOTION, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
-      NULL, this);
-  m_sTimeStepSeconds->Disconnect(
       wxEVT_COMMAND_SPINCTRL_UPDATED,
       wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
   m_cbDetectLand->Disconnect(
