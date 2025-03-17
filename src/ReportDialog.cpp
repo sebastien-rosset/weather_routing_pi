@@ -102,13 +102,13 @@ void ReportDialog::SetRouteMapOverlays(
     double avgspeed = (*it)->RouteInfo(RouteMapOverlay::AVGSPEED);
     double avgspeedground = (*it)->RouteInfo(RouteMapOverlay::AVGSPEEDGROUND);
     page += _("Average Speed Over Water (SOW)") + wxString(_T(": ")) +
-            wxString::Format(_T(" %.2f"), avgspeed) + _T(" ") + _("knots") +
+            wxString::Format(_T(" %.1f"), avgspeed) + _T(" ") + _("knots") +
             _T("<dt>");
     page += _("Average Speed Over Ground (SOG)") + wxString(_T(": ")) +
-            wxString::Format(_T(" %.2f"), avgspeedground) + _T(" ") +
+            wxString::Format(_T(" %.1f"), avgspeedground) + _T(" ") +
             _("knots") + _T("<dt>");
     page += _("Average Wind") + wxString(_T(": ")) +
-            wxString::Format(_T(" %.2f"),
+            wxString::Format(_T(" %.1f"),
                              (*it)->RouteInfo(RouteMapOverlay::AVGWIND)) +
             _T(" ") + _("knots") + _T("<dt>");
 
@@ -117,18 +117,18 @@ void ReportDialog::SetRouteMapOverlays(
     // wind as it gives an indication on how strong will be the sailing
     // conditions, and if the crew has sufficient experience to handle it.
     page += _("Maximum Wind") + wxString(_T(": ")) +
-            wxString::Format(_T(" %.2f"),
+            wxString::Format(_T(" %.1f"),
                              (*it)->RouteInfo(RouteMapOverlay::MAXWIND)) +
             _T(" ") + _("knots") + _T("<dt>");
     ;
 
     page += _("Average Swell") + wxString(_T(": ")) +
-            wxString::Format(_T(" %.2f"),
+            wxString::Format(_T(" %.1f"),
                              (*it)->RouteInfo(RouteMapOverlay::AVGSWELL)) +
             _T(" ") + _("meters") + _T("<dt>");
     page +=
         _("Upwind") + wxString(_T(": ")) +
-        wxString::Format(_T(" %.2f%%"),
+        wxString::Format(_T(" %.1f%%"),
                          (*it)->RouteInfo(RouteMapOverlay::PERCENTAGE_UPWIND)) +
         _T("<dt>");
     double port_starboard = (*it)->RouteInfo(RouteMapOverlay::PORT_STARBOARD);
@@ -159,7 +159,7 @@ void ReportDialog::SetRouteMapOverlays(
     double wspddiff = avgspeedground / avgspeed;
     if (fabs(1 - wspddiff) > .03) {
       page += wxString::Format(
-                  _T("%.2f%% "),
+                  _T("%.1f%% "),
                   ((wspddiff > 1 ? wspddiff : 1 / wspddiff) - 1) * 100.0) +
               _("speed change due to ");
       if (wspddiff > 1)
@@ -262,7 +262,7 @@ void ReportDialog::GenerateRoutesReport() {
 
     page += _("<dt>Fastest configuration ") + FormatTime(fastest->StartTime());
     page += wxString(_T(" ")) + _("avg speed") +
-            wxString::Format(_T(": %.2f "),
+            wxString::Format(_T(": %.1f "),
                              fastest->RouteInfo(RouteMapOverlay::AVGSPEED)) +
             _("knots");
 
