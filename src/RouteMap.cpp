@@ -3562,8 +3562,8 @@ wxString RouteMap::GetRoutingErrorInfo() {
 
     if (error_counts[PROPAGATION_EXCEEDED_MAX_WIND] > 0) {
       info +=
-          wxString::Format(_("\nWind exceeds limits. Increase '%s' if safe.",
-                             _("Max True Wind")););
+          wxString::Format(_("\nWind exceeds limits. Increase '%s' if safe."),
+                             _("Max True Wind"));
     }
 
     if (error_counts[PROPAGATION_BOAT_SPEED_COMPUTATION_FAILED] > 0) {
