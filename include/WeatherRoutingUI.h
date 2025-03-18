@@ -266,8 +266,6 @@ protected:
   wxStaticText* m_staticText110;
   wxSpinCtrl* m_sTimeStepMinutes;
   wxStaticText* m_staticText111;
-  wxSpinCtrl* m_sTimeStepSeconds;
-  wxStaticText* m_staticText112;
   wxCheckBox* m_cbDetectLand;
   wxCheckBox* m_cbDetectBoundary;
   wxCheckBox* m_cbOptimizeTacking;
