@@ -1048,6 +1048,24 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   fgSizer60->SetFlexibleDirection(wxBOTH);
   fgSizer60->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
 
+  // Add radio button group for start selection
+  wxBoxSizer* startSelectionSizer = new wxBoxSizer(wxHORIZONTAL);
+
+  m_rbStartFromBoat =
+      new wxRadioButton(sbStart->GetStaticBox(), wxID_ANY, _("Start from boat"),
+                        wxDefaultPosition, wxDefaultSize, wxRB_GROUP);
+  startSelectionSizer->Add(m_rbStartFromBoat, 0,
+                           wxALL | wxALIGN_CENTER_VERTICAL, 5);
+
+  m_rbStartPositionSelection =
+      new wxRadioButton(sbStart->GetStaticBox(), wxID_ANY, _("Start position"),
+                        wxDefaultPosition, wxDefaultSize);
+  m_rbStartPositionSelection->SetValue(true);  // Default to position selection
+  startSelectionSizer->Add(m_rbStartPositionSelection, 0,
+                           wxALL | wxALIGN_CENTER_VERTICAL, 5);
+
+  fgSizer60->Add(startSelectionSizer, 0, wxEXPAND, 5);
+
   m_cStart =
       new wxComboBox(sbStart->GetStaticBox(), wxID_ANY, wxEmptyString,
                      wxDefaultPosition, wxDefaultSize, 0, NULL, wxCB_READONLY);
@@ -1735,6 +1753,14 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   this->Centre(wxBOTH);
 
   // Connect Events
+  m_rbStartFromBoat->Connect(
+      wxEVT_COMMAND_RADIOBUTTON_SELECTED,
+      wxCommandEventHandler(ConfigurationDialogBase::OnStartFromBoat), NULL,
+      this);
+  m_rbStartPositionSelection->Connect(
+      wxEVT_COMMAND_RADIOBUTTON_SELECTED,
+      wxCommandEventHandler(ConfigurationDialogBase::OnStartFromPosition), NULL,
+      this);
   m_cStart->Connect(wxEVT_COMMAND_COMBOBOX_SELECTED,
                     wxCommandEventHandler(ConfigurationDialogBase::OnUpdate),
                     NULL, this);
@@ -2182,6 +2208,14 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
 
 ConfigurationDialogBase::~ConfigurationDialogBase() {
   // Disconnect Events
+  m_rbStartFromBoat->Disconnect(
+      wxEVT_COMMAND_RADIOBUTTON_SELECTED,
+      wxCommandEventHandler(ConfigurationDialogBase::OnStartFromBoat), NULL,
+      this);
+  m_rbStartPositionSelection->Disconnect(
+      wxEVT_COMMAND_RADIOBUTTON_SELECTED,
+      wxCommandEventHandler(ConfigurationDialogBase::OnStartFromPosition), NULL,
+      this);
   m_cStart->Disconnect(wxEVT_COMMAND_COMBOBOX_SELECTED,
                        wxCommandEventHandler(ConfigurationDialogBase::OnUpdate),
                        NULL, this);

@@ -1,9 +1,4 @@
 /***************************************************************************
- *
- * Project:  OpenCPN Weather Routing plugin
- * Author:   Sean D'Epagnier
- *
- ***************************************************************************
  *   Copyright (C) 2016 by Sean D'Epagnier                                 *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -20,9 +15,7 @@
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
  *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,  USA.         *
- ***************************************************************************
- *
- */
+ ***************************************************************************/
 
 #include <wx/wx.h>
 #include <wx/imaglist.h>
@@ -967,7 +960,7 @@ void WeatherRouting::UpdateRoutePositionDialog() {
   // WIND: TRUE WIND ANGLE
   // For wind direction, specify if it is
   // coming from starboard or port side.
-  double windDirection = heading_resolve(data.ctw - data.W);
+  double windDirection = heading_resolve(data.ctw - data.twa);
   wxString windDirectionLabel;
   if (windDirection <= 0)
     windDirectionLabel =
@@ -1272,6 +1265,7 @@ void WeatherRouting::OnWeatherRouteSort(wxListEvent& event) {
 void WeatherRouting::OnWeatherRouteSelected() {
   GetParent()->Refresh();
 
+  // Get the list of currently selected routes.
   std::list<RouteMapOverlay*> currentroutemaps = CurrentRouteMaps();
   std::list<RouteMapConfiguration> currentconfigurations;
   for (std::list<RouteMapOverlay*>::iterator it = currentroutemaps.begin();
@@ -1349,8 +1343,9 @@ void WeatherRouting::UpdateComputeState() {
 
 void WeatherRouting::OnCompute(wxCommandEvent& event) {
   std::list<RouteMapOverlay*> currentroutemaps = CurrentRouteMaps();
-  for (auto it = currentroutemaps.begin(); it != currentroutemaps.end(); it++)
+  for (auto it = currentroutemaps.begin(); it != currentroutemaps.end(); it++) {
     Start(*it);
+  }
   UpdateComputeState();
 }
 
@@ -1855,6 +1850,9 @@ bool WeatherRouting::OpenXML(wxString filename, bool reportfailure) {
       } else if (!strcmp(e->Value(), "Configuration")) {
         RouteMapConfiguration configuration;
         configuration.RouteGUID = wxString::FromUTF8(e->Attribute("GUID"));
+        configuration.StartType =
+            (RouteMapConfiguration::StartDataType)AttributeInt(
+                e, "StartType", RouteMapConfiguration::START_FROM_POSITION);
         configuration.Start = wxString::FromUTF8(e->Attribute("Start"));
         wxDateTime date;
         date.ParseISODate(wxString::FromUTF8(e->Attribute("StartDate")));
@@ -2000,6 +1998,7 @@ void WeatherRouting::SaveXML(wxString filename) {
     if (!configuration.RouteGUID.IsEmpty())
       c->SetAttribute("GUID", configuration.RouteGUID.mb_str());
 
+    c->SetAttribute("StartType", configuration.StartType);
     c->SetAttribute("Start", configuration.Start.mb_str());
     c->SetAttribute("StartDate",
                     configuration.StartTime.FormatISODate().mb_str());
@@ -2169,7 +2168,12 @@ void WeatherRoute::Update(WeatherRouting* wr, bool stateonly) {
     RouteMapConfiguration configuration = routemapoverlay->GetConfiguration();
 
     BoatFilename = configuration.boatFileName;
-    Start = configuration.Start;
+    // Add handling for Start field based on StartType
+    if (configuration.StartType == RouteMapConfiguration::START_FROM_BOAT) {
+      Start = _("Boat");
+    } else {
+      Start = configuration.Start;
+    }
 
     wxDateTime starttime = configuration.StartTime;
 
@@ -2248,22 +2252,28 @@ void WeatherRoute::Update(WeatherRouting* wr, bool stateonly) {
     Comfort = RouteMapOverlay::sailingConditionText(comfort_level);
   }
 
-  if (!routemapoverlay->Valid())
-    State = _("Invalid Start/End ") + routemapoverlay->GetError();
-  else if (routemapoverlay->Running())
+  if (!routemapoverlay->Valid()) {
+    State = _("Invalid Start/End");
+    wxString error = routemapoverlay->GetError();
+    wxString weatherError = routemapoverlay->GetWeatherForecastError();
+    if (!error.IsEmpty())
+      State += ": " + error;
+    else if (!weatherError.IsEmpty())
+      State += ": " + weatherError;
+  } else if (routemapoverlay->Running())
     State = _("Computing...");
   else {
     if (routemapoverlay->Finished()) {
       if (routemapoverlay->ReachedDestination())
         State = _("Complete");
       else {
-        State = _T("");
+        State = "";
         bool needsComma = false;
         wxString weatherStatus = routemapoverlay->GetWeatherForecastError();
         if (weatherStatus != wxEmptyString) {
           if (needsComma) State += _T(", ");
           State += _("Grib");
-          State += _T(": ");
+          State += ": ";
           State += weatherStatus;
           needsComma = true;
         }
@@ -2271,7 +2281,7 @@ void WeatherRoute::Update(WeatherRouting* wr, bool stateonly) {
         if (polarStatus != POLAR_SPEED_SUCCESS) {
           if (needsComma) State += _T(", ");
           State += _("Polar");
-          State += _T(": ");
+          State += ": ";
           State += Polar::GetPolarStatusMessage(polarStatus);
           needsComma = true;
         }
@@ -2284,14 +2294,14 @@ void WeatherRoute::Update(WeatherRouting* wr, bool stateonly) {
         if (routemapoverlay->LandCrossing()) {
           if (needsComma) State += _T(", ");
           State += _("Land");
-          State += _T(": ");
+          State += ": ";
           State += _("Failed");
           needsComma = true;
         }
         if (routemapoverlay->BoundaryCrossing()) {
           if (needsComma) State += _T(", ");
           State += _("Boundary");
-          State += _T(": ");
+          State += ": ";
           State += _("Failed");
         }
       }
@@ -2760,12 +2770,48 @@ void WeatherRouting::ExportRoute(RouteMapOverlay& routemapoverlay) {
 }
 
 void WeatherRouting::Start(RouteMapOverlay* routemapoverlay) {
-  if (!routemapoverlay ||
-      (routemapoverlay->Finished() &&
-       routemapoverlay->GetWeatherForecastStatus() == WEATHER_FORECAST_SUCCESS))
-    return;
+  if (!routemapoverlay) return;
 
   RouteMapConfiguration configuration = routemapoverlay->GetConfiguration();
+  bool boatHasMoved = false;
+  if (routemapoverlay->Finished() &&
+      configuration.StartType == RouteMapConfiguration::START_FROM_BOAT) {
+    // Check if the boat has moved significantly since the last calculation.
+    double distance = DistGreatCircle_Plugin(
+        configuration.StartLat, configuration.StartLon,
+        m_weather_routing_pi.m_boat_lat, m_weather_routing_pi.m_boat_lon);
+    // Threshold for significant movement is somewhat arbitrarily set to 20 meters.
+    boatHasMoved = (distance * 1852.0) > 20.0;
+  }
+
+  // Skip recalculation if the route has completed, or route is from boat and
+  // boat has moved.
+  if (routemapoverlay->Finished() &&
+      routemapoverlay->GetWeatherForecastStatus() == WEATHER_FORECAST_SUCCESS &&
+      !boatHasMoved) {
+    return;
+  }
+
+  // If starting from boat, update the boat position
+  if (configuration.StartType == RouteMapConfiguration::START_FROM_BOAT) {
+    // Use the current boat position from the plugin
+    configuration.StartLat = m_weather_routing_pi.m_boat_lat;
+    configuration.StartLon = m_weather_routing_pi.m_boat_lon;
+    // Set "Boat" as the starting point name for display purposes
+    configuration.Start = _("Boat");
+    // Clear any StartGUID since we're using the boat position, not a waypoint
+    configuration.StartGUID = wxEmptyString;
+    // Call Update() to recalculate the bearing and other parameters
+    configuration.Update();
+
+    routemapoverlay->SetConfiguration(configuration);
+  }
+  // Ensure we have valid start coordinates
+  if (std::isnan(configuration.StartLat) ||
+      std::isnan(configuration.StartLon)) {
+    routemapoverlay->SetError(_("Invalid start position"));
+    return;
+  }
 
   if (configuration.DeltaTime <= 0) {
     routemapoverlay->SetError(_("Zero Time Step"));

@@ -82,8 +82,9 @@ public:
   /**
    * Checks if a point is inside the polygon region.
    *
-   * Determines if a point with coordinates (x, y) is contained within the polygon region
-   * using a ray casting algorithm. Points on the boundary are considered inside.
+   * Determines if a point with coordinates (x, y) is contained within the
+   * polygon region using a ray casting algorithm. Points on the boundary are
+   * considered inside.
    *
    * @param x The x-coordinate of the point to check
    * @param y The y-coordinate of the point to check

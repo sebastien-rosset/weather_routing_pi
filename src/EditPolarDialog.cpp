@@ -50,7 +50,7 @@ EditPolarDialog::EditPolarDialog(wxWindow* parent)
 #endif
       m_BoatDialog(static_cast<BoatDialog*>(parent)) {
   //	m_gPolar->Connect( wxEVT_GRID_CELL_CHANGED, wxGridEventHandler(
-  //EditPolarDialogBase::OnPolarGridChanged ), NULL, this );
+  // EditPolarDialogBase::OnPolarGridChanged ), NULL, this );
 
   m_lMeasurements->InsertColumn(spTRUE_WIND_SPEED, _("True Wind Speed"));
   m_lMeasurements->InsertColumn(spTRUE_WIND_DIRECTION,

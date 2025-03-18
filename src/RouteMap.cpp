@@ -1,9 +1,4 @@
 /***************************************************************************
- *
- * Project:  OpenCPN Weather Routing plugin
- * Author:   Sean D'Epagnier
- *
- ***************************************************************************
  *   Copyright (C) 2016 by Sean D'Epagnier                                 *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -20,8 +15,7 @@
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
  *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,  USA.         *
- ***************************************************************************
- */
+ ***************************************************************************/
 
 /* generate a datastructure which contains positions for
    isochron line segments which describe the position of the boat at a given
@@ -703,7 +697,7 @@ bool RoutePoint::GetPlotData(RoutePoint* next, double dt,
   int data_mask = 0;  // not used for plotting yet
   bool old = configuration.grib_is_data_deficient;
   configuration.grib_is_data_deficient = grib_is_data_deficient;
-  if (!ReadWindAndCurrents(configuration, this, data.twd, data.tws, data.W,
+  if (!ReadWindAndCurrents(configuration, this, data.twd, data.tws, data.twa,
                            data.VW, data.currentDir, data.currentSpeed, atlas,
                            data_mask)) {
     // I don't think this can ever be hit, because the data should have been
@@ -2904,12 +2898,40 @@ void IsoChron::ResetDrawnFlag() {
     (*it)->ResetDrawnFlag();
 }
 
+weather_routing_pi* RouteMapConfiguration::s_plugin_instance = nullptr;
+
+RouteMapConfiguration::RouteMapConfiguration()
+    : StartType(START_FROM_POSITION),
+      StartLon(0),
+      EndLon(0),
+      grib(nullptr),
+      grib_is_data_deficient(false) {}
+
+double RouteMapConfiguration::GetBoatLat() {
+  if (s_plugin_instance) return s_plugin_instance->m_boat_lat;
+  return NAN;
+}
+
+double RouteMapConfiguration::GetBoatLon() {
+  if (s_plugin_instance) return s_plugin_instance->m_boat_lon;
+  return NAN;
+}
+
 bool RouteMapConfiguration::Update() {
   bool havestart = false, haveend = false;
   PlugIn_Waypoint waypoint;
 
+  if (StartType == RouteMapConfiguration::START_FROM_BOAT) {
+    StartLat = GetBoatLat();
+    StartLon = GetBoatLon();
+    if (StartLat != NAN && StartLon != NAN) {
+      havestart = true;
+    }
+  }
+
   if (!RouteGUID.IsEmpty()) {
-    if (!StartGUID.IsEmpty() && GetSingleWaypoint(StartGUID, &waypoint)) {
+    if (StartType == RouteMapConfiguration::START_FROM_POSITION &&
+        !StartGUID.IsEmpty() && GetSingleWaypoint(StartGUID, &waypoint)) {
       StartLat = waypoint.m_lat;
       StartLon = waypoint.m_lon;
       havestart = true;
@@ -2919,32 +2941,33 @@ bool RouteMapConfiguration::Update() {
       EndLon = waypoint.m_lon;
       haveend = true;
     }
-  } else
-    for (const auto& it : RouteMap::Positions) {
-      if (Start == it.Name) {
-        double lat = it.lat;
-        double lon = it.lon;
-        if (!it.GUID.IsEmpty() && GetSingleWaypoint(it.GUID, &waypoint)) {
-          lat = waypoint.m_lat;
-          lon = waypoint.m_lon;
-        }
-        StartLat = lat;
-        StartLon = lon;
+  }
+  for (const auto& it : RouteMap::Positions) {
+    if (StartType == RouteMapConfiguration::START_FROM_POSITION &&
+        Start == it.Name) {
+      double lat = it.lat;
+      double lon = it.lon;
+      if (!it.GUID.IsEmpty() && GetSingleWaypoint(it.GUID, &waypoint)) {
+        lat = waypoint.m_lat;
+        lon = waypoint.m_lon;
+      }
+      StartLat = lat;
+      StartLon = lon;
 
-        havestart = true;
-      }
-      if (End == it.Name) {
-        double lat = it.lat;
-        double lon = it.lon;
-        if (!it.GUID.IsEmpty() && GetSingleWaypoint(it.GUID, &waypoint)) {
-          lat = waypoint.m_lat;
-          lon = waypoint.m_lon;
-        }
-        EndLat = lat;
-        EndLon = lon;
-        haveend = true;
-      }
+      havestart = true;
     }
+    if (End == it.Name) {
+      double lat = it.lat;
+      double lon = it.lon;
+      if (!it.GUID.IsEmpty() && GetSingleWaypoint(it.GUID, &waypoint)) {
+        lat = waypoint.m_lat;
+        lon = waypoint.m_lon;
+      }
+      EndLat = lat;
+      EndLon = lon;
+      haveend = true;
+    }
+  }
 
   if (!havestart || !haveend) {
     StartLat = StartLon = EndLat = EndLon = NAN;
@@ -3563,7 +3586,7 @@ wxString RouteMap::GetRoutingErrorInfo() {
     if (error_counts[PROPAGATION_EXCEEDED_MAX_WIND] > 0) {
       info +=
           wxString::Format(_("\nWind exceeds limits. Increase '%s' if safe."),
-                             _("Max True Wind"));
+                           _("Max True Wind"));
     }
 
     if (error_counts[PROPAGATION_BOAT_SPEED_COMPUTATION_FAILED] > 0) {

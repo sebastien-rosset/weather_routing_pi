@@ -85,7 +85,7 @@ protected:
   wxMenuItem* m_mBatch1;
   wxMenu* m_menu1;
 
-  // Virtual event handlers, overide them in your derived class
+  // Virtual event handlers, override them in your derived class
   virtual void OnClose(wxCloseEvent& event) { event.Skip(); }
   virtual void OnSize(wxSizeEvent& event) { event.Skip(); }
   virtual void OnOpen(wxCommandEvent& event) { event.Skip(); }
@@ -101,6 +101,17 @@ protected:
   virtual void OnGoTo(wxCommandEvent& event) { event.Skip(); }
   virtual void OnDelete(wxCommandEvent& event) { event.Skip(); }
   virtual void OnDeleteAll(wxCommandEvent& event) { event.Skip(); }
+  /**
+   * Handles the "Compute" button click event.
+   *
+   * This method starts the computation process for all currently selected route
+   * configurations. It retrieves the list of selected route maps, initiates the
+   * computation for each one, and updates the UI to reflect the ongoing
+   * computation state.
+   *
+   * @param event The button click event (unused but required by event handler
+   * signature)
+   */
   virtual void OnCompute(wxCommandEvent& event) { event.Skip(); }
   virtual void OnComputeAll(wxCommandEvent& event) { event.Skip(); }
   virtual void OnStop(wxCommandEvent& event) { event.Skip(); }
@@ -160,6 +171,17 @@ protected:
   virtual void OnWeatherRouteSort(wxListEvent& event) { event.Skip(); }
   virtual void OnWeatherRouteSelected(wxListEvent& event) { event.Skip(); }
   virtual void OnWeatherRouteKeyDown(wxListEvent& event) { event.Skip(); }
+  /**
+   * Handles the "Compute" button click event.
+   *
+   * This method starts the computation process for all currently selected route
+   * configurations. It retrieves the list of selected route maps, initiates the
+   * computation for each one, and updates the UI to reflect the ongoing
+   * computation state.
+   *
+   * @param event The button click event (unused but required by event handler
+   * signature)
+   */
   virtual void OnCompute(wxCommandEvent& event) { event.Skip(); }
   virtual void OnExport(wxCommandEvent& event) { event.Skip(); }
   virtual void OnExportRoute(wxCommandEvent& event) { event.Skip(); }
@@ -167,6 +189,13 @@ protected:
 public:
   wxSplitterWindow* m_splitter1;
   wxListCtrl* m_lPositions;
+  /**
+   * List control that displays configured weather routes.
+   *
+   * This list control contains route configurations and their computed results.
+   * Each row represents a weather route with columns showing properties like
+   * Name, Start position, End position.
+   */
   wxListCtrl* m_lWeatherRoutes;
   wxButton* m_bCompute;
   wxButton* m_bExport;
@@ -240,6 +269,10 @@ private:
 protected:
   wxNotebook* m_notebook7;
   wxPanel* m_pBasic;
+  /** Radio buttons for start selection */
+  wxRadioButton* m_rbStartFromBoat;
+  wxRadioButton* m_rbStartPositionSelection;
+  /** The starting point of the route. */
   wxComboBox* m_cStart;
   wxStaticText* m_staticText28;
   wxButton* m_bGribTime;
@@ -261,6 +294,7 @@ protected:
   wxStaticText* m_staticText27;
   wxSpinCtrl* m_sMaxSwellMeters;
   wxStaticText* m_staticText129;
+  /** The end point of the route. */
   wxComboBox* m_cEnd;
   wxSpinCtrl* m_sTimeStepHours;
   wxStaticText* m_staticText110;
@@ -308,6 +342,8 @@ protected:
   wxButton* m_bResetAdvanced;
 
   // Virtual event handlers, overide them in your derived class
+  virtual void OnStartFromBoat(wxCommandEvent& event) { event.Skip(); }
+  virtual void OnStartFromPosition(wxCommandEvent& event) { event.Skip(); }
   virtual void OnUpdate(wxCommandEvent& event) { event.Skip(); }
   virtual void OnUpdateDate(wxDateEvent& event) { event.Skip(); }
   virtual void OnGribTime(wxCommandEvent& event) { event.Skip(); }

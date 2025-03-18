@@ -52,13 +52,44 @@ class WeatherRoute {
 public:
   WeatherRoute();
   ~WeatherRoute();
+  /**
+   * Updates the weather route object with current configuration and calculation
+   * status.
+   *
+   * This method updates both the route configuration data and status
+   * information. It's used whenever route information needs to be refreshed in
+   * the UI.
+   *
+   * @param wr Pointer to the WeatherRouting main object to access settings
+   * @param stateonly If true, only update the State field, not configuration
+   * data
+   */
   void Update(WeatherRouting* wr, bool stateonly = false);
 
   bool Filtered;
-  wxString BoatFilename, Start, StartTime, End, EndTime, Time, Distance,
-      AvgSpeed, MaxSpeed, AvgSpeedGround, MaxSpeedGround, AvgWind, MaxWind,
-      MaxWindGust, AvgCurrent, MaxCurrent, AvgSwell, MaxSwell, UpwindPercentage,
-      PortStarboard, Tacks, State, Comfort;
+  wxString BoatFilename;
+  wxString Start;
+  wxString StartTime;
+  wxString End;
+  wxString EndTime;
+  wxString Time;
+  wxString Distance;
+  wxString AvgSpeed;
+  wxString MaxSpeed;
+  wxString AvgSpeedGround;
+  wxString MaxSpeedGround;
+  wxString AvgWind;
+  wxString MaxWind;
+  wxString MaxWindGust;
+  wxString AvgCurrent;
+  wxString MaxCurrent;
+  wxString AvgSwell;
+  wxString MaxSwell;
+  wxString UpwindPercentage;
+  wxString PortStarboard;
+  wxString Tacks;
+  wxString State;
+  wxString Comfort;
   RouteMapOverlay* routemapoverlay;
 };
 
@@ -127,6 +158,13 @@ public:
 
   void UpdateCurrentConfigurations();
   void UpdateStates();
+  /**
+   * Get list of currently selected route maps in the weather routes list
+   *
+   * @param messagedialog If true, show warning dialog when no routes are
+   * selected
+   * @return List of RouteMapOverlay pointers for selected routes
+   */
   std::list<RouteMapOverlay*> CurrentRouteMaps(bool messagedialog = false);
   RouteMapOverlay* FirstCurrentRouteMap();
   RouteMapOverlay* m_RouteMapOverlayNeedingGrib;
@@ -219,7 +257,17 @@ private:
   RouteMap* SelectedRouteMap();
   void Export(RouteMapOverlay& routemapoverlay);
   void ExportRoute(RouteMapOverlay& routemapoverlay);
-  /* Start the computation of the specified route. */
+  /**
+   * Initiates route calculation for a specific route map overlay.
+   *
+   * This method handles the pre-computation setup for a route map overlay:
+   * - If starting from boat position, it updates the start coordinates
+   * - It attempts to start the computation thread
+   * - It handles any errors that occur during startup
+   * - It adds successful starts to the running routes list
+   *
+   * @param routemapoverlay Pointer to the route map overlay to compute
+   */
   void Start(RouteMapOverlay* routemapoverlay);
   void StartAll();
   /* Stop the computation of the specified route. */

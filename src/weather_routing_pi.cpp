@@ -131,6 +131,8 @@ int weather_routing_pi::Init() {
 
   m_pWeather_Routing = NULL;
 
+  RouteMapConfiguration::s_plugin_instance = this;
+
 #ifdef PLUGIN_USE_SVG
   m_leftclick_tool_id = InsertPlugInToolSVG(
       _T( "WeatherRouting" ), _svg_weather_routing,
@@ -273,9 +275,9 @@ void weather_routing_pi::SetPluginMessage(wxString& message_id,
         wxMessageDialog mdlg(
             m_parent_window,
             _("Grib plugin version not supported.") + _T("\n\n") +
-                wxString::Format("%s %d.%d to %d.%d", ver,
-                                 GRIB_MIN_MAJOR, GRIB_MIN_MINOR,
-                                 GRIB_MAX_MAJOR, GRIB_MAX_MINOR),
+                wxString::Format("%s %d.%d to %d.%d", ver, GRIB_MIN_MAJOR,
+                                 GRIB_MIN_MINOR, GRIB_MAX_MAJOR,
+                                 GRIB_MAX_MINOR),
             _("Weather Routing"), wxOK | wxICON_WARNING);
         mdlg.ShowModal();
       }
@@ -327,8 +329,8 @@ void weather_routing_pi::SetPluginMessage(wxString& message_id,
               "data.") +
                 _T("\n\n") +
                 wxString::Format("%s %d.%d to %d.%d", ver,
-                                CLIMATOLOGY_MIN_MAJOR, CLIMATOLOGY_MIN_MINOR,
-                                CLIMATOLOGY_MAX_MAJOR, CLIMATOLOGY_MAX_MINOR),
+                                 CLIMATOLOGY_MIN_MAJOR, CLIMATOLOGY_MIN_MINOR,
+                                 CLIMATOLOGY_MAX_MAJOR, CLIMATOLOGY_MAX_MINOR),
             _("Weather Routing"), wxOK | wxICON_WARNING);
         mdlg.ShowModal();
         return;

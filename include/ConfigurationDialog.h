@@ -42,6 +42,23 @@ public:
   ~ConfigurationDialog();
 
   void EditBoat();
+  /**
+   * Updates the configuration dialog with settings from given route
+   * configurations
+   *
+   * @param configurations List of route map configurations to display/edit in
+   * dialog
+   *
+   * This method:
+   * - Updates all configuration controls to reflect the given route settings
+   * - Handles multiple selected configurations by showing common values
+   * - Called when route selection changes in weather routes list
+   * - Updates start/end positions, boat settings, weather parameters etc.
+   *
+   * Note: If multiple configurations are passed in, only settings that are the
+   * same across all configurations will be displayed. Others will show default
+   * values.
+   */
   void SetConfigurations(std::list<RouteMapConfiguration> configuration);
   void Update();
 
@@ -88,6 +105,8 @@ protected:
     wxDynamicCast(event.GetEventObject(), wxSpinCtrlDouble)->Enable();
     event.Skip();
   }
+  void OnStartFromBoat(wxCommandEvent& event);
+  void OnStartFromPosition(wxCommandEvent& event);
   void OnAvoidCyclones(wxCommandEvent& event);
   void OnAddDegreeStep(wxCommandEvent& event);
   void OnRemoveDegreeStep(wxCommandEvent& event);
@@ -97,8 +116,6 @@ protected:
 
 private:
   void UpdateCycloneControls();
-
-  enum ConfigurationItem { START, END, START_TIME, TIME_STEP };
 
   void SetStartDateTime(wxDateTime datetime);
 
