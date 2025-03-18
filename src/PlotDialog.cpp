@@ -82,7 +82,7 @@ void PlotDialog::OnMouseEventsPlot(wxMouseEvent& event) {
   for (int i = 0; i < 3; i++) {
     double value = (1.0 - (double)p.y / h) * (m_maxvalue[i] - m_minvalue[i]) +
                    m_minvalue[i];
-    stMousePosition[i]->SetLabel(wxString::Format(_T(" %.3f"), value));
+    stMousePosition[i]->SetLabel(wxString::Format(_T(" %.1f"), value));
   }
 }
 

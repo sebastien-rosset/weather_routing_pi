@@ -211,12 +211,12 @@ WeatherRouting::WeatherRouting(wxWindow* parent, weather_routing_pi& plugin)
           "changed the names, your modifications will be overwritten, so be\n"
           "sure to backup your changes. If you have added new polars or boats\n"
           "with exclusive names, they will be kept untouched.\n\n");
-    message +=
-    _("Import example configurations will overwrite your route\n"
-    "configurations with a sample set showing you how WeatherRouting\n"
-    "works. Backup your existing configurations if you need.\n\n"
-    "Pressing \"OK\" will apply the selected changes, pressing \"Cancel\"\n"
-    "will do nothing and you will be asked again on the next launch.");
+    message += _(
+        "Import example configurations will overwrite your route\n"
+        "configurations with a sample set showing you how WeatherRouting\n"
+        "works. Backup your existing configurations if you need.\n\n"
+        "Pressing \"OK\" will apply the selected changes, pressing \"Cancel\"\n"
+        "will do nothing and you will be asked again on the next launch.");
 
     wxString confDlgChoices[3] = {_("Import new boats and polars"),
                                   _("Import example configurations")};
@@ -2198,42 +2198,42 @@ void WeatherRoute::Update(WeatherRouting* wr, bool stateonly) {
                                configuration.EndLat, configuration.EndLon));
 
     AvgSpeed = wxString::Format(
-        _T("%.2f"), routemapoverlay->RouteInfo(RouteMapOverlay::AVGSPEED));
+        _T("%.1f"), routemapoverlay->RouteInfo(RouteMapOverlay::AVGSPEED));
 
     MaxSpeed = wxString::Format(
-        _T("%.2f"), routemapoverlay->RouteInfo(RouteMapOverlay::MAXSPEED));
+        _T("%.1f"), routemapoverlay->RouteInfo(RouteMapOverlay::MAXSPEED));
 
     AvgSpeedGround = wxString::Format(
-        _T("%.2f"),
+        _T("%.1f"),
         routemapoverlay->RouteInfo(RouteMapOverlay::AVGSPEEDGROUND));
 
     MaxSpeedGround = wxString::Format(
-        _T("%.2f"),
+        _T("%.1f"),
         routemapoverlay->RouteInfo(RouteMapOverlay::MAXSPEEDGROUND));
 
     AvgWind = wxString::Format(
-        _T("%.2f"), routemapoverlay->RouteInfo(RouteMapOverlay::AVGWIND));
+        _T("%.1f"), routemapoverlay->RouteInfo(RouteMapOverlay::AVGWIND));
 
     MaxWind = wxString::Format(
-        _T("%.2f"), routemapoverlay->RouteInfo(RouteMapOverlay::MAXWIND));
+        _T("%.1f"), routemapoverlay->RouteInfo(RouteMapOverlay::MAXWIND));
 
     MaxWindGust = wxString::Format(
-        _T("%.2f"), routemapoverlay->RouteInfo(RouteMapOverlay::MAXWINDGUST));
+        _T("%.1f"), routemapoverlay->RouteInfo(RouteMapOverlay::MAXWINDGUST));
 
     AvgCurrent = wxString::Format(
-        _T("%.2f"), routemapoverlay->RouteInfo(RouteMapOverlay::AVGCURRENT));
+        _T("%.1f"), routemapoverlay->RouteInfo(RouteMapOverlay::AVGCURRENT));
 
     MaxCurrent = wxString::Format(
-        _T("%.2f"), routemapoverlay->RouteInfo(RouteMapOverlay::MAXCURRENT));
+        _T("%.1f"), routemapoverlay->RouteInfo(RouteMapOverlay::MAXCURRENT));
 
     AvgSwell = wxString::Format(
-        _T("%.2f"), routemapoverlay->RouteInfo(RouteMapOverlay::AVGSWELL));
+        _T("%.1f"), routemapoverlay->RouteInfo(RouteMapOverlay::AVGSWELL));
 
     MaxSwell = wxString::Format(
-        _T("%.2f"), routemapoverlay->RouteInfo(RouteMapOverlay::MAXSWELL));
+        _T("%.1f"), routemapoverlay->RouteInfo(RouteMapOverlay::MAXSWELL));
 
     UpwindPercentage = wxString::Format(
-        _T("%.2f%%"),
+        _T("%.1f%%"),
         routemapoverlay->RouteInfo(RouteMapOverlay::PERCENTAGE_UPWIND));
 
     double ps = routemapoverlay->RouteInfo(RouteMapOverlay::PORT_STARBOARD);
@@ -2294,7 +2294,6 @@ void WeatherRoute::Update(WeatherRouting* wr, bool stateonly) {
           State += _T(": ");
           State += _("Failed");
         }
-
       }
     } else {
       for (std::list<RouteMapOverlay*>::iterator it =
@@ -2762,7 +2761,8 @@ void WeatherRouting::ExportRoute(RouteMapOverlay& routemapoverlay) {
 
 void WeatherRouting::Start(RouteMapOverlay* routemapoverlay) {
   if (!routemapoverlay ||
-      (routemapoverlay->Finished() && routemapoverlay->GetWeatherForecastStatus() == WEATHER_FORECAST_SUCCESS))
+      (routemapoverlay->Finished() &&
+       routemapoverlay->GetWeatherForecastStatus() == WEATHER_FORECAST_SUCCESS))
     return;
 
   RouteMapConfiguration configuration = routemapoverlay->GetConfiguration();
