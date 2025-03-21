@@ -101,9 +101,9 @@ double PlotDialog::GetValue(PlotData& data, int var) {
     case WIND_VELOCITY:
       return data.VW;
     case WIND_DIRECTION:
-      return heading_resolve(data.ctw - data.W);
+      return heading_resolve(data.ctw - data.twa);
     case WIND_COURSE:
-      return positive_degrees(data.W);
+      return positive_degrees(data.twa);
 
     case WIND_VELOCITY_GROUND:
       return data.tws;

@@ -101,6 +101,13 @@
 
 class WeatherRouting;
 
+/**
+ * OpenCPN Weather Routing plugin main class.
+ *
+ * Implements the OpenCPN Weather Routing plugin that provides
+ * weather routing capabilities to OpenCPN. It handles initialization,
+ * UI management, and interactions with the OpenCPN application.
+ */
 class weather_routing_pi : public wxEvtHandler, public opencpn_plugin_118 {
 public:
   weather_routing_pi(void* ppimgr);
@@ -132,9 +139,20 @@ public:
 
   int GetToolbarToolCount();
 
+  /**
+   * Receives cursor lat/lon position updates.
+   *
+   * @param lat Latitude of the cursor.
+   * @param lon Longitude of the cursor.
+   */
   void SetCursorLatLon(double lat, double lon);
 
   void SetPluginMessage(wxString& message_id, wxString& message_body);
+  /**
+   * Handle position fix information (boat position).
+   *
+   * @param pfix Position fix information.
+   */
   void SetPositionFixEx(PlugIn_Position_Fix_Ex& pfix);
   void ShowPreferencesDialog(wxWindow* parent);
 
@@ -145,8 +163,10 @@ public:
   static wxString StandardPath();
   void ShowMenuItems(bool show);
 
-  double m_boat_lat, m_boat_lon;
-  double m_cursor_lat, m_cursor_lon;
+  double m_boat_lat;    //!< Latitude of the boat position, in degrees.
+  double m_boat_lon;    //!< Longitude of the boat position, in degrees.
+  double m_cursor_lat;  //!< Latitude of the cursor position, in degrees.
+  double m_cursor_lon;  //!< Longitude of the cursor position, in degrees.
 
 private:
   void OnCursorLatLonTimer(wxTimerEvent&);

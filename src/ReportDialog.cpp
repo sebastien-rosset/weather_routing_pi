@@ -82,7 +82,11 @@ void ReportDialog::SetRouteMapOverlays(
 
     page += _("Boat Filename") + _T(" ") +
             wxFileName(c.boatFileName).GetName() + _T("<dt>");
-    page += _("Route from ") + c.Start + _(" to ") + c.End + _T("<dt>");
+    if (c.StartType == RouteMapConfiguration::START_FROM_BOAT) {
+      page += _("Route from ") + _("Boat") + _(" to ") + c.End + _T("<dt>");
+    } else {
+      page += _("Route from ") + c.Start + _(" to ") + c.End + _T("<dt>");
+    }
     page += _("Leaving ") + FormatTime((*it)->StartTime()) + _T("<dt>");
     if (d) {
       page += _("Arriving ") + FormatTime((*it)->EndTime()) + _T("<dt>");
@@ -423,7 +427,7 @@ void ReportDialog::GenerateRoutesReport() {
 
 void ReportDialog::OnInformation(wxCommandEvent& event) {
   wxString mes =
-  _("Weather Routing Reports gives an overview of a given route based on \
+      _("Weather Routing Reports gives an overview of a given route based on \
   multiple configurations.\n\n\
   For example using the configuration batch dialog, it is possible to \
   easily generate multiple otherwise identical configurations which \
@@ -436,6 +440,6 @@ void ReportDialog::OnInformation(wxCommandEvent& event) {
   cyclone risk and additional weather conditions may be described.");
 
   wxMessageDialog mdlg(this, mes, _("Weather Routing Report"),
-      wxOK | wxICON_INFORMATION);
+                       wxOK | wxICON_INFORMATION);
   mdlg.ShowModal();
 }

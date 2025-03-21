@@ -670,7 +670,7 @@ int RouteMapOverlay::sailingConditionLevel(const PlotData& plot) const {
   // conditions as if you sail downwind (impact of waves, heel, and more).
   // Use a normal distribution to set the maximum difficulty at 35° upwind,
   // and reduce when we go downwind.
-  double AW = heading_resolve(plot.ctw - plot.W);
+  double AW = heading_resolve(plot.ctw - plot.twa);
   double teta = 30;
   double mu = 35;
   double amp = 20;
@@ -870,7 +870,7 @@ void RouteMapOverlay::RenderWindBarbsOnRoute(piDC& dc, PlugIn_ViewPort& vp,
     //   cog sog : boat speed over ground
     //   ctw  stw  : boat speed over water
     float windSpeed = it->VW;
-    float windDirection = it->W;  // heading_resolve(it->ctw - it->W);
+    float windDirection = it->twa;  // heading_resolve(it->ctw - it->W);
 
     // By default, display true wind
     float finalWindSpeed = windSpeed;
@@ -1473,10 +1473,10 @@ double RouteMapOverlay::RouteInfo(enum RouteInfoType type, bool cursor_route) {
         if (total < it->WVHT) total = it->WVHT;
         break;
       case PERCENTAGE_UPWIND:
-        if (fabs(heading_resolve(it->ctw - it->W)) < 90) total++;
+        if (fabs(heading_resolve(it->ctw - it->twa)) < 90) total++;
         break;
       case PORT_STARBOARD:
-        if (heading_resolve(it->ctw - it->W) > 0) total++;
+        if (heading_resolve(it->ctw - it->twa) > 0) total++;
         break;
       // CUSTOMIZATION
       // Comfort on route

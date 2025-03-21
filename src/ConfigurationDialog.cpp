@@ -92,6 +92,16 @@ void ConfigurationDialog::OnCurrentTime(wxCommandEvent& event) {
   Update();
 }
 
+void ConfigurationDialog::OnStartFromBoat(wxCommandEvent& event) {
+  m_cStart->Enable(!m_rbStartFromBoat->GetValue());
+  Update();
+}
+
+void ConfigurationDialog::OnStartFromPosition(wxCommandEvent& event) {
+  m_cStart->Enable(m_rbStartPositionSelection->GetValue());
+  Update();
+}
+
 void ConfigurationDialog::OnAvoidCyclones(wxCommandEvent& event) { Update(); }
 
 void ConfigurationDialog::OnBoatFilename(wxCommandEvent& event) {
@@ -207,16 +217,27 @@ void ConfigurationDialog::SetConfigurations(
 
   SET_CHOICE(End);
 
-  // if there's a GUID it's an OpenCPN route, for now disable start and end
-  // which would invalidate the it
+  // if there's a Route GUID it's an OpenCPN route, in that case disable start
+  // and end.
   bool oRoute = false;
+  bool allStartFromBoat = true;
+  bool allStartFromPosition = true;
   for (auto it : configurations) {
     if (!it.RouteGUID.IsEmpty()) {
       oRoute = true;
       break;
     }
+    if (it.StartType != RouteMapConfiguration::START_FROM_BOAT)
+      allStartFromBoat = false;
+    if (it.StartType != RouteMapConfiguration::START_FROM_POSITION)
+      allStartFromPosition = false;
   }
-  m_cStart->Enable(!oRoute);
+  m_rbStartFromBoat->Enable(!oRoute);
+  m_rbStartPositionSelection->Enable(!oRoute);
+  m_rbStartFromBoat->SetValue(allStartFromBoat);
+  m_rbStartPositionSelection->SetValue(allStartFromPosition);
+
+  m_cStart->Enable(!oRoute && !m_rbStartFromBoat->GetValue());
   m_cEnd->Enable(!oRoute);
 
   SET_SPIN(FromDegree);
@@ -358,6 +379,10 @@ void ConfigurationDialog::SetStartDateTime(wxDateTime datetime) {
 void ConfigurationDialog::Update() {
   if (m_bBlockUpdate) return;
 
+  // Ensure the combobox is properly enabled/disabled based on radio button
+  // selection
+  m_cStart->Enable(!m_rbStartFromBoat->GetValue());
+
   bool refresh = false;
   RouteMapConfiguration configuration;
   std::list<RouteMapOverlay*> currentroutemaps =
@@ -366,7 +391,16 @@ void ConfigurationDialog::Update() {
        it != currentroutemaps.end(); it++) {
     configuration = (*it)->GetConfiguration();
 
-    GET_CHOICE(Start);
+    // Set the start type based on the radio button selection
+    if (m_rbStartFromBoat->GetValue()) {
+      configuration.StartType = RouteMapConfiguration::START_FROM_BOAT;
+    } else {
+      configuration.StartType = RouteMapConfiguration::START_FROM_POSITION;
+    }
+
+    // Only get start position choice if not using boat position
+    if (configuration.StartType == RouteMapConfiguration::START_FROM_POSITION)
+      GET_CHOICE(Start);
     GET_CHOICE(End);
 
     if (NO_EDITED_CONTROLS ||

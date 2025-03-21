@@ -157,9 +157,13 @@ public:
   double ctw;  //!< Course of boat through water (degrees).
   /** Wind speed relative to the water's frame of reference in knots. */
   double VW;
-  /** Relative angle between vessel's course through water (CTW) and the wind
-   * direction in degrees. */
-  double W;
+  /**
+   * True Wind Angle (TWA)
+   *
+   * Represents the relative angle between vessel's course through water (CTW)
+   * and the wind direction in degrees.
+   */
+  double twa;
   double tws;           //!< Velocity of wind over ground (knots).
   double twd;           //!< Wind direction over ground.
   double currentSpeed;  //!< Velocity of current over ground (knots).
@@ -169,6 +173,7 @@ public:
 };
 
 class SkipPosition;
+class weather_routing_pi;
 
 enum PropagationError {
   PROPAGATION_NO_ERROR = 0,
@@ -873,20 +878,39 @@ struct RouteMapPosition {
  * position, timestamp, error flags, and intermediate calculation results.
  */
 struct RouteMapConfiguration {
-  RouteMapConfiguration()
-      : StartLon(0),
-        EndLon(0),
-        grib(nullptr),
-        grib_is_data_deficient(false) {
-  } /* avoid waiting forever in update longitudes */
+  /**
+   * Defines the source for the starting point of the route.
+   */
+  enum StartDataType {
+    START_FROM_POSITION,  //!< Start from named position, resolved to lat/lon.
+    START_FROM_BOAT       //!< Start from boat's current position.
+  };
+
+  RouteMapConfiguration(); /* avoid waiting forever in update longitudes */
+
+  /**
+   * Updates the route configuration with the latest position information.
+   *
+   * This method performs several important functions:
+   * 1. Resolves named positions or GUIDs to actual latitude/longitude
+   * coordinates
+   * 2. Handles the special case of starting from the boat's current position
+   * 3. Normalizes longitude values for consistent calculations
+   * 4. Calculates the bearing between the start and end points
+   * 5. Generates the list of course angles to test during route calculation
+   *
+   * @return true if both start and end positions are valid, false otherwise
+   */
   bool Update();
 
   wxString RouteGUID; /* Route GUID if any */
-  /* The name of starting position, which is resolved to StartLat/StartLon. */
+  /** The name of starting position, which is resolved to StartLat/StartLon. */
   wxString Start;
+  /** The type of starting poiht, either from named position or boat current
+   * position. */
+  StartDataType StartType;
   wxString StartGUID;
-  /*
-   * The name of the destination position, which is resolved to EndLat/EndLon.
+  /** The name of the destination position, which is resolved to EndLat/EndLon.
    */
   wxString End;
   wxString EndGUID;
@@ -954,6 +978,13 @@ struct RouteMapConfiguration {
   // The calculated route will avoid land within this distance.
   double SafetyMarginLand;
 
+  /**
+   * When enabled, the routing algorithm will avoid historical cyclone tracks.
+   *
+   * Uses climatology data to identify areas where cyclones have historically
+   * occurred during the relevant season based on CycloneMonths and CycloneDays
+   * parameters, and attempts to route around these dangerous zones.
+   */
   bool AvoidCycloneTracks;
   // Avoid cyclone tracks within ( 30*CycloneMonths + CycloneDays ) days of
   // climatology data.
@@ -1030,7 +1061,8 @@ struct RouteMapConfiguration {
 
   /**
    * If true, the route calculation will avoid land, outside the
-   * SafetyMarginLand. */
+   * SafetyMarginLand.
+   */
   bool DetectLand;
   // If true, the route calculation will avoid exclusion boundaries.
   bool DetectBoundary;
@@ -1053,17 +1085,23 @@ struct RouteMapConfiguration {
   // destination sooner by sitting in place until the current abades.
   bool Anchoring;
 
-  // Do not go below this minimum True Wind angle at each step of the route
-  // calculation. The default value is 0 degrees.
+  /**
+   * Do not go below this minimum True Wind angle at each step of the route
+   * calculation. The default value is 0 degrees.
+   */
   double FromDegree;
-  // Do not go above this maximum True Wind angle at each step of the route
-  // calculation. The default value is 180 degrees.
+  /**
+   * Do not go above this maximum True Wind angle at each step of the route
+   * calculation. The default value is 180 degrees.
+   */
   double ToDegree;
-  // The angular resolution at each step of the route calculation, in degrees.
-  // Lower values provide finer resolution but increase computation time.
-  // Higher values provide coarser resolution, but faster computation time.
-  // The allowed range of resolution is from 0.1 to 60 degrees.
-  // The default value is 5 degrees.
+  /**
+   * The angular resolution at each step of the route calculation, in degrees.
+   * Lower values provide finer resolution but increase computation time.
+   * Higher values provide coarser resolution, but faster computation time.
+   * The allowed range of resolution is from 0.1 to 60 degrees.
+   * The default value is 5 degrees.
+   */
   double ByDegrees;
 
   /* computed values */
@@ -1087,26 +1125,40 @@ struct RouteMapConfiguration {
    * more calculations.
    */
   std::list<double> DegreeSteps;
-  double StartLat, StartLon;  // The latitude and longitude of the starting
-                              // position, in decimal degrees.
-  double EndLat, EndLon;      // The latitude and longitude of the destination
-                              // position, in decimal degrees.
+  /** The latitude of the starting position, in decimal degrees. */
+  double StartLat;
+  /** The longitude of the starting position, in decimal degrees. */
+  double StartLon;
+  /** The latitude of the destination position, in decimal degrees. */
+  double EndLat;
+  /** The longitude of the destination position, in decimal degrees. */
+  double EndLon;
 
-  /*
+  /**
    * The initial bearing from Start position to End position, following the
    * Great Circle route and taking into consideration the ellipsoidal shape of
    * the Earth. Note: a boat sailing the great circle route will gradually
    * change the bearing to the destination.
    */
   double StartEndBearing;
-  /** longitudes are either 0 to 360 or -180 to 180,
-  this means the map cannot cross both 0 and 180 longitude.
-  To fully support this requires a lot more logic and would probably slow the
-  algorithm by about 8%.  Is it even useful?  */
+  /**
+   * longitudes are either 0 to 360 or -180 to 180,
+   * this means the map cannot cross both 0 and 180 longitude.
+   * To fully support this requires a lot more logic and would probably slow the
+   * algorithm by about 8%.  Is it even useful?
+   */
   bool positive_longitudes;
 
   // parameters
   WR_GribRecordSet* grib;
+
+  /** Returns the current latitude of the boat, in degrees. */
+  static double GetBoatLat();
+  /** Returns the current longitude of the boat, in degrees. */
+  static double GetBoatLon();
+
+  static weather_routing_pi* s_plugin_instance;
+
   /**
    * Current timestamp in the routing calculation in UTC.
    * This is initialized to StartTime and advances with each propagation step.
