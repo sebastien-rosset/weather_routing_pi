@@ -275,9 +275,33 @@ protected:
   /** The starting point of the route. */
   wxComboBox* m_cStart;
   wxStaticText* m_staticText28;
+  /**
+   * Button to set the start time to match the currently loaded GRIB file's
+   * time. Clicking this button will set the time controls to match the valid
+   * time of the currently loaded weather GRIB file. This is useful for ensuring
+   * the route calculation begins with valid weather data.
+   */
   wxButton* m_bGribTime;
+  /**
+   * Checkbox to automatically use current time when computing a route.
+   * When checked, the starting time will always be updated to the current
+   * system time at the moment computation begins. This option is particularly
+   * useful when repeatedly recalculating routes that start from the boat's
+   * current position during active navigation, as it ensures the calculation
+   * always uses the latest time without requiring manual time updates from the
+   * user.
+   */
+  wxCheckBox* m_cbUseCurrentTime;
   wxStaticText* m_staticText30;
   wxTimePickerCtrl* m_tpTime;
+  /**
+   * Button to set the start time to the current system time.
+   * Clicking this button will update the date and time controls to the current
+   * system time. This is useful for quickly setting up a route that starts
+   * at the present moment. This button is disabled when m_cbUseCurrentTime is
+   * checked, as the current time will be automatically used when computation
+   * begins.
+   */
   wxButton* m_bCurrentTime;
   wxTextCtrl* m_tBoat;
   wxButton* m_bBoatFilename;
@@ -346,6 +370,7 @@ protected:
   virtual void OnStartFromPosition(wxCommandEvent& event) { event.Skip(); }
   virtual void OnUpdate(wxCommandEvent& event) { event.Skip(); }
   virtual void OnUpdateDate(wxDateEvent& event) { event.Skip(); }
+  virtual void OnUseCurrentTime(wxCommandEvent& event) { event.Skip(); }
   virtual void OnGribTime(wxCommandEvent& event) { event.Skip(); }
   virtual void OnUpdateTime(wxDateEvent& event) { event.Skip(); }
   virtual void OnCurrentTime(wxCommandEvent& event) { event.Skip(); }

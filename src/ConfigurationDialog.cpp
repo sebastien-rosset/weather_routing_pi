@@ -81,7 +81,6 @@ void ConfigurationDialog::EditBoat() {
   m_WeatherRouting.m_BoatDialog.LoadPolar(m_tBoat->GetValue());
   m_WeatherRouting.m_BoatDialog.Show();
 }
-
 void ConfigurationDialog::OnGribTime(wxCommandEvent& event) {
   SetStartDateTime(m_GribTimelineTime);
   Update();
@@ -89,6 +88,14 @@ void ConfigurationDialog::OnGribTime(wxCommandEvent& event) {
 
 void ConfigurationDialog::OnCurrentTime(wxCommandEvent& event) {
   SetStartDateTime(wxDateTime::Now().ToUTC());
+  Update();
+}
+
+void ConfigurationDialog::OnUseCurrentTime(wxCommandEvent& event) {
+  m_dpStartDate->Enable(!m_cbUseCurrentTime->IsChecked());
+  m_tpTime->Enable(!m_cbUseCurrentTime->IsChecked());
+  m_bGribTime->Enable(!m_cbUseCurrentTime->IsChecked());
+  m_bCurrentTime->Enable(!m_cbUseCurrentTime->IsChecked());
   Update();
 }
 
@@ -205,8 +212,15 @@ void ConfigurationDialog::SetConfigurations(
                     wxDateTime, wxDateTime());
   SET_CONTROL_VALUE(STARTTIME, m_tpTime, SetValue, wxDateTime, wxDateTime());
 
-  m_bCurrentTime->Enable(m_tpTime->IsEnabled() && m_dpStartDate->IsEnabled());
-  m_bGribTime->Enable(m_tpTime->IsEnabled() && m_dpStartDate->IsEnabled());
+  SET_CHECKBOX(UseCurrentTime);
+
+  bool timeButtonsEnabled = m_tpTime->IsEnabled() &&
+                            m_dpStartDate->IsEnabled() &&
+                            !m_cbUseCurrentTime->IsChecked();
+  m_dpStartDate->Enable(timeButtonsEnabled);
+  m_tpTime->Enable(timeButtonsEnabled);
+  m_bCurrentTime->Enable(timeButtonsEnabled);
+  m_bGribTime->Enable(timeButtonsEnabled);
 
   SET_SPIN_VALUE(TimeStepHours, (int)((*it).DeltaTime / 3600));
   SET_SPIN_VALUE(TimeStepMinutes, ((int)(*it).DeltaTime / 60) % 60);
@@ -239,6 +253,11 @@ void ConfigurationDialog::SetConfigurations(
 
   m_cStart->Enable(!oRoute && !m_rbStartFromBoat->GetValue());
   m_cEnd->Enable(!oRoute);
+
+  m_bGribTime->Enable(!m_cbUseCurrentTime->IsChecked());
+  m_bCurrentTime->Enable(!m_cbUseCurrentTime->IsChecked());
+  m_dpStartDate->Enable(!m_cbUseCurrentTime->IsChecked());
+  m_tpTime->Enable(!m_cbUseCurrentTime->IsChecked());
 
   SET_SPIN(FromDegree);
   SET_SPIN(ToDegree);
@@ -402,6 +421,8 @@ void ConfigurationDialog::Update() {
     if (configuration.StartType == RouteMapConfiguration::START_FROM_POSITION)
       GET_CHOICE(Start);
     GET_CHOICE(End);
+
+    GET_CHECKBOX(UseCurrentTime);
 
     if (NO_EDITED_CONTROLS ||
         std::find(m_edited_controls.begin(), m_edited_controls.end(),

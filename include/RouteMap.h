@@ -917,6 +917,8 @@ struct RouteMapConfiguration {
 
   /** The time when the boat leaves the starting position. */
   wxDateTime StartTime;
+  /** Flag to use the current time as the start time. */
+  bool UseCurrentTime;
   /** Default time in seconds between propagations. */
   double DeltaTime;
   /** Time in seconds between propagations. */

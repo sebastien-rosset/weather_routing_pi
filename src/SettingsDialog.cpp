@@ -37,7 +37,7 @@
 #include "weather_routing_pi.h"
 #include "WeatherRouting.h"
 
-const wxString SettingsDialog::column_names[] = {"",
+const wxString SettingsDialog::column_names[] = {"",  // "Visible" column
                                                  "Boat",
                                                  "Start",
                                                  "Start Time",
