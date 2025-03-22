@@ -299,9 +299,21 @@ public:
   ~SettingsDialogBase();
 };
 
-///////////////////////////////////////////////////////////////////////////////
-/// Class ConfigurationDialogBase
-///////////////////////////////////////////////////////////////////////////////
+/**
+ * Base dialog UI class for weather routing configuration.
+ *
+ * This class provides the UI layout and controls for editing weather routing
+ * configurations. It handles visual layout and basic event connections for the
+ * weather routing configuration interface.
+ *
+ * The dialog consists of basic and advanced tabs containing various
+ * configuration parameters controlling how routes are calculated:
+ * - Basic: start/end positions, departure time, boat selection
+ * - Advanced: constraints, efficiency parameters, course settings, etc.
+ *
+ * This class defines the UI elements but delegates actual event handling and
+ * business logic to the derived ConfigurationDialog class.
+ */
 class ConfigurationDialogBase : public wxDialog {
 private:
 protected:
@@ -423,14 +435,20 @@ protected:
 
 public:
   wxDatePickerCtrl* m_dpStartDate;
-  wxCheckBox* m_cbCurrents;  // specify whether to use currents or not.
+  wxCheckBox* m_cbCurrents;  //!< specify whether to use currents or not.
   wxCheckBox* m_cbUseGrib;
   wxChoice* m_cClimatologyType;
   wxCheckBox* m_cbAvoidCycloneTracks;
-  wxSpinCtrl* m_sFromDegree;       // Minimum course relative to true wind.
-  wxSpinCtrl* m_sToDegree;         // Maximum course relative to true wind.
-  wxSpinCtrlDouble* m_sByDegrees;  // The increment course angle when
-                                   // calculating a isochrone route.
+  wxSpinCtrl*
+      m_sUpwindEfficiency;  //!< Efficiency coefficient for upwind sailing
+  wxSpinCtrl*
+      m_sDownwindEfficiency;  // !<Efficiency coefficient for downwind sailing
+  wxSpinCtrl* m_sNightCumulativeEfficiency;  //!< Efficiency coefficient for
+                                             //!< night sailing
+  wxSpinCtrl* m_sFromDegree;  //!< Minimum course relative to true wind.
+  wxSpinCtrl* m_sToDegree;    //!< Maximum course relative to true wind.
+  /** The increment course angle when calculating a isochrone route. */
+  wxSpinCtrlDouble* m_sByDegrees;
 
   ConfigurationDialogBase(
       wxWindow* parent, wxWindowID id = wxID_ANY,

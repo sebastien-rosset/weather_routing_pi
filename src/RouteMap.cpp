@@ -797,18 +797,18 @@ static inline bool ComputeBoatSpeed(
       // direction).
       double dir = twa - windDirOverWater + atlas.W[i];
       if (dir > 180) dir = 360 - dir;
-      double VBc, mind = polar.MinDegreeStep();
+      double boatSpeed, mind = polar.MinDegreeStep();
       // if tacking
       if (fabs(dir) < mind)
-        VBc = polar.Speed(mind, atlas.VW[i], &polar_status, bound,
-                          configuration.OptimizeTacking) *
-              cos(deg2rad(mind)) / cos(deg2rad(dir));
+        boatSpeed = polar.Speed(mind, atlas.VW[i], &polar_status, bound,
+                                configuration.OptimizeTacking) *
+                    cos(deg2rad(mind)) / cos(deg2rad(dir));
       else
-        VBc = polar.Speed(dir, atlas.VW[i], &polar_status, bound,
-                          configuration.OptimizeTacking);
+        boatSpeed = polar.Speed(dir, atlas.VW[i], &polar_status, bound,
+                                configuration.OptimizeTacking);
       // Accumulate weighted boat speed based on probability of each wind
       // direction
-      stw += atlas.directions[i] * VBc;
+      stw += atlas.directions[i] * boatSpeed;
     }
 
     if (configuration.ClimatologyType ==
@@ -836,6 +836,31 @@ static inline bool ComputeBoatSpeed(
     configuration.polar_status = polar_status;
     return false;  // ctw = stw = 0;
   }
+
+  // Apply upwind/downwind efficiency factors based on wind angle.
+  double abs_twa = fabs(twa);
+  if (abs_twa <= 90.0) {
+    // Upwind sailing (0-90 degrees relative to wind)
+    stw *= configuration.UpwindEfficiency;
+  } else {
+    // Downwind sailing (90-180 degrees relative to wind)
+    stw *= configuration.DownwindEfficiency;
+  }
+#if 0
+  // TODO: Implement library to determine if it is night-time based on the
+  // current time and location.
+  if (configuration.NightCumulativeEfficiency != 1.0) {
+    // Apply night-time efficiency factor.
+    // First, get the current time in UTC.
+    wxDateTime time = configuration.time.ToUTC();
+    // Then, check if the current time is between sunset and sunrise
+    // for the current position.
+    if (IsNight(time, configuration, lat, lon)) {
+      // If it is night-time, apply the night-time efficiency factor.
+      stw *= configuration.NightCumulativeEfficiency;
+    }
+  }
+#endif
 
   // Calculate boat movement over ground by combining boat speed with current.
   TransformToGroundFrame(ctw, stw, currentDir, currentSpeed, cog, sog);
@@ -2902,6 +2927,9 @@ weather_routing_pi* RouteMapConfiguration::s_plugin_instance = nullptr;
 
 RouteMapConfiguration::RouteMapConfiguration()
     : StartType(START_FROM_POSITION),
+      UpwindEfficiency(1.),
+      DownwindEfficiency(1.),
+      NightCumulativeEfficiency(1.),
       StartLon(0),
       EndLon(0),
       grib(nullptr),

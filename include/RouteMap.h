@@ -1111,6 +1111,24 @@ struct RouteMapConfiguration {
   double WindStrength;
 
   /**
+   * Efficiency coefficient for upwind sailing (percentage).
+   * 1.0 is 100% of the polar performance.
+   */
+  double UpwindEfficiency;
+
+  /**
+   * Efficiency coefficient for downwind sailing (percentage).
+   * 1.0 is 100% of the polar performance.
+   */
+  double DownwindEfficiency;
+
+  /**
+   * Cumulative efficiency coefficient for night sailing (percentage).
+   * 1.0 is 100% of the day time performance.
+   */
+  double NightCumulativeEfficiency;
+
+  /**
    * If true, the route calculation will avoid land, outside the
    * SafetyMarginLand.
    */
