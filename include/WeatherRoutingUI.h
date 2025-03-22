@@ -86,10 +86,39 @@ protected:
   wxMenu* m_menu1;
 
   // Virtual event handlers, override them in your derived class
+  /**
+   * UI event handler for closing the dialog.
+   *
+   * Base class handler for the close menu/button action.
+   *
+   * @param event The command event
+   */
   virtual void OnClose(wxCloseEvent& event) { event.Skip(); }
   virtual void OnSize(wxSizeEvent& event) { event.Skip(); }
+  /**
+   * UI event handler for opening a configuration file.
+   *
+   * Base class handler for the open menu/button action.
+   *
+   * @param event The command event
+   */
   virtual void OnOpen(wxCommandEvent& event) { event.Skip(); }
+  /**
+   * UI event handler for saving a configuration file.
+   *
+   * Base class handler for the save menu/button action.
+   *
+   * @param event The command event
+   */
   virtual void OnSave(wxCommandEvent& event) { event.Skip(); }
+  /**
+   * UI event handler for saving as a configuration file.
+   *
+   * Base class handler for the "save as" menu/button action.
+   *
+   * @param event The command event
+   */
+  virtual void OnSaveAs(wxCommandEvent& event) { event.Skip(); }
   virtual void OnClose(wxCommandEvent& event) { event.Skip(); }
   virtual void OnNewPosition(wxCommandEvent& event) { event.Skip(); }
   virtual void OnUpdateBoat(wxCommandEvent& event) { event.Skip(); }
@@ -328,7 +357,7 @@ protected:
   wxCheckBox* m_cbDetectBoundary;
   wxCheckBox* m_cbOptimizeTacking;
   wxCheckBox* m_cbAllowDataDeficient;
-  wxButton* m_bClose;
+  wxButton* m_bOK;
   wxPanel* m_pAdvanced;
   wxStaticText* m_staticText26;
   wxSpinCtrl* m_sMaxLatitude;
@@ -604,9 +633,21 @@ public:
   ~ReportDialogBase();
 };
 
-///////////////////////////////////////////////////////////////////////////////
-/// Class ConfigurationBatchDialogBase
-///////////////////////////////////////////////////////////////////////////////
+/**
+ * Base class for the Configuration Batch Dialog.
+ *
+ * This dialog allows users to create and manage batch configurations for
+ * weather routing. Batch processing enables automated generation of multiple
+ * routing scenarios with variations in parameters such as departure times, boat
+ * configurations, and wind settings.
+ *
+ * The dialog provides UI controls for:
+ * - Setting start and end dates/times and their spacing intervals
+ * - Managing source and destination positions
+ * - Selecting boat configurations
+ * - Configuring wind strength parameters
+ * - Executing batch generation
+ */
 class ConfigurationBatchDialogBase : public wxDialog {
 private:
 protected:
@@ -647,7 +688,7 @@ protected:
   wxButton* m_bInformation;
   wxButton* m_bReset;
   wxButton* m_bGenerate;
-  wxButton* m_bClose;
+  wxButton* m_bOK;
 
   // Virtual event handlers, overide them in your derived class
   virtual void OnOnce(wxCommandEvent& event) { event.Skip(); }
