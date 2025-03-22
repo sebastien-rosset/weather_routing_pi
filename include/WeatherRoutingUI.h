@@ -71,9 +71,13 @@ protected:
   wxMenuItem* m_mCompute;
   wxMenuItem* m_mComputeAll;
   wxMenuItem* m_mStop;
-  wxMenuItem* m_mExport;
-  wxMenuItem* m_mExportRoute;
-  wxMenuItem* m_mExportAll;
+  /** Menu item to save weather routing as a track in OpenCPN core. */
+  wxMenuItem* m_mSaveAsTrack;
+  /** Menu item to export weather routing as GPX file. */
+  wxMenuItem* m_mExportRouteAsGPX;
+  /** Menu item to save all weather routing configurations as tracks in OpenCPN
+   * core. */
+  wxMenuItem* m_mSaveAllAsTracks;
   wxMenu* m_mView;
   wxMenu* m_mHelp;
   wxMenuItem* m_mEdit1;
@@ -145,9 +149,12 @@ protected:
   virtual void OnComputeAll(wxCommandEvent& event) { event.Skip(); }
   virtual void OnStop(wxCommandEvent& event) { event.Skip(); }
   virtual void OnResetAll(wxCommandEvent& event) { event.Skip(); }
-  virtual void OnExport(wxCommandEvent& event) { event.Skip(); }
-  virtual void OnExportRoute(wxCommandEvent& event) { event.Skip(); }
-  virtual void OnExportAll(wxCommandEvent& event) { event.Skip(); }
+  /** Callback invoked when user clicks "Save as Track" menu item. */
+  virtual void OnSaveAsTrack(wxCommandEvent& event) { event.Skip(); }
+  /** Callback invoked when user clicks "Export as GPX" menu item. */
+  virtual void OnExportRouteAsGPX(wxCommandEvent& event) { event.Skip(); }
+  /** Callback invoked when user clicks "Save All as Tracks" menu item. */
+  virtual void OnSaveAllAsTracks(wxCommandEvent& event) { event.Skip(); }
   virtual void OnFilter(wxCommandEvent& event) { event.Skip(); }
   virtual void OnSettings(wxCommandEvent& event) { event.Skip(); }
   virtual void OnStatistics(wxCommandEvent& event) { event.Skip(); }
@@ -212,8 +219,10 @@ protected:
    * signature)
    */
   virtual void OnCompute(wxCommandEvent& event) { event.Skip(); }
-  virtual void OnExport(wxCommandEvent& event) { event.Skip(); }
-  virtual void OnExportRoute(wxCommandEvent& event) { event.Skip(); }
+  /** Callback invoked when user clicks "Save as Track" menu item. */
+  virtual void OnSaveAsTrack(wxCommandEvent& event) { event.Skip(); }
+  /** Callback invoked when user clicks "Export as GPX" menu item. */
+  virtual void OnExportRouteAsGPX(wxCommandEvent& event) { event.Skip(); }
 
 public:
   wxSplitterWindow* m_splitter1;
