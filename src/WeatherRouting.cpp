@@ -1854,19 +1854,27 @@ bool WeatherRouting::OpenXML(wxString filename, bool reportfailure) {
             (RouteMapConfiguration::StartDataType)AttributeInt(
                 e, "StartType", RouteMapConfiguration::START_FROM_POSITION);
         configuration.Start = wxString::FromUTF8(e->Attribute("Start"));
-        wxDateTime date;
-        date.ParseISODate(wxString::FromUTF8(e->Attribute("StartDate")));
-        wxDateTime time;
-        time.ParseISOTime(wxString::FromUTF8(e->Attribute("StartTime")));
-        if (date.IsValid()) {
-          if (time.IsValid()) {
-            date.SetHour(time.GetHour());
-            date.SetMinute(time.GetMinute());
-            date.SetSecond(time.GetSecond());
+        configuration.UseCurrentTime =
+            AttributeBool(e, "UseCurrentTime", false);
+        if (configuration.UseCurrentTime) {
+          // The current time will be overridden when the route is computed.
+          configuration.StartTime = wxDateTime::Now().ToUTC();
+        } else {
+          wxDateTime date;
+          date.ParseISODate(wxString::FromUTF8(e->Attribute("StartDate")));
+          wxDateTime time;
+          time.ParseISOTime(wxString::FromUTF8(e->Attribute("StartTime")));
+          if (date.IsValid()) {
+            if (time.IsValid()) {
+              date.SetHour(time.GetHour());
+              date.SetMinute(time.GetMinute());
+              date.SetSecond(time.GetSecond());
+            }
+            configuration.StartTime = date;
+          } else {
+            configuration.StartTime = wxDateTime::Now();
           }
-          configuration.StartTime = date;
-        } else
-          configuration.StartTime = wxDateTime::Now();
+        }
 
         configuration.End = wxString::FromUTF8(e->Attribute("End"));
         configuration.DeltaTime = AttributeDouble(e, "dt", 0);
@@ -2000,10 +2008,13 @@ void WeatherRouting::SaveXML(wxString filename) {
 
     c->SetAttribute("StartType", configuration.StartType);
     c->SetAttribute("Start", configuration.Start.mb_str());
-    c->SetAttribute("StartDate",
-                    configuration.StartTime.FormatISODate().mb_str());
-    c->SetAttribute("StartTime",
-                    configuration.StartTime.FormatISOTime().mb_str());
+    c->SetAttribute("UseCurrentTime", configuration.UseCurrentTime);
+    if (!configuration.UseCurrentTime) {
+      c->SetAttribute("StartDate",
+                      configuration.StartTime.FormatISODate().mb_str());
+      c->SetAttribute("StartTime",
+                      configuration.StartTime.FormatISOTime().mb_str());
+    }
     c->SetAttribute("End", configuration.End.mb_str());
     c->SetAttribute("dt", configuration.DeltaTime);
 
@@ -2174,9 +2185,12 @@ void WeatherRoute::Update(WeatherRouting* wr, bool stateonly) {
     } else {
       Start = configuration.Start;
     }
-
+    StartType =
+        configuration.StartType == RouteMapConfiguration::START_FROM_POSITION
+            ? _("From Position")
+            : _("From Boat");
+    UseCurrentTime = configuration.UseCurrentTime ? _("true") : _("false");
     wxDateTime starttime = configuration.StartTime;
-
     if (wr->m_SettingsDialog.m_cbUseLocalTime->GetValue())
       starttime = starttime.FromUTC();
     StartTime = starttime.Format(_T("%x %H:%M"));
@@ -2780,18 +2794,22 @@ void WeatherRouting::Start(RouteMapOverlay* routemapoverlay) {
     double distance = DistGreatCircle_Plugin(
         configuration.StartLat, configuration.StartLon,
         m_weather_routing_pi.m_boat_lat, m_weather_routing_pi.m_boat_lon);
-    // Threshold for significant movement is somewhat arbitrarily set to 20 meters.
+    // Threshold for significant movement is somewhat arbitrarily set to 20
+    // meters.
     boatHasMoved = (distance * 1852.0) > 20.0;
   }
 
-  // Skip recalculation if the route has completed, or route is from boat and
-  // boat has moved.
+  // Skip recalculation if:
+  // 1. The route has completed, or
+  // 2. Route is from boat and boat has moved, or
+  // 3. Configuration specifies to use current start time.
   if (routemapoverlay->Finished() &&
       routemapoverlay->GetWeatherForecastStatus() == WEATHER_FORECAST_SUCCESS &&
-      !boatHasMoved) {
+      !boatHasMoved && !configuration.UseCurrentTime) {
     return;
   }
 
+  bool configUpdated = false;
   // If starting from boat, update the boat position
   if (configuration.StartType == RouteMapConfiguration::START_FROM_BOAT) {
     // Use the current boat position from the plugin
@@ -2801,9 +2819,16 @@ void WeatherRouting::Start(RouteMapOverlay* routemapoverlay) {
     configuration.Start = _("Boat");
     // Clear any StartGUID since we're using the boat position, not a waypoint
     configuration.StartGUID = wxEmptyString;
+    configUpdated = true;
+  }
+  if (configuration.UseCurrentTime) {
+    // Use the current time
+    configuration.StartTime = wxDateTime::Now().ToUTC();
+    configUpdated = true;
+  }
+  if (configUpdated) {
     // Call Update() to recalculate the bearing and other parameters
     configuration.Update();
-
     routemapoverlay->SetConfiguration(configuration);
   }
   // Ensure we have valid start coordinates

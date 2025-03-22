@@ -1,9 +1,4 @@
-/***************************************************************************
- *
- * Project:  OpenCPN Weather Routing plugin
- * Author:   Sean D'Epagnier
- *
- ***************************************************************************
+/**************************************************************************
  *   Copyright (C) 2016 by Sean D'Epagnier                                 *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -19,9 +14,8 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,  USA.             *
- ***************************************************************************
- */
+ *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,  USA.         *
+ ***************************************************************************/
 
 #ifndef _WEATHER_ROUTING_H_
 #define _WEATHER_ROUTING_H_
@@ -48,10 +42,29 @@
 class weather_routing_pi;
 class WeatherRouting;
 
+/**
+ * Class representing a weather routing configuration and its associated route.
+ *
+ * This class serves as a UI-focused wrapper that combines both configuration
+ * settings and calculation results. While RouteMapConfiguration stores the raw
+ * routing parameters and RouteMapOverlay handles the actual route computation
+ * and display, WeatherRoute maintains the human-readable representation of
+ * route data for display in the UI.
+ *
+ * The class stores formatted strings for distance, speed, weather conditions,
+ * and other metrics rather than raw numerical values. It works closely with the
+ * WeatherRouting dialog to present route information in a user-friendly format.
+ *
+ * @see RouteMapConfiguration For the underlying route parameters and settings
+ * @see RouteMapOverlay For the actual route calculation and display
+ * functionality
+ * @see WeatherRouting For the main routing interface that manages these routes
+ */
 class WeatherRoute {
 public:
   WeatherRoute();
   ~WeatherRoute();
+
   /**
    * Updates the weather route object with current configuration and calculation
    * status.
@@ -60,36 +73,92 @@ public:
    * information. It's used whenever route information needs to be refreshed in
    * the UI.
    *
-   * @param wr Pointer to the WeatherRouting main object to access settings
+   * @param wr Pointer to the WeatherRouting main object to access settings.
    * @param stateonly If true, only update the State field, not configuration
-   * data
+   * data.
    */
   void Update(WeatherRouting* wr, bool stateonly = false);
 
+  /** Flag indicating if this route is filtered out in the UI display. */
   bool Filtered;
+
+  /** Path to the boat characteristics file used for this route. */
   wxString BoatFilename;
+
+  /** Starting position name/coordinates. */
   wxString Start;
+
+  /** Specifies whether to set the StartTime to the current computer time at the
+   * start of the calculation. */
+  wxString UseCurrentTime;
+
+  /** Starting position type (boat or named). */
+  wxString StartType;
+
+  /** Departure time for the route. */
   wxString StartTime;
+
+  /** Destination position name/coordinates. */
   wxString End;
+
+  /** Estimated arrival time at destination. */
   wxString EndTime;
+
+  /** Total route duration. */
   wxString Time;
+
+  /** Total route distance in nautical miles. */
   wxString Distance;
+
+  /** Average boat speed through water in knots. */
   wxString AvgSpeed;
+
+  /** Maximum boat speed through water in knots. */
   wxString MaxSpeed;
+
+  /** Average boat speed over ground including currents in knots. */
   wxString AvgSpeedGround;
+
+  /** Maximum boat speed over ground in knots. */
   wxString MaxSpeedGround;
+
+  /** Average wind speed encountered in knots. */
   wxString AvgWind;
+
+  /** Maximum sustained wind speed encountered in knots. */
   wxString MaxWind;
+
+  /** Maximum wind gust encountered in knots. */
   wxString MaxWindGust;
+
+  /** Average current speed encountered in knots. */
   wxString AvgCurrent;
+
+  /** Maximum current speed encountered in knots. */
   wxString MaxCurrent;
+
+  /** Average swell height encountered in meters. */
   wxString AvgSwell;
+
+  /** Maximum swell height encountered in meters. */
   wxString MaxSwell;
+
+  /** Percentage of time spent sailing upwind. */
   wxString UpwindPercentage;
+
+  /** Distribution between port and starboard tacks. */
   wxString PortStarboard;
+
+  /** Number of tacks/gybes performed. */
   wxString Tacks;
+
+  /** Current computation state of the route. */
   wxString State;
+
+  /** Comfort/safety metrics for the route conditions. */
   wxString Comfort;
+
+  /** Pointer to the actual route calculation and display overlay. */
   RouteMapOverlay* routemapoverlay;
 };
 
@@ -101,34 +170,38 @@ private:
   WeatherRoutingPanel* m_panel;
 
 public:
-  enum { POSITION_NAME = 0, POSITION_LAT, POSITION_LON };
+  enum {
+    POSITION_NAME = 0,  //!< Position identifier/name
+    POSITION_LAT,       //!< Latitude coordinate
+    POSITION_LON        //!< Longitude coordinate
+  };
 
   enum {
-    VISIBLE = 0,
-    BOAT,
-    START,
-    STARTTIME,
-    END,
-    ENDTIME,
-    TIME,
-    DISTANCE,
-    AVGSPEED,
-    MAXSPEED,
-    AVGSPEEDGROUND,
-    MAXSPEEDGROUND,
-    AVGWIND,
-    MAXWIND,
-    MAXWINDGUST,
-    AVGCURRENT,
-    MAXCURRENT,
-    AVGSWELL,
-    MAXSWELL,
-    UPWIND_PERCENTAGE,
-    PORT_STARBOARD,
-    TACKS,
-    COMFORT,
-    STATE,
-    NUM_COLS
+    VISIBLE = 0,        //!< Route visibility toggle state
+    BOAT,               //!< Boat configuration file name
+    START,              //!< Starting position name/coordinates
+    STARTTIME,          //!< Route departure time
+    END,                //!< Destination position name/coordinates
+    ENDTIME,            //!< Estimated arrival time
+    TIME,               //!< Total route duration
+    DISTANCE,           //!< Total route distance in nautical miles
+    AVGSPEED,           //!< Average boat speed through water in knots
+    MAXSPEED,           //!< Maximum boat speed through water in knots
+    AVGSPEEDGROUND,     //!< Average boat speed over ground in knots
+    MAXSPEEDGROUND,     //!< Maximum boat speed over ground in knots
+    AVGWIND,            //!< Average wind speed encountered in knots
+    MAXWIND,            //!< Maximum sustained wind speed in knots
+    MAXWINDGUST,        //!< Maximum wind gust encountered in knots
+    AVGCURRENT,         //!< Average current speed encountered in knots
+    MAXCURRENT,         //!< Maximum current speed encountered in knots
+    AVGSWELL,           //!< Average swell height encountered in meters
+    MAXSWELL,           //!< Maximum swell height encountered in meters
+    UPWIND_PERCENTAGE,  //!< Percentage of time spent sailing upwind
+    PORT_STARBOARD,     //!< Distribution between port and starboard tacks
+    TACKS,              //!< Number of tacks/gybes performed
+    COMFORT,            //!< Comfort/safety metrics for conditions
+    STATE,              //!< Current computation state of route
+    NUM_COLS            //!< Total number of display columns
   };
   long columns[NUM_COLS];
   static const wxString column_names[NUM_COLS];

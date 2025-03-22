@@ -538,6 +538,10 @@ WeatherRoutingPanel::WeatherRoutingPanel(wxWindow* parent, wxWindowID id,
 
   m_bCompute = new wxButton(sbSizer29->GetStaticBox(), wxID_ANY, _("&Compute"),
                             wxDefaultPosition, wxDefaultSize, 0);
+  // Add after m_bCompute creation, around line 539:
+  m_bCompute->SetToolTip(
+      _("Calculate weather route based on selected start/end positions and "
+        "configuration"));
   fgSizer116->Add(m_bCompute, 0, wxALL, 5);
 
   m_bExport = new wxButton(sbSizer29->GetStaticBox(), wxID_ANY,
@@ -792,40 +796,58 @@ SettingsDialogBase::SettingsDialogBase(wxWindow* parent, wxWindowID id,
   m_cbDisplayCursorRoute =
       new wxCheckBox(m_scrolledWindow4, wxID_ANY, _("Display Cursor Route"),
                      wxDefaultPosition, wxDefaultSize, 0);
+  m_cbDisplayCursorRoute->SetToolTip(
+      _("Show the cursor route line when dragging on the chart"));
   m_cbDisplayCursorRoute->SetValue(true);
   fgSizer82->Add(m_cbDisplayCursorRoute, 0, wxALL, 5);
 
   m_cbAlternatesForAll = new wxCheckBox(m_scrolledWindow4, wxID_ANY,
                                         _("Alternates for all IsoChrons"),
                                         wxDefaultPosition, wxDefaultSize, 0);
+  m_cbAlternatesForAll->SetToolTip(
+      _("Generate alternate routes for all isochronal points rather than just "
+        "endpoints"));
+
   fgSizer82->Add(m_cbAlternatesForAll, 0, wxALL, 5);
 
   m_cbMarkAtPolarChange = new wxCheckBox(m_scrolledWindow4, wxID_ANY,
                                          _("Display mark when Polar changes"),
                                          wxDefaultPosition, wxDefaultSize, 0);
+  m_cbMarkAtPolarChange->SetToolTip(
+      _("Display marks on the route where polar changes occur due to wind "
+        "conditions"));
   m_cbMarkAtPolarChange->SetValue(true);
   fgSizer82->Add(m_cbMarkAtPolarChange, 0, wxALL, 5);
 
   m_cbDisplayCurrent =
       new wxCheckBox(m_scrolledWindow4, wxID_ANY, _("Display current"),
                      wxDefaultPosition, wxDefaultSize, 0);
+  m_cbDisplayCurrent->SetToolTip(_("Show current arrows along the route"));
   m_cbDisplayCurrent->SetValue(true);
   fgSizer82->Add(m_cbDisplayCurrent, 0, wxALL, 5);
 
   m_cbDisplayWindBarbs =
       new wxCheckBox(m_scrolledWindow4, wxID_ANY, _("Display Wind Barbs"),
                      wxDefaultPosition, wxDefaultSize, 0);
+  m_cbDisplayWindBarbs->SetToolTip(
+      _("Show wind barbs along the route indicating wind direction and speed"));
   fgSizer82->Add(m_cbDisplayWindBarbs, 0, wxALL, 5);
 
   m_cbDisplayApparentWindBarbs =
       new wxCheckBox(m_scrolledWindow4, wxID_ANY,
                      _("Apparent Wind for Barbs On Route (not True Wind)"),
                      wxDefaultPosition, wxDefaultSize, 0);
+  m_cbDisplayApparentWindBarbs->SetToolTip(
+      _("Display apparent wind barbs instead of true wind barbs along the "
+        "route"));
   fgSizer82->Add(m_cbDisplayApparentWindBarbs, 0, wxALL, 5);
 
   m_cbDisplayComfort = new wxCheckBox(m_scrolledWindow4, wxID_ANY,
                                       _("Display Sailing Comfort on Route"),
                                       wxDefaultPosition, wxDefaultSize, 0);
+  m_cbDisplayComfort->SetToolTip(
+      _("Show sailing comfort measurement along the route based on wind and "
+        "wave conditions"));
   fgSizer82->Add(m_cbDisplayComfort, 0, wxALL, 5);
 
   fgSizer18->Add(fgSizer82, 1, wxEXPAND, 5);
@@ -877,6 +899,8 @@ SettingsDialogBase::SettingsDialogBase(wxWindow* parent, wxWindowID id,
 
   m_cbUseLocalTime = new wxCheckBox(this, wxID_ANY, _("Use Local Time"),
                                     wxDefaultPosition, wxDefaultSize, 0);
+  m_cbUseLocalTime->SetToolTip(
+      _("Display times in local time zone instead of UTC"));
   fgSizer101->Add(m_cbUseLocalTime, 1, wxALL | wxEXPAND, 5);
 
   fgSizer100->Add(fgSizer101, 1, wxEXPAND | wxALL, 5);
@@ -1054,12 +1078,16 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_rbStartFromBoat =
       new wxRadioButton(sbStart->GetStaticBox(), wxID_ANY, _("Start from boat"),
                         wxDefaultPosition, wxDefaultSize, wxRB_GROUP);
+  m_rbStartFromBoat->SetToolTip(
+      _("Use current boat position as the starting point"));
   startSelectionSizer->Add(m_rbStartFromBoat, 0,
                            wxALL | wxALIGN_CENTER_VERTICAL, 5);
 
   m_rbStartPositionSelection =
       new wxRadioButton(sbStart->GetStaticBox(), wxID_ANY, _("Start position"),
                         wxDefaultPosition, wxDefaultSize);
+  m_rbStartPositionSelection->SetToolTip(
+      _("Select a predefined position as the starting point"));
   m_rbStartPositionSelection->SetValue(true);  // Default to position selection
   startSelectionSizer->Add(m_rbStartPositionSelection, 0,
                            wxALL | wxALIGN_CENTER_VERTICAL, 5);
@@ -1069,7 +1097,17 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_cStart =
       new wxComboBox(sbStart->GetStaticBox(), wxID_ANY, wxEmptyString,
                      wxDefaultPosition, wxDefaultSize, 0, NULL, wxCB_READONLY);
+  m_cStart->SetToolTip(
+      _("Choose the starting position from the list of available positions"));
   fgSizer60->Add(m_cStart, 1, wxALL | wxEXPAND, 5);
+
+  m_cbUseCurrentTime =
+      new wxCheckBox(sbStart->GetStaticBox(), wxID_ANY, _("Use current time"),
+                     wxDefaultPosition, wxDefaultSize, 0);
+  m_cbUseCurrentTime->SetToolTip(
+      _("When enabled, uses the actual time at the moment the routing "
+        "computation starts"));
+  fgSizer60->Add(m_cbUseCurrentTime, 0, wxALL, 5);
 
   wxFlexGridSizer* fgSizer111;
   fgSizer111 = new wxFlexGridSizer(0, 3, 0, 0);
@@ -1085,11 +1123,15 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_dpStartDate = new wxDatePickerCtrl(
       sbStart->GetStaticBox(), wxID_ANY, wxDefaultDateTime, wxDefaultPosition,
       wxDefaultSize, wxDP_ALLOWNONE | wxDP_DEFAULT);
+  m_dpStartDate->SetToolTip(_("Select the starting date for weather routing"));
   fgSizer111->Add(m_dpStartDate, 1, wxALIGN_CENTER_VERTICAL | wxALL | wxEXPAND,
                   5);
 
   m_bGribTime = new wxButton(sbStart->GetStaticBox(), wxID_ANY, _("Grib Time"),
                              wxDefaultPosition, wxDefaultSize, 0);
+  m_bGribTime->SetToolTip(
+      _("Set date/time to match currently selected time in the GRIB weather "
+        "forecast plugin"));
   fgSizer111->Add(m_bGribTime, 1, wxALIGN_CENTER_VERTICAL | wxEXPAND | wxALL,
                   5);
 
@@ -1102,11 +1144,13 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_tpTime =
       new wxTimePickerCtrl(sbStart->GetStaticBox(), wxID_ANY, wxDefaultDateTime,
                            wxDefaultPosition, wxDefaultSize, wxDP_DEFAULT);
+  m_tpTime->SetToolTip(_("Select the starting time for weather routing"));
   fgSizer111->Add(m_tpTime, 1, wxALIGN_CENTER_VERTICAL | wxEXPAND | wxALL, 5);
 
   m_bCurrentTime =
       new wxButton(sbStart->GetStaticBox(), wxID_ANY, _("Current Time"),
                    wxDefaultPosition, wxDefaultSize, 0);
+  m_bCurrentTime->SetToolTip(_("Set to current date and time"));
   fgSizer111->Add(m_bCurrentTime, 1, wxALIGN_CENTER_VERTICAL | wxEXPAND | wxALL,
                   5);
 
@@ -1161,6 +1205,11 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_sMaxDivertedCourse = new wxSpinCtrl(
       sbConstraints->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition,
       wxSize(-1, -1), wxSP_ARROW_KEYS, 0, 180, 180);
+  m_sMaxDivertedCourse->SetToolTip(
+      _("Maximum course variation from great circle (shortest) route in "
+        "degrees.\nLarger values allow finding alternate routes but increase "
+        "computation time.\nNote: Alternate routes may be necessary to avoid "
+        "land or find better weather."));
   m_sMaxDivertedCourse->SetMaxSize(wxSize(140, -1));
 
   fgSizer110->Add(m_sMaxDivertedCourse, 1,
@@ -1181,6 +1230,9 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_sMaxTrueWindKnots = new wxSpinCtrl(
       sbConstraints->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition,
       wxSize(-1, -1), wxSP_ARROW_KEYS, 0, 200, 60);
+  m_sMaxTrueWindKnots->SetToolTip(
+      _("Maximum true wind speed to allow during routing.\nRoutes with wind "
+        "speeds above this value will be avoided."));
   m_sMaxTrueWindKnots->SetMaxSize(wxSize(140, -1));
 
   fgSizer110->Add(m_sMaxTrueWindKnots, 1,
@@ -1202,6 +1254,9 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_sMaxApparentWindKnots = new wxSpinCtrl(
       sbConstraints->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition,
       wxSize(-1, -1), wxSP_ARROW_KEYS, 0, 200, 60);
+  m_sMaxApparentWindKnots->SetToolTip(
+      _("Maximum apparent wind speed to allow during routing.\nRoutes with "
+        "apparent wind speeds above this value will be avoided."));
   m_sMaxApparentWindKnots->SetMaxSize(wxSize(140, -1));
 
   fgSizer110->Add(m_sMaxApparentWindKnots, 1,
@@ -1222,6 +1277,9 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_sMaxSwellMeters = new wxSpinCtrl(
       sbConstraints->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition,
       wxSize(-1, -1), wxSP_ARROW_KEYS, 0, 100, 20);
+  m_sMaxSwellMeters->SetToolTip(
+      _("Maximum swell height to allow during routing.\nRoutes with swell "
+        "heights above this value will be avoided."));
   m_sMaxSwellMeters->SetMaxSize(wxSize(140, -1));
 
   fgSizer110->Add(m_sMaxSwellMeters, 1,
@@ -1252,6 +1310,8 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_cEnd =
       new wxComboBox(sbEnd->GetStaticBox(), wxID_ANY, wxEmptyString,
                      wxDefaultPosition, wxDefaultSize, 0, NULL, wxCB_READONLY);
+  m_cEnd->SetToolTip(_(
+      "Choose the destination position from the list of available positions"));
   sbEnd->Add(m_cEnd, 0, wxALL | wxEXPAND, 5);
 
   fgSizer112->Add(sbEnd, 1, wxEXPAND | wxALL, 5);
@@ -1268,6 +1328,7 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_sTimeStepHours = new wxSpinCtrl(
       sbTime_Step->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition,
       wxSize(-1, -1), wxALIGN_RIGHT | wxSP_ARROW_KEYS, 0, 1000, 1);
+  m_sTimeStepHours->SetToolTip(_("Hours between each calculation step"));
   m_sTimeStepHours->SetMaxSize(wxSize(140, -1));
 
   fgSizer921->Add(m_sTimeStepHours, 0, wxALL, 5);
@@ -1281,6 +1342,7 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_sTimeStepMinutes = new wxSpinCtrl(
       sbTime_Step->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition,
       wxSize(-1, -1), wxALIGN_RIGHT | wxSP_ARROW_KEYS, 0, 60, 1);
+  m_sTimeStepMinutes->SetToolTip(_("Minutes between each calculation step"));
   m_sTimeStepMinutes->SetMaxSize(wxSize(140, -1));
 
   fgSizer921->Add(m_sTimeStepMinutes, 0, wxALL, 5);
@@ -1307,17 +1369,21 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_cbDetectLand =
       new wxCheckBox(sbOptions->GetStaticBox(), wxID_ANY, _("Detect Land"),
                      wxDefaultPosition, wxDefaultSize, wxCHK_3STATE);
+  m_cbDetectLand->SetToolTip(_("Detect land crossings and avoid them"));
   m_cbDetectLand->SetValue(true);
   fgSizer23->Add(m_cbDetectLand, 1, wxALL | wxEXPAND, 5);
 
   m_cbDetectBoundary =
       new wxCheckBox(sbOptions->GetStaticBox(), wxID_ANY, _("Detect Boundary"),
                      wxDefaultPosition, wxDefaultSize, wxCHK_3STATE);
+  m_cbDetectBoundary->SetToolTip(
+      _("Detect configured boundaries and avoid crossing them"));
   fgSizer23->Add(m_cbDetectBoundary, 1, wxALL | wxEXPAND, 5);
 
   m_cbCurrents =
       new wxCheckBox(sbOptions->GetStaticBox(), wxID_ANY, _("Currents"),
                      wxDefaultPosition, wxDefaultSize, wxCHK_3STATE);
+  m_cbCurrents->SetToolTip(_("Include currents in routing calculation"));
   m_cbCurrents->SetValue(true);
   fgSizer23->Add(m_cbCurrents, 1, wxALL | wxEXPAND, 5);
 
@@ -1346,6 +1412,7 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
 
   m_cbUseGrib = new wxCheckBox(sbData_Source->GetStaticBox(), wxID_ANY,
                                _("Grib"), wxDefaultPosition, wxDefaultSize, 0);
+  m_cbUseGrib->SetToolTip(_("Use GRIB weather data for routing"));
   m_cbUseGrib->SetValue(true);
   fgSizer59->Add(m_cbUseGrib, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
 
@@ -1770,6 +1837,10 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_dpStartDate->Connect(
       wxEVT_DATE_CHANGED,
       wxDateEventHandler(ConfigurationDialogBase::OnUpdateDate), NULL, this);
+  m_cbUseCurrentTime->Connect(
+      wxEVT_COMMAND_CHECKBOX_CLICKED,
+      wxCommandEventHandler(ConfigurationDialogBase::OnUseCurrentTime), NULL,
+      this);
   m_bGribTime->Connect(
       wxEVT_COMMAND_BUTTON_CLICKED,
       wxCommandEventHandler(ConfigurationDialogBase::OnGribTime), NULL, this);
@@ -2225,6 +2296,10 @@ ConfigurationDialogBase::~ConfigurationDialogBase() {
   m_dpStartDate->Disconnect(
       wxEVT_DATE_CHANGED,
       wxDateEventHandler(ConfigurationDialogBase::OnUpdateDate), NULL, this);
+  m_cbUseCurrentTime->Disconnect(
+      wxEVT_COMMAND_CHECKBOX_CLICKED,
+      wxCommandEventHandler(ConfigurationDialogBase::OnUseCurrentTime), NULL,
+      this);
   m_bGribTime->Disconnect(
       wxEVT_COMMAND_BUTTON_CLICKED,
       wxCommandEventHandler(ConfigurationDialogBase::OnGribTime), NULL, this);
