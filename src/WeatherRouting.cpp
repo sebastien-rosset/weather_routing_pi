@@ -370,12 +370,12 @@ WeatherRouting::WeatherRouting(wxWindow* parent, weather_routing_pi& plugin)
   m_panel->m_bCompute->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
                                wxCommandEventHandler(WeatherRouting::OnCompute),
                                NULL, this);
-  m_panel->m_bExport->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
-                              wxCommandEventHandler(WeatherRouting::OnExport),
-                              NULL, this);
+  m_panel->m_bExport->Connect(
+      wxEVT_COMMAND_BUTTON_CLICKED,
+      wxCommandEventHandler(WeatherRouting::OnSaveAsTrack), NULL, this);
   m_panel->m_bExportRoute->Connect(
       wxEVT_COMMAND_BUTTON_CLICKED,
-      wxCommandEventHandler(WeatherRouting::OnExportRoute), NULL, this);
+      wxCommandEventHandler(WeatherRouting::OnExportRouteAsGPX), NULL, this);
 
 #ifdef __OCPN__ANDROID__
   GetHandle()->setAttribute(Qt::WA_AcceptTouchEvents);
@@ -431,10 +431,10 @@ WeatherRouting::~WeatherRouting() {
       wxCommandEventHandler(WeatherRouting::OnCompute), NULL, this);
   m_panel->m_bExport->Disconnect(
       wxEVT_COMMAND_BUTTON_CLICKED,
-      wxCommandEventHandler(WeatherRouting::OnExport), NULL, this);
+      wxCommandEventHandler(WeatherRouting::OnSaveAsTrack), NULL, this);
   m_panel->m_bExportRoute->Disconnect(
       wxEVT_COMMAND_BUTTON_CLICKED,
-      wxCommandEventHandler(WeatherRouting::OnExportRoute), NULL, this);
+      wxCommandEventHandler(WeatherRouting::OnExportRouteAsGPX), NULL, this);
 
   m_tAutoSaveXML.Disconnect(
       wxEVT_TIMER, wxTimerEventHandler(WeatherRouting::OnAutoSaveXMLTimer),
@@ -1627,14 +1627,14 @@ void WeatherRouting::OnResetAll(wxCommandEvent& event) {
   UpdateStates();
 }
 
-void WeatherRouting::OnExport(wxCommandEvent& event) {
+void WeatherRouting::OnSaveAsTrack(wxCommandEvent& event) {
   std::list<RouteMapOverlay*> routemapoverlays = CurrentRouteMaps(true);
   for (std::list<RouteMapOverlay*>::iterator it = routemapoverlays.begin();
        it != routemapoverlays.end(); it++)
-    Export(**it);
+    SaveAsTrack(**it);
 }
 
-void WeatherRouting::OnExportRoute(wxCommandEvent& event) {
+void WeatherRouting::OnExportRouteAsGPX(wxCommandEvent& event) {
   std::list<RouteMapOverlay*> routemapoverlays = CurrentRouteMaps(true);
   int nfail = 0;
   for (std::list<RouteMapOverlay*>::iterator it = routemapoverlays.begin();
@@ -1659,11 +1659,11 @@ void WeatherRouting::OnExportRoute(wxCommandEvent& event) {
   }
 }
 
-void WeatherRouting::OnExportAll(wxCommandEvent& event) {
+void WeatherRouting::OnSaveAllAsTracks(wxCommandEvent& event) {
   for (int i = 0; i < m_panel->m_lWeatherRoutes->GetItemCount(); i++)
-    Export(*reinterpret_cast<WeatherRoute*>(
-                wxUIntToPtr(m_panel->m_lWeatherRoutes->GetItemData(i)))
-                ->routemapoverlay);
+    SaveAsTrack(*reinterpret_cast<WeatherRoute*>(
+                     wxUIntToPtr(m_panel->m_lWeatherRoutes->GetItemData(i)))
+                     ->routemapoverlay);
 }
 
 void WeatherRouting::OnSettings(wxCommandEvent& event) {
@@ -1892,6 +1892,8 @@ bool WeatherRouting::OpenXML(wxString filename, bool reportfailure) {
 
       skipadd:;
       } else if (!strcmp(e->Value(), "Configuration")) {
+        // Ideally the name of the XML element should be "Routings" but it is
+        // kept as "Configuration" for backward compatibility.
         RouteMapConfiguration configuration;
         configuration.RouteGUID = wxString::FromUTF8(e->Attribute("GUID"));
         configuration.StartType =
@@ -2042,6 +2044,8 @@ void WeatherRouting::SaveXML(wxString filename) {
   }
 
   for (auto it = m_WeatherRoutes.begin(); it != m_WeatherRoutes.end(); it++) {
+    // Ideally the name of the XML element should be "Routings" but it is kept
+    // as "Configuration" for backward compatibility.
     TiXmlElement* c = new TiXmlElement("Configuration");
 
     RouteMapConfiguration configuration =
@@ -2117,8 +2121,8 @@ void WeatherRouting::SetEnableConfigurationMenu() {
   m_mDelete->Enable(current);
   m_mCompute->Enable(current);
   m_panel->m_bCompute->Enable(current);
-  m_mExport->Enable(current);
-  m_mExportRoute->Enable(current);
+  m_mSaveAsTrack->Enable(current);
+  m_mExportRouteAsGPX->Enable(current);
   m_panel->m_bExport->Enable(current);
 
   m_mStop->Enable(m_WaitingRouteMaps.size() + m_RunningRouteMaps.size() > 0);
@@ -2126,7 +2130,7 @@ void WeatherRouting::SetEnableConfigurationMenu() {
   bool cnt = m_panel->m_lWeatherRoutes->GetItemCount() > 0;
   m_mDeleteAll->Enable(cnt);
   m_mComputeAll->Enable(cnt);
-  m_mExportAll->Enable(cnt);
+  m_mSaveAllAsTracks->Enable(cnt);
 }
 
 void WeatherRouting::UpdateConfigurations() {
@@ -2200,7 +2204,7 @@ bool WeatherRouting::AddConfiguration(RouteMapConfiguration& configuration) {
 
   m_mDeleteAll->Enable();
   m_mComputeAll->Enable();
-  m_mExportAll->Enable();
+  m_mSaveAllAsTracks->Enable();
   m_tAutoSaveXML.Start(5000, true);  // Schedule auto-save in 5 seconds
   return true;
 }
@@ -2649,7 +2653,7 @@ void WeatherRouting::RebuildList() {
   }
 }
 
-void WeatherRouting::Export(RouteMapOverlay& routemapoverlay) {
+void WeatherRouting::SaveAsTrack(RouteMapOverlay& routemapoverlay) {
   std::list<PlotData> plotdata = routemapoverlay.GetPlotData(false);
 
   if (plotdata.empty()) {

@@ -410,9 +410,12 @@ private:
   void OnDelete(wxCommandEvent& event);
   void OnDeleteAll(wxCommandEvent& event);
   void OnFilter(wxCommandEvent& event);
-  void OnExport(wxCommandEvent& event);
-  void OnExportRoute(wxCommandEvent& event);
-  void OnExportAll(wxCommandEvent& event);
+  /** Callback invoked when user clicks "Save as Track" menu item. */
+  void OnSaveAsTrack(wxCommandEvent& event);
+  /** Export route as GPX file. */
+  void OnExportRouteAsGPX(wxCommandEvent& event);
+  /** Callback invoked when user clicks "Save All as Tracks" menu item. */
+  void OnSaveAllAsTracks(wxCommandEvent& event);
   void OnSettings(wxCommandEvent& event);
   void OnStatistics(wxCommandEvent& event);
   void OnReport(wxCommandEvent& event);
@@ -478,7 +481,8 @@ private:
   void UpdateItem(long index, bool stateonly = false);
 
   RouteMap* SelectedRouteMap();
-  void Export(RouteMapOverlay& routemapoverlay);
+  /** Save weather routing as OpenCPN track. */
+  void SaveAsTrack(RouteMapOverlay& routemapoverlay);
   void ExportRoute(RouteMapOverlay& routemapoverlay);
   /**
    * Initiates route calculation for a specific route map overlay.

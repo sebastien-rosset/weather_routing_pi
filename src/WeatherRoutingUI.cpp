@@ -137,20 +137,21 @@ WeatherRoutingBase::WeatherRoutingBase(wxWindow* parent, wxWindowID id,
 
   m_mConfiguration->AppendSeparator();
 
-  m_mExport = new wxMenuItem(m_mConfiguration, wxID_ANY, wxString(_("Export")),
-                             wxEmptyString, wxITEM_NORMAL);
-  m_mConfiguration->Append(m_mExport);
+  m_mSaveAsTrack = new wxMenuItem(m_mConfiguration, wxID_ANY,
+                                  wxString(_("Save routing as track")),
+                                  wxEmptyString, wxITEM_NORMAL);
+  m_mConfiguration->Append(m_mSaveAsTrack);
 
-  m_mExportRoute =
-      new wxMenuItem(m_mConfiguration, wxID_ANY,
-                     wxString(_("E&xportRoute")) + wxT('\t') + wxT("Ctrl+X"),
-                     wxEmptyString, wxITEM_NORMAL);
-  m_mConfiguration->Append(m_mExportRoute);
+  m_mSaveAllAsTracks = new wxMenuItem(
+      m_mConfiguration, wxID_ANY, wxString(_("Save all routings as tracks")),
+      wxEmptyString, wxITEM_NORMAL);
+  m_mConfiguration->Append(m_mSaveAllAsTracks);
 
-  m_mExportAll =
-      new wxMenuItem(m_mConfiguration, wxID_ANY, wxString(_("Export All")),
-                     wxEmptyString, wxITEM_NORMAL);
-  m_mConfiguration->Append(m_mExportAll);
+  m_mExportRouteAsGPX = new wxMenuItem(
+      m_mConfiguration, wxID_ANY,
+      wxString(_("E&xport routing as GPX file")) + wxT('\t') + wxT("Ctrl+X"),
+      wxEmptyString, wxITEM_NORMAL);
+  m_mConfiguration->Append(m_mExportRouteAsGPX);
 
   m_mConfiguration->AppendSeparator();
 
@@ -160,7 +161,7 @@ WeatherRoutingBase::WeatherRoutingBase(wxWindow* parent, wxWindowID id,
                              wxEmptyString, wxITEM_NORMAL);
   m_mConfiguration->Append(m_mFilter);
 
-  m_menubar3->Append(m_mConfiguration, _("&Configuration"));
+  m_menubar3->Append(m_mConfiguration, _("&Routings"));
 
   m_mView = new wxMenu();
   wxMenuItem* m_mSettings;
@@ -382,16 +383,18 @@ WeatherRoutingBase::WeatherRoutingBase(wxWindow* parent, wxWindowID id,
   m_mConfiguration->Bind(wxEVT_COMMAND_MENU_SELECTED,
                          wxCommandEventHandler(WeatherRoutingBase::OnResetAll),
                          this, m_mResetAll->GetId());
-  m_mConfiguration->Bind(wxEVT_COMMAND_MENU_SELECTED,
-                         wxCommandEventHandler(WeatherRoutingBase::OnExport),
-                         this, m_mExport->GetId());
   m_mConfiguration->Bind(
       wxEVT_COMMAND_MENU_SELECTED,
-      wxCommandEventHandler(WeatherRoutingBase::OnExportRoute), this,
-      m_mExportRoute->GetId());
-  m_mConfiguration->Bind(wxEVT_COMMAND_MENU_SELECTED,
-                         wxCommandEventHandler(WeatherRoutingBase::OnExportAll),
-                         this, m_mExportAll->GetId());
+      wxCommandEventHandler(WeatherRoutingBase::OnSaveAsTrack), this,
+      m_mSaveAsTrack->GetId());
+  m_mConfiguration->Bind(
+      wxEVT_COMMAND_MENU_SELECTED,
+      wxCommandEventHandler(WeatherRoutingBase::OnExportRouteAsGPX), this,
+      m_mExportRouteAsGPX->GetId());
+  m_mConfiguration->Bind(
+      wxEVT_COMMAND_MENU_SELECTED,
+      wxCommandEventHandler(WeatherRoutingBase::OnSaveAllAsTracks), this,
+      m_mSaveAllAsTracks->GetId());
   m_mConfiguration->Bind(wxEVT_COMMAND_MENU_SELECTED,
                          wxCommandEventHandler(WeatherRoutingBase::OnFilter),
                          this, m_mFilter->GetId());
@@ -528,7 +531,7 @@ WeatherRoutingPanel::WeatherRoutingPanel(wxWindow* parent, wxWindowID id,
 
   wxStaticBoxSizer* sbSizer29;
   sbSizer29 = new wxStaticBoxSizer(
-      new wxStaticBox(m_panel12, wxID_ANY, _("Configurations")), wxVERTICAL);
+      new wxStaticBox(m_panel12, wxID_ANY, _("Routings")), wxVERTICAL);
 
   wxFlexGridSizer* fgSizer17;
   fgSizer17 = new wxFlexGridSizer(2, 1, 0, 0);
@@ -557,12 +560,12 @@ WeatherRoutingPanel::WeatherRoutingPanel(wxWindow* parent, wxWindowID id,
   fgSizer116->Add(m_bCompute, 0, wxALL, 5);
 
   m_bExport = new wxButton(sbSizer29->GetStaticBox(), wxID_ANY,
-                           _("&Export results as internal Track"),
-                           wxDefaultPosition, wxDefaultSize, 0);
+                           _("&Save routing as track"), wxDefaultPosition,
+                           wxDefaultSize, 0);
   fgSizer116->Add(m_bExport, 0, wxALL, 5);
 
   m_bExportRoute = new wxButton(sbSizer29->GetStaticBox(), wxID_ANY,
-                                _("Export results as GPX Route file"),
+                                _("Export routing as GPX route file"),
                                 wxDefaultPosition, wxDefaultSize, 0);
   fgSizer116->Add(m_bExportRoute, 0, wxALL, 5);
 
@@ -630,8 +633,8 @@ WeatherRoutingPanel::WeatherRoutingPanel(wxWindow* parent, wxWindowID id,
                       wxCommandEventHandler(WeatherRoutingPanel::OnCompute),
                       NULL, this);
   m_bExport->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
-                     wxCommandEventHandler(WeatherRoutingPanel::OnExport), NULL,
-                     this);
+                     wxCommandEventHandler(WeatherRoutingPanel::OnSaveAsTrack),
+                     NULL, this);
 }
 
 WeatherRoutingPanel::~WeatherRoutingPanel() {
@@ -678,9 +681,9 @@ WeatherRoutingPanel::~WeatherRoutingPanel() {
   m_bCompute->Disconnect(wxEVT_COMMAND_BUTTON_CLICKED,
                          wxCommandEventHandler(WeatherRoutingPanel::OnCompute),
                          NULL, this);
-  m_bExport->Disconnect(wxEVT_COMMAND_BUTTON_CLICKED,
-                        wxCommandEventHandler(WeatherRoutingPanel::OnExport),
-                        NULL, this);
+  m_bExport->Disconnect(
+      wxEVT_COMMAND_BUTTON_CLICKED,
+      wxCommandEventHandler(WeatherRoutingPanel::OnSaveAsTrack), NULL, this);
 }
 
 SettingsDialogBase::SettingsDialogBase(wxWindow* parent, wxWindowID id,
