@@ -943,53 +943,90 @@ struct RouteMapConfiguration {
 
   enum IntegratorType { NEWTON, RUNGE_KUTTA } Integrator;
 
-  // The maximum angle the boat can be diverted from the bearing to the
-  // destination, at each step of the route calculation, in degrees. This
-  // represents the angle away from Start to End bearing (StartEndBearing). The
-  // normal setting is 100 degrees, which speeds up calculations. If the route
-  // needs to go around land, islands or peninsulas, the user can increase the
-  // value. E.g. the boat may have to go in the opposite direction then back to
-  // the destination bearing.
+  /**
+   * The maximum angle the boat can be diverted from the bearing to the
+   * destination, at each step of the route calculation, in degrees.
+   *
+   * This represents the angle away from Start to End bearing (StartEndBearing).
+   * The normal setting is 100 degrees, which speeds up calculations. If the
+   * route needs to go around land, islands or peninsulas, the user can increase
+   * the value. E.g. the boat may have to go in the opposite direction then back
+   * to the destination bearing.
+   */
   double MaxDivertedCourse;
-  // The maximum angle the boat can be diverted from the bearing to the
-  // destination, based on the starting position to the destination (unlike
-  // MaxDivertedCourse which is the angle at each step of the route
-  // calculation).
+
+  /**
+   * The maximum angle the boat can be diverted from the bearing to the
+   * destination, based on the starting position to the destination (unlike
+   * MaxDivertedCourse which is the angle at each step of the route
+   * calculation).
+   */
   double MaxCourseAngle;
-  // How much the boat course can change at each step of the route calculation.
-  // A value of 180 gives the maximum flexibility of boat movement, but
-  // increases the computation time. A minimum of 90 is usually needed for
-  // tacking, a value of 120 is recommended with strong currents.
+
+  /**
+   * How much the boat course can change at each step of the route calculation.
+   *
+   * A value of 180 gives the maximum flexibility of boat movement, but
+   * increases the computation time. A minimum of 90 is usually needed for
+   * tacking, a value of 120 is recommended with strong currents.
+   */
   double MaxSearchAngle;
-  // The calculated route will avoid a path where the true wind is above this
-  // value in knots.
+
+  /**
+   * The calculated route will avoid a path where the true wind is above this
+   * value in knots.
+   */
   double MaxTrueWindKnots;
-  // The calculated route will avoid a path where the gust wind is above this
-  // value in knots.
+
+  /**
+   * The calculated route will avoid a path where the apparent wind is above
+   * this value in knots.
+   */
   double MaxApparentWindKnots;
 
-  // The calculated route will avoid swells larger than this value in meters.
-  // If the grib data does not contain swell information, the maximum swell
-  // value is ignored. If there is no route within the maximum swell value, the
-  // route calculation will fail.
+  /**
+   * The calculated route will avoid swells larger than this value in meters.
+   *
+   * If the grib data does not contain swell information, the maximum swell
+   * value is ignored. If there is no route within the maximum swell value, the
+   * route calculation will fail.
+   */
   double MaxSwellMeters;
-  // The calculated route will not go beyond this latitude, as an absolute
-  // value. If the starting or destination position is beyond this latitude, the
-  // route calculation will fail.
+
+  /**
+   * The calculated route will not go beyond this latitude, as an absolute
+   * value.
+   *
+   * If the starting or destination position is beyond this latitude, the route
+   * calculation will fail.
+   */
   double MaxLatitude;
-  // The penalty time to tack the boat, in seconds.
-  // The penalty time is added to the route calculation for each tack.
+
+  /**
+   * The penalty time to tack the boat, in seconds.
+   *
+   * The penalty time is added to the route calculation for each tack.
+   */
   double TackingTime;
-  // When wind opposes current rough seas can be produced.
-  // This constraint takes the dot product of the current and wind vectors, and
-  // if the result exceeds this value, navigation in this area is avoided. For
-  // example, a value of 60 would avoid 30 knots of wind opposing a 2 knot
-  // current as well as 20 knots of wind opposing a 3 knot current. Higher
-  // values allow for rougher conditions. The special value 0 (default) allows
-  // any conditions.
+
+  /**
+   * Maximum opposing wind vs current value to avoid dangerous sea conditions.
+   *
+   * When wind opposes current rough seas can be produced.
+   * This constraint takes the dot product of the current and wind vectors, and
+   * if the result exceeds this value, navigation in this area is avoided. For
+   * example, a value of 60 would avoid 30 knots of wind opposing a 2 knot
+   * current as well as 20 knots of wind opposing a 3 knot current. Higher
+   * values allow for rougher conditions. The special value 0 (default) allows
+   * any conditions.
+   */
   double WindVSCurrent;
-  // The minimum safety distance to land, in nautical miles.
-  // The calculated route will avoid land within this distance.
+
+  /**
+   * The minimum safety distance to land, in nautical miles.
+   *
+   * The calculated route will avoid land within this distance.
+   */
   double SafetyMarginLand;
 
   /**
@@ -1078,25 +1115,52 @@ struct RouteMapConfiguration {
    * SafetyMarginLand.
    */
   bool DetectLand;
-  // If true, the route calculation will avoid exclusion boundaries.
+
+  /**
+   * If true, the route calculation will avoid exclusion boundaries.
+   *
+   * When enabled, the routing algorithm will check for and avoid entering any
+   * defined exclusion zones or boundary areas during route calculation.
+   */
   bool DetectBoundary;
-  // If true and grib data contains ocean currents, the route calculation will
-  // use ocean current data.
+
+  /**
+   * If true and grib data contains ocean currents, the route calculation will
+   * use ocean current data.
+   *
+   * Ocean currents can significantly affect routing, either aiding or hindering
+   * vessel progress. When enabled, the routing algorithm takes into account
+   * current direction and speed from GRIB data when calculating optimal routes.
+   */
   bool Currents;
-  // If true, avoid polar dead zones.
-  // If false, avoid upwind course (polar angle too low) or downwind no-go zone
-  // (polar angle too high).
+
+  /**
+   * If true, avoid polar dead zones.
+   * If false, avoid upwind course (polar angle too low) or downwind no-go zone
+   * (polar angle too high).
+   *
+   * This setting affects how the routing algorithm handles sailing angles that
+   * are at the limits of the vessel's polar performance data.
+   */
   bool OptimizeTacking;
-  // In some cases it may be possible to reach a location from two different
-  // routes (imagine either side of an island) which is further away from the
-  // destination before the destination can be reached. The algorithm must
-  // invert and work inwards on this inverted region to possibly reach the
-  // destination.
+
+  /**
+   * In some cases it may be possible to reach a location from two different
+   * routes (imagine either side of an island) which is further away from the
+   * destination before the destination can be reached. The algorithm must
+   * invert and work inwards on this inverted region to possibly reach the
+   * destination.
+   */
   bool InvertedRegions;
-  // In some cases, it may be preferable to anchor (assuming it isn't too deep)
-  // rather than continue to navigate if there is a contrary current which is
-  // swifter than the boat can travel. This allows the route to reach the
-  // destination sooner by sitting in place until the current abades.
+
+  /**
+   * If true, allows the vessel to anchor when facing adverse currents.
+   *
+   * In some cases, it may be preferable to anchor (assuming it isn't too deep)
+   * rather than continue to navigate if there is a contrary current which is
+   * swifter than the boat can travel. This allows the route to reach the
+   * destination sooner by sitting in place until the current abades.
+   */
   bool Anchoring;
 
   /**
