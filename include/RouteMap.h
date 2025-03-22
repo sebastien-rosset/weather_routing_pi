@@ -842,6 +842,17 @@ public:
 
 typedef std::list<IsoChron*> IsoChronList;
 
+/**
+ * Represents a named geographic position that can be used as a start or end
+ * point for routing.
+ *
+ * RouteMapPosition stores essential information about a saved position
+ * including:
+ * - A human-readable name for the position
+ * - An optional GUID for linking to navigation objects
+ * - Latitude and longitude coordinates
+ * - A unique numeric identifier
+ */
 struct RouteMapPosition {
   RouteMapPosition(wxString n, double lat0, double lon0,
                    wxString guid = wxEmptyString)
@@ -849,11 +860,12 @@ struct RouteMapPosition {
     ID = ++s_ID;
   }
 
-  wxString Name;
-  wxString GUID;
-  double lat, lon;
-  long ID;
-  static long s_ID;
+  wxString Name;  //!< Human-readable name identifying this position
+  wxString GUID;  //!< Optional unique identifier linking to navigation objects
+  double lat;     //!< Latitude in decimal degrees
+  double lon;     //!< Longitude in decimal degrees
+  long ID;        //!< Unique numeric identifier for this position
+  static long s_ID;  //!< Static counter used to generate unique IDs
 };
 
 /**

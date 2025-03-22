@@ -320,6 +320,10 @@ WeatherRouting::WeatherRouting(wxWindow* parent, weather_routing_pi& plugin)
       wxTimerEventHandler(WeatherRouting::OnHideConfigurationTimer), NULL,
       this);
 
+  m_tAutoSaveXML.Connect(
+      wxEVT_TIMER, wxTimerEventHandler(WeatherRouting::OnAutoSaveXMLTimer),
+      NULL, this);
+
   Connect(wxEVT_IDLE, wxTimerEventHandler(WeatherRouting::OnRenderedTimer),
           NULL, this);
 
@@ -431,6 +435,10 @@ WeatherRouting::~WeatherRouting() {
   m_panel->m_bExportRoute->Disconnect(
       wxEVT_COMMAND_BUTTON_CLICKED,
       wxCommandEventHandler(WeatherRouting::OnExportRoute), NULL, this);
+
+  m_tAutoSaveXML.Disconnect(
+      wxEVT_TIMER, wxTimerEventHandler(WeatherRouting::OnAutoSaveXMLTimer),
+      NULL, this);
 
   StopAll();
 
@@ -663,6 +671,7 @@ void WeatherRouting::AddPosition(double lat, double lon, wxString name) {
   m_panel->m_lPositions->SetItemData(index, p.ID);
   m_ConfigurationDialog.AddSource(name);
   m_ConfigurationBatchDialog.AddSource(name);
+  m_tAutoSaveXML.Start(5000, true);  // Schedule auto-save in 5 seconds
 }
 
 void WeatherRouting::AddPosition(double lat, double lon, wxString name,
@@ -689,6 +698,7 @@ void WeatherRouting::AddPosition(double lat, double lon, wxString name,
                                      wxString::Format(_T("%.5f"), lon));
       m_panel->m_lPositions->SetColumnWidth(POSITION_LON, wxLIST_AUTOSIZE);
       UpdateConfigurations();
+      m_tAutoSaveXML.Start(5000, true);  // Schedule auto-save in 5 seconds
       return;
     }
   }
@@ -736,6 +746,8 @@ void WeatherRouting::AddRoute(wxString& GUID) {
     }
 #endif
   if (!IsShown()) Show(true);
+
+  m_tAutoSaveXML.Start(5000, true);  // Schedule auto-save in 5 seconds
 }
 
 void WeatherRouting::CursorRouteChanged() {
@@ -1126,6 +1138,7 @@ void WeatherRouting::OnDeletePosition(wxCommandEvent& event) {
   m_panel->m_lPositions->DeleteItem(index);
 
   UpdateConfigurations();
+  m_tAutoSaveXML.Start(5000, true);  // Schedule auto-save in 5 seconds
 }
 
 void WeatherRouting::OnDeleteAllPositions(wxCommandEvent& event) {
@@ -1133,6 +1146,7 @@ void WeatherRouting::OnDeleteAllPositions(wxCommandEvent& event) {
   m_ConfigurationDialog.ClearSources();
   m_ConfigurationBatchDialog.ClearSources();
   m_panel->m_lPositions->DeleteAllItems();
+  m_tAutoSaveXML.Start(5000, true);  // Schedule auto-save in 5 seconds
 }
 
 void WeatherRouting::OnPositionKeyDown(wxListEvent& event) {
@@ -1223,6 +1237,8 @@ void WeatherRouting::OnDelete(wxCommandEvent& event) {
                                           wxLIST_STATE_SELECTED,
                                           wxLIST_STATE_SELECTED);
   GetParent()->Refresh();
+
+  m_tAutoSaveXML.Start(5000, true);  // Schedule auto-save in 5 seconds
 }
 
 void WeatherRouting::OnDeleteAll(wxCommandEvent& event) {
@@ -1236,6 +1252,8 @@ void WeatherRouting::OnDeleteAll(wxCommandEvent& event) {
   DeleteRouteMaps(allroutemapoverlays);
 
   GetParent()->Refresh();
+
+  m_tAutoSaveXML.Start(5000, true);  // Schedule auto-save in 5 seconds
 }
 
 void WeatherRouting::OnWeatherRouteSort(wxListEvent& event) {
@@ -1382,13 +1400,35 @@ void WeatherRouting::OnOpen(wxCommandEvent& event) {
 }
 
 void WeatherRouting::OnSave(wxCommandEvent& event) {
+  if (m_FileName.GetFullPath().IsEmpty()) {
+    // No file path set yet, behave like Save As
+    OnSaveAs(event);
+    return;
+  }
+
+  SaveXML(m_FileName.GetFullPath());
+  m_tAutoSaveXML
+      .Stop();  // Stop any pending auto-save since we just manually saved
+}
+
+void WeatherRouting::OnSaveAs(wxCommandEvent& event) {
   wxString error;
   wxFileDialog saveDialog(
       this, _("Select Configuration"), m_FileName.GetPath(),
       m_FileName.GetName(),
-      wxT("XML files (*.xml)|*.XML;*.xml|All files (*.*)|*.*"), wxFD_SAVE);
+      wxT("XML files (*.xml)|*.XML;*.xml|All files (*.*)|*.*"),
+      wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
 
-  if (saveDialog.ShowModal() == wxID_OK) SaveXML(saveDialog.GetPath());
+  if (saveDialog.ShowModal() == wxID_OK) {
+    // Use wxFileDialog::AppendExtension to ensure the file has the .xml
+    // extension
+    wxString filename =
+        wxFileDialog::AppendExtension(saveDialog.GetPath(), _T("*.xml"));
+
+    SaveXML(filename);
+    m_tAutoSaveXML
+        .Stop();  // Stop any pending auto-save since we just manually saved
+  }
 }
 
 void WeatherRouting::OnClose(wxCommandEvent& event) { Hide(); }
@@ -1763,6 +1803,10 @@ void WeatherRouting::OnComputationTimer(wxTimerEvent&) {
 void WeatherRouting::OnHideConfigurationTimer(wxTimerEvent&) {
   m_ConfigurationDialog.Hide();
 }
+
+void WeatherRouting::OnAutoSaveXMLTimer(wxTimerEvent&) { AutoSaveXML(); }
+
+void WeatherRouting::AutoSaveXML() { SaveXML(m_FileName.GetFullPath()); }
 
 void WeatherRouting::OnRenderedTimer(wxTimerEvent&) {
   // don't do it until the window system is up and running
@@ -2157,6 +2201,7 @@ bool WeatherRouting::AddConfiguration(RouteMapConfiguration& configuration) {
   m_mDeleteAll->Enable();
   m_mComputeAll->Enable();
   m_mExportAll->Enable();
+  m_tAutoSaveXML.Start(5000, true);  // Schedule auto-save in 5 seconds
   return true;
 }
 

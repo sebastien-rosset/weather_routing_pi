@@ -74,10 +74,37 @@ protected:
   void OnRemoveBoat(wxCommandEvent& event);
   void On100(wxCommandEvent& event);
   void On80to120(wxCommandEvent& event);
+  /**
+   * Opens a batch configuration file.
+   *
+   * Displays a file open dialog allowing the user to select a batch
+   * configuration file, then loads the selected file. This updates the batch
+   * dialog with the source and destination positions, boat configurations, and
+   * other batch processing parameters.
+   *
+   * @param event The command event (unused)
+   */
   void OnOpen(wxCommandEvent& event);
+  /**
+   * Saves the current batch configuration to a file.
+   *
+   * Displays a file save dialog allowing the user to specify where to save the
+   * current batch configuration settings, then writes the configuration to the
+   * selected file.
+   *
+   * @param event The command event (unused)
+   */
   void OnSave(wxCommandEvent& event);
   void OnReset(wxCommandEvent& event);
   void OnInformation(wxCommandEvent& event);
+  /**
+   * Closes the batch configuration dialog and applies changes.
+   *
+   * Hides the batch configuration dialog and apply the changes. This
+   * method is called when the user clicks the OK button.
+   *
+   * @param event The command event (unused)
+   */
   void OnClose(wxCommandEvent& event);
   void OnGenerate(wxCommandEvent& event);
 

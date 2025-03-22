@@ -550,4 +550,7 @@ void ConfigurationDialog::Update() {
   m_WeatherRouting.UpdateCurrentConfigurations();
 
   if (refresh) m_WeatherRouting.GetParent()->Refresh();
+
+  // Schedule auto-save to persist any configuration changes
+  m_WeatherRouting.ScheduleAutoSave();
 }

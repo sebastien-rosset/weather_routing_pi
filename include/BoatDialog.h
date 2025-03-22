@@ -55,11 +55,96 @@ private:
   void OnUpdatePlot();
   void OnUpdatePlot(wxCommandEvent& event) { OnUpdatePlot(); }
   void OnUpdatePlot(wxSpinEvent& event) { OnUpdatePlot(); }
+  /**
+   * Opens a boat configuration file.
+   *
+   * This method displays a file dialog allowing the user to select an XML boat
+   * configuration file. Upon selection, it stores the selected directory as the
+   * default path for future boat file operations, then attempts to open the
+   * boat file.
+   *
+   * A boat configuration file contains a collection of polar files, typically
+   * with different polars representing different sail configurations or
+   * conditions. The file defines how the boat performs at different wind angles
+   * and speeds across various sail settings.
+   *
+   * If the file is successfully loaded, the polar list is repopulated with all
+   * the polars from the boat configuration and the plots are refreshed. If
+   * loading fails, an error message is displayed.
+   *
+   * @param event The command event (unused)
+   * @see m_Boat.OpenXML() For the actual file parsing functionality
+   * @see RepopulatePolars() For updating the polar list display
+   * @see UpdateVMG() For recalculating velocity made good values
+   * @see RefreshPlots() For updating the polar plots
+   */
   void OnOpenBoat(wxCommandEvent& event);
+  /**
+   * Saves the current boat configuration to the specified file.
+   *
+   * This is the core implementation that handles saving the boat configuration
+   * with all its associated polar files. It waits for any crossover generation
+   * thread to complete, then determines the file path (prompting for one if
+   * none is set), and saves the boat configuration in XML format.
+   *
+   * The boat configuration contains the collection of all polar files that
+   * define the boat's performance characteristics under different sail
+   * configurations and wind conditions.
+   *
+   * On successful save, it updates any weather routing configurations using
+   * this boat through the WeatherRouting class and closes the dialog. On
+   * failure, it displays an error message.
+   *
+   * This method is called by both OnSaveBoat and OnSaveAsBoat.
+   */
   void SaveBoat();
+
+  /**
+   * Saves the current boat configuration to a new file.
+   *
+   * Clears the current file path and calls SaveBoat(), which will prompt the
+   * user for a new file name and location.
+   *
+   * @param event The command event (unused)
+   * @see SaveBoat() For the actual file saving functionality
+   */
   void OnSaveAsBoat(wxCommandEvent& event);
+  /**
+   * Saves the current boat configuration using SaveBoat().
+   *
+   * This is a direct call to SaveBoat(), which will use the existing file path
+   * if available, or prompt for a new one if not.
+   *
+   * @param event The command event (unused)
+   * @see SaveBoat() For the actual file saving functionality
+   */
   void OnSaveBoat(wxCommandEvent& event) { SaveBoat(); }
+  /**
+   * Closes the boat dialog.
+   *
+   * Hides the boat dialog without saving any changes. This method is called
+   * when the user clicks the close button or cancels the dialog.
+   *
+   * @param event The command event (unused)
+   */
   void OnClose(wxCommandEvent& event);
+  /**
+   * Loads a boat configuration file from the specified path.
+   *
+   * This method attempts to open and load a boat configuration file, which
+   * contains multiple polar files defining the boat's performance under
+   * different sail configurations. It sets the boat path, updates the dialog
+   * title to reflect the loaded file, and loads the XML configuration
+   * containing all the polar data.
+   *
+   * On success, it updates the polar list display with all polars found in the
+   * configuration.
+   *
+   * @param filename The path to the boat configuration file to load
+   * @return True if the file was loaded successfully, false otherwise
+   * @see m_Boat.OpenXML() For the actual file parsing
+   * @see RepopulatePolars() For updating the polar list display
+   */
   void LoadFile(bool switched = false);
   void OnPolarSelected(wxListEvent& event) { OnPolarSelected(); }
   void OnPolarSelected();

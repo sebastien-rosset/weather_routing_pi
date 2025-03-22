@@ -32,6 +32,15 @@ WeatherRoutingBase::WeatherRoutingBase(wxWindow* parent, wxWindowID id,
 
   m_mFile->AppendSeparator();
 
+  wxMenuItem* m_mSaveAs;
+  m_mSaveAs = new wxMenuItem(
+      m_mFile, wxID_ANY,
+      wxString(_("&Save As...")) + wxT('\t') + wxT("Shift+Ctrl+S"),
+      wxEmptyString, wxITEM_NORMAL);
+  m_mFile->Append(m_mSaveAs);
+
+  m_mFile->AppendSeparator();
+
   wxMenuItem* m_mClose;
   m_mClose = new wxMenuItem(m_mFile, wxID_ANY,
                             wxString(_("&Close")) + wxT('\t') + wxT("Ctrl+W"),
@@ -322,6 +331,9 @@ WeatherRoutingBase::WeatherRoutingBase(wxWindow* parent, wxWindowID id,
   m_mFile->Bind(wxEVT_COMMAND_MENU_SELECTED,
                 wxCommandEventHandler(WeatherRoutingBase::OnSave), this,
                 m_mSave->GetId());
+  m_mFile->Bind(wxEVT_COMMAND_MENU_SELECTED,
+                wxCommandEventHandler(WeatherRoutingBase::OnSaveAs), this,
+                m_mSaveAs->GetId());
   m_mFile->Bind(wxEVT_COMMAND_MENU_SELECTED,
                 wxCommandEventHandler(WeatherRoutingBase::OnClose), this,
                 m_mClose->GetId());
@@ -1459,9 +1471,9 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
 
   fgSizer112->Add(sbData_Source, 1, wxEXPAND | wxALL, 5);
 
-  m_bClose = new wxButton(m_pBasic, wxID_ANY, _(" Close"), wxDefaultPosition,
-                          wxDefaultSize, 0);
-  fgSizer112->Add(m_bClose, 0, wxALIGN_RIGHT | wxALL, 5);
+  m_bOK = new wxButton(m_pBasic, wxID_ANY, _("OK"), wxDefaultPosition,
+                       wxDefaultSize, 0);
+  fgSizer112->Add(m_bOK, 0, wxALIGN_RIGHT | wxALL, 5);
 
   fgSizer106->Add(fgSizer112, 1, wxEXPAND | wxALL, 5);
 
@@ -2032,9 +2044,9 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_cbAllowDataDeficient->Connect(
       wxEVT_COMMAND_CHECKBOX_CLICKED,
       wxCommandEventHandler(ConfigurationDialogBase::OnUpdate), NULL, this);
-  m_bClose->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
-                    wxCommandEventHandler(ConfigurationDialogBase::OnClose),
-                    NULL, this);
+  m_bOK->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+                 wxCommandEventHandler(ConfigurationDialogBase::OnClose), NULL,
+                 this);
   m_sMaxLatitude->Connect(
       wxEVT_MOTION, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
       NULL, this);
@@ -2491,9 +2503,9 @@ ConfigurationDialogBase::~ConfigurationDialogBase() {
   m_cbAllowDataDeficient->Disconnect(
       wxEVT_COMMAND_CHECKBOX_CLICKED,
       wxCommandEventHandler(ConfigurationDialogBase::OnUpdate), NULL, this);
-  m_bClose->Disconnect(wxEVT_COMMAND_BUTTON_CLICKED,
-                       wxCommandEventHandler(ConfigurationDialogBase::OnClose),
-                       NULL, this);
+  m_bOK->Disconnect(wxEVT_COMMAND_BUTTON_CLICKED,
+                    wxCommandEventHandler(ConfigurationDialogBase::OnClose),
+                    NULL, this);
   m_sMaxLatitude->Disconnect(
       wxEVT_MOTION, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
       NULL, this);
@@ -4362,9 +4374,9 @@ ConfigurationBatchDialogBase::ConfigurationBatchDialogBase(
                              wxDefaultSize, 0);
   fgSizer78->Add(m_bGenerate, 0, wxALL, 5);
 
-  m_bClose = new wxButton(this, wxID_ANY, _("Close"), wxDefaultPosition,
-                          wxDefaultSize, 0);
-  fgSizer78->Add(m_bClose, 0, wxALL, 5);
+  m_bOK = new wxButton(this, wxID_ANY, _("OK"), wxDefaultPosition,
+                       wxDefaultSize, 0);
+  fgSizer78->Add(m_bOK, 0, wxALL, 5);
 
   fgSizer76->Add(fgSizer78, 1, wxEXPAND | wxALL, 5);
 
@@ -4431,9 +4443,9 @@ ConfigurationBatchDialogBase::ConfigurationBatchDialogBase(
       wxEVT_COMMAND_BUTTON_CLICKED,
       wxCommandEventHandler(ConfigurationBatchDialogBase::OnGenerate), NULL,
       this);
-  m_bClose->Connect(
-      wxEVT_COMMAND_BUTTON_CLICKED,
-      wxCommandEventHandler(ConfigurationBatchDialogBase::OnClose), NULL, this);
+  m_bOK->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+                 wxCommandEventHandler(ConfigurationBatchDialogBase::OnClose),
+                 NULL, this);
 }
 
 ConfigurationBatchDialogBase::~ConfigurationBatchDialogBase() {
@@ -4494,7 +4506,7 @@ ConfigurationBatchDialogBase::~ConfigurationBatchDialogBase() {
       wxEVT_COMMAND_BUTTON_CLICKED,
       wxCommandEventHandler(ConfigurationBatchDialogBase::OnGenerate), NULL,
       this);
-  m_bClose->Disconnect(
+  m_bOK->Disconnect(
       wxEVT_COMMAND_BUTTON_CLICKED,
       wxCommandEventHandler(ConfigurationBatchDialogBase::OnClose), NULL, this);
 }

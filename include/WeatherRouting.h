@@ -162,12 +162,42 @@ public:
   RouteMapOverlay* routemapoverlay;
 };
 
+/**
+ * Class that handles the main Weather Routing functionality.
+ *
+ * WeatherRouting provides the main dialog interface for the Weather Routing
+ * plugin, allowing configuration, calculation, display, and export of optimal
+ * sailing routes based on weather data, boat polar performance, and routing
+ * constraints.
+ *
+ * This class manages multiple route calculations, configuration UI, position
+ * management, and visualization of routes. It coordinates the interaction
+ * between various dialogs including configuration, batch processing,
+ * statistics, and reporting. It also handles file operations for saving and
+ * loading routing configurations.
+ *
+ * The class serves as the central coordinator between the following components:
+ * - Route map overlays (RouteMapOverlay) - The actual route computation
+ * - Weather routes (WeatherRoute) - The UI representation of routes
+ * - Positions (RouteMapPosition) - Start/end locations for routes
+ * - Dialog interfaces - For configuration and display of route information
+ *
+ * Weather routing calculations are performed in background threads managed by
+ * this class. The routing data can be exported to OpenCPN routes and displayed
+ * on the chart.
+ *
+ * @see WeatherRoute For the UI data model for routes
+ * @see RouteMapOverlay For the route calculation engine and display
+ * @see RouteMapConfiguration For the routing parameters
+ */
 class WeatherRouting : public WeatherRoutingBase {
 private:
   bool m_disable_colpane;
   wxCollapsiblePane* m_colpane;
   wxWindow* m_colpaneWindow;
   WeatherRoutingPanel* m_panel;
+  /** Timer for auto-saving positions and routes. */
+  wxTimer m_tAutoSaveXML;
 
 public:
   enum {
@@ -251,8 +281,48 @@ public:
 
   void UpdateDisplaySettings();
 
+  /**
+   * Adds a new position with prompted name.
+   *
+   * Displays a dialog prompting the user to enter a name for the new position,
+   * then adds the position with the provided latitude, longitude, and the
+   * user-entered name.
+   *
+   * @param lat Latitude of the position in decimal degrees
+   * @param lon Longitude of the position in decimal degrees
+   * @see AddPosition(double lat, double lon, wxString name) The method that
+   * performs the actual addition
+   */
   void AddPosition(double lat, double lon);
+
+  /**
+   * Adds a position with specified latitude, longitude, and name.
+   *
+   * Verifies that the name doesn't already exist (prompting for replacement if
+   * it does), then adds the position to the position list, updates UI elements,
+   * and triggers configurations to update with the new position.
+   *
+   * @param lat Latitude of the position in decimal degrees
+   * @param lon Longitude of the position in decimal degrees
+   * @param name Name identifier for the position
+   * @see UpdateConfigurations() For updating route configurations with the new
+   * position
+   */
   void AddPosition(double lat, double lon, wxString name);
+  /**
+   * Adds a position with specified GUID (Globally Unique Identifier).
+   *
+   * Used primarily for loading saved configurations or when importing positions
+   * from routes or waypoints. If a position with the specified GUID already
+   * exists, it updates that position instead of creating a new one.
+   *
+   * @param lat Latitude of the position in decimal degrees
+   * @param lon Longitude of the position in decimal degrees
+   * @param name Name identifier for the position
+   * @param GUID Unique identifier, typically from OpenCPN waypoints
+   * @see AddPosition(double lat, double lon, wxString name) Called when GUID is
+   * empty
+   */
   void AddPosition(double lat, double lon, wxString name, wxString GUID);
   void AddRoute(wxString& GUID);
 
@@ -261,6 +331,13 @@ public:
 
   void UpdateCursorPositionDialog();
   void UpdateRoutePositionDialog();
+
+  /**
+   * Schedule an auto-save operation to occur after a delay.
+   * This is a public method that can be called from dialog classes
+   * to trigger auto-save when configuration changes.
+   */
+  void ScheduleAutoSave() { m_tAutoSaveXML.Start(5000, true); }
 
   SettingsDialog m_SettingsDialog;
 
@@ -274,8 +351,44 @@ private:
   void OnClose(wxCloseEvent& event) { Hide(); }
   void OnPositionKeyDown(wxListEvent& event);
   void OnEditConfiguration();
+  /**
+   * Loads a weather routing configuration from an XML file.
+   *
+   * This method displays a file dialog allowing the user to select an XML
+   * configuration file to load. Upon selection, it clears all existing
+   * positions and configurations, then loads the new configuration using
+   * OpenXML(). The loaded file becomes the current working file for the
+   * session.
+   *
+   * @param event The command event (unused)
+   * @see OpenXML() For the actual file parsing functionality
+   * @see SaveXML() For the complementary save operation
+   */
   void OnOpen(wxCommandEvent& event);
+  /**
+   * Saves the current weather routing configuration to the current file path.
+   *
+   * If no file path is set (first save), it functions like OnSaveAs() and
+   * prompts for a location. Otherwise, it saves directly to the current file
+   * path without showing a dialog. After saving, it updates the window title
+   * with the filename and stops any pending auto-save operations.
+   *
+   * @param event The command event (unused)
+   * @see SaveXML() For the actual file writing functionality
+   * @see OnSaveAs() Used when no existing file path is set
+   */
   void OnSave(wxCommandEvent& event);
+  /**
+   * Saves the current weather routing configuration to a new file path.
+   *
+   * Always displays a file save dialog allowing the user to specify a new
+   * file location. After saving, it updates the window title with the selected
+   * filename and stops any pending auto-save operations.
+   *
+   * @param event The command event (unused)
+   * @see SaveXML() For the actual file writing functionality
+   */
+  void OnSaveAs(wxCommandEvent& event);
   void OnClose(wxCommandEvent& event);
   void OnSize(wxSizeEvent& event);
   void OnNew(wxCommandEvent& event);
@@ -313,18 +426,55 @@ private:
 
   void OnComputationTimer(wxTimerEvent&);
   void OnHideConfigurationTimer(wxTimerEvent&);
+  void OnAutoSaveXMLTimer(wxTimerEvent&);
   void OnRenderedTimer(wxTimerEvent&);
 
   bool OpenXML(wxString filename, bool reportfailure = true);
   void SaveXML(wxString filename);
+  /** Auto save on positions/routes changes. */
+  void AutoSaveXML();
 
   void SetEnableConfigurationMenu();
 
   void UpdateConfigurations();
   void UpdateDialogs();
 
+  /**
+   * Adds a new configuration to the weather routing system.
+   *
+   * Creates a new WeatherRoute object based on the provided configuration,
+   * initializes a RouteMapOverlay for it, and adds it to the UI list.
+   * If the configuration references a route by GUID, it retrieves the route's
+   * waypoints to set start and end positions.
+   *
+   * @param configuration The routing configuration to add
+   * @return True if the configuration was successfully added, false otherwise
+   * @see WeatherRoute For the UI data model created from the configuration
+   * @see RouteMapOverlay For the route calculation and display engine
+   */
   bool AddConfiguration(RouteMapConfiguration& configuration);
+  /**
+   * Updates a route map overlay in the UI.
+   *
+   * Finds the WeatherRoute object associated with the given RouteMapOverlay
+   * and updates its UI information. This is typically called after calculation
+   * state changes or when configuration parameters are modified.
+   *
+   * @param routemapoverlay Pointer to the RouteMapOverlay to update
+   */
   void UpdateRouteMap(RouteMapOverlay* routemapoverlay);
+  /**
+   * Updates a specific item in the weather routes list.
+   *
+   * Updates the display values for a weather route at the specified index in
+   * the list. Updates all fields (boat filename, positions, times, speeds,
+   * etc.) unless stateonly is true, in which case it only updates the
+   * computation state information.
+   *
+   * @param index The index of the item to update in the weather routes list
+   * @param stateonly If true, only update the state field, not all
+   * configuration data
+   */
   void UpdateItem(long index, bool stateonly = false);
 
   RouteMap* SelectedRouteMap();
