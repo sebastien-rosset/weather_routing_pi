@@ -1,0 +1,360 @@
+= Weather Routing Plugin Developer's Guide
+:source-highlighter: coderay
+:icons: font
+:toc: left
+:sectnums:
+:experimental:
+
+== Introduction
+
+This guide is intended for developers who want to contribute to the Weather Routing plugin for OpenCPN. The Weather Routing plugin calculates optimal sailing routes based on weather forecasts, boat polar performance diagrams, and various sailing parameters.
+
+Rather than duplicating the general plugin development information in the https://opencpn-manuals.github.io/main/ocpn-dev-manual/0.1/pm-plugin-api-overview.html[OpenCPN Developer Manual], this guide focuses specifically on the core classes and algorithms of the Weather Routing plugin.
+
+== Architecture Overview
+
+The Weather Routing plugin is built around an isochrone-based routing algorithm. The main components are:
+
+1. *Data Model*: Configuration objects, boat polars, GRIB weather data
+2. *Routing Engine*: The core algorithm for calculating routes based on isochrones
+3. *UI Components*: Dialogs for configuring and displaying routes
+4. *Plugin Integration*: Connection to OpenCPN
+
+=== Core Classes Hierarchy
+
+[source]
+----
+weather_routing_pi (plugin)
+├── WeatherRouting (main UI dialog)
+│   ├── RouteMapOverlay (calculation/display engine)
+│   │   └── RouteMap (core routing algorithm)
+│   └── WeatherRoute (UI representation of routes)
+└── Configuration Classes
+    ├── RouteMapConfiguration
+    ├── Boat (with Polars)
+    └── Position & IsoChron classes
+----
+
+== Key Classes and Data Model
+
+=== Route Configuration: `RouteMapConfiguration`
+
+`RouteMapConfiguration` is the central configuration class that holds all settings for route computation, including:
+
+* Start and end positions 
+* Time parameters (start time, time step)
+* Boat characteristics and polar data
+* Environmental constraints (max wind, max waves, etc.)
+* Land and boundary avoidance settings
+* Weather data sources (GRIB/climatology)
+
+This class not only stores the settings but also manages the state during routing calculation.
+
+Key properties:
+[source,cpp]
+----
+struct RouteMapConfiguration {
+    // Position settings
+    wxString Start;
+    wxString End;
+    double StartLat, StartLon, EndLat, EndLon;
+    
+    // Time settings
+    wxDateTime StartTime;
+    double DeltaTime;
+    
+    // Boat settings
+    Boat boat;
+    wxString boatFileName;
+    
+    // Constraints
+    double MaxSearchAngle;      // Max course change at each step
+    double MaxTrueWindKnots;    // Max wind to allow
+    double MaxSwellMeters;      // Max wave height to allow
+    double SafetyMarginLand;    // Distance to keep from land
+    
+    // Weather settings
+    bool UseGrib;
+    enum ClimatologyDataType ClimatologyType;
+    
+    // Land avoidance
+    bool DetectLand;
+    bool DetectBoundary;
+};
+----
+
+=== Position Classes: `RoutePoint`, `Position`, `PlotData`
+
+These classes represent geographical points along a route:
+
+==== `RoutePoint`
+Base class for a point on a map with methods to:
+
+* Get weather data at that point
+* Test for land intersections
+* Propagate to a destination point
+
+==== `Position`
+Extends `RoutePoint` with routing-specific data:
+
+* Links to parent/child positions
+* Directional information (parent_heading, parent_bearing)
+* Propagation status tracking
+* Error handling
+
+==== `PlotData`
+Extends `RoutePoint` with detailed navigation data for visualization:
+
+* Time information
+* Speed and course (ground and water)
+* Wind and current details
+* Wave height and other environmental data
+
+=== Isochrone Classes: `IsoRoute` and `IsoChron`
+
+These classes represent the expanding wavefront of possible positions:
+
+==== `IsoRoute`
+Represents a closed loop of positions that can be reached in the same time:
+
+* Maintains a circular linked list of positions
+* Provides methods for testing containment and intersections
+* Handles merging and normalizing (removing intersections)
+
+==== `IsoChron`
+Manages a collection of IsoRoute objects that together represent reachable areas:
+
+* Contains routes reachable in the same time
+* Stores time and weather data for the specific interval
+* Provides methods for propagation and containment testing
+
+=== `SkipPosition`
+An optimization class that speeds up route traversal by grouping consecutive positions in the same directional quadrant.
+
+== The Routing Algorithm
+
+=== Overview
+
+The Weather Routing plugin uses an isochrone-based algorithm:
+
+1. Start from an initial position
+2. Calculate all possible positions reachable within a time step
+3. Connect these positions to form isochrones (lines of equal travel time)
+4. Repeat steps 2-3 until the destination is reached or max iterations exceeded
+5. Trace back the optimal route from destination to start
+
+=== Key Algorithm Components
+
+==== Position Propagation
+
+The `Position::Propagate()` method is the core of the routing algorithm:
+
+[source,cpp]
+----
+bool Position::Propagate(IsoRouteList& routelist, RouteMapConfiguration& configuration) {
+    // Skip if already propagated
+    if (propagated) {
+        propagation_error = PROPAGATION_ALREADY_PROPAGATED;
+        return false;
+    }
+    propagated = true;
+    
+    // Get environmental data (wind, waves, etc.)
+    // Check if position is valid (not exceeding constraints)
+    
+    // For each possible course angle:
+    for (auto it = configuration.DegreeSteps.begin(); it != configuration.DegreeSteps.end(); it++) {
+        double twa = heading_resolve(*it);  // True wind angle
+        
+        // Calculate boat speed using polar data
+        // Calculate new position after time step
+        // Check if new position violates constraints
+        // (land, boundaries, environmental limits)
+        
+        // Create new position and add to route list
+    }
+    
+    // Build route from positions
+    routelist.push_back(new IsoRoute(points->BuildSkipList()));
+    return true;
+}
+----
+
+==== Isochrone Merging and Normalization
+
+The routing algorithm must handle intersecting isochrones with the `Normalize()` function:
+
+1. Detect intersections between line segments
+2. Swap connections to form valid non-intersecting regions
+3. Handle inverted regions (holes in the isochrone)
+
+==== Route Map Propagation
+
+The `RouteMap::Propagate()` method manages the overall routing process:
+
+[source,cpp]
+----
+bool RouteMap::Propagate() {
+    // Determine time step
+    // Create new list for this propagation step
+    IsoRouteList routelist;
+    
+    // Get latest isochron and propagate each position
+    IsoChron *last = origin.back();
+    last->PropagateIntoList(routelist, m_Configuration);
+    
+    // Reduce and normalize the routes
+    IsoRouteList reduced;
+    if(!ReduceList(reduced, routelist, m_Configuration))
+        return false;
+    
+    // Test if destination reached
+    // Create new isochron and add to list
+    IsoChron *isochron = new IsoChron(reduced, time, dt, m_SharedNewGrib, m_Configuration.grib_is_data_deficient);
+    origin.push_back(isochron);
+    
+    return true;
+}
+----
+
+== Adding New Features
+
+=== Adding New Constraints
+
+To add a new constraint to the routing algorithm:
+
+1. Add the parameter to `RouteMapConfiguration`
+2. Add constraint checking in `Position::Propagate()`
+3. Add UI controls to `ConfigurationDialog` class
+4. Update serialization in both `WeatherRouting::SaveXML()` and `OpenXML()`
+
+=== Supporting New Weather Data
+
+To add support for a new weather data source:
+
+1. Modify the `ReadWindAndCurrents()` function
+2. Add new data source type to `RouteMapConfiguration::ClimatologyDataType`
+3. Create interface functions to fetch data from the new source
+4. Update UI to allow selecting the new data source
+
+=== Improving Performance
+
+The routing algorithm is computationally intensive. Some areas to optimize:
+
+1. SkipPosition optimization for faster intersection detection
+2. Parallel computation of position propagation
+3. More efficient isochrone normalization algorithm
+4. Smarter filtering of positions to reduce the search space
+
+== Debugging Tips
+
+=== Understanding Propagation Errors
+
+When a position fails to propagate, a `propagation_error` code is set. Common errors:
+
+* `PROPAGATION_WIND_DATA_FAILED`: No wind data for the position
+* `PROPAGATION_EXCEEDED_MAX_WIND`: Wind exceeds maximum configured limit
+* `PROPAGATION_EXCEEDED_MAX_SWELL`: Waves exceed maximum configured limit
+* `PROPAGATION_LAND_INTERSECTION`: Path crosses land
+* `PROPAGATION_BOUNDARY_INTERSECTION`: Path crosses a boundary
+
+=== Visualizing Isochrones
+
+When debugging, it can be helpful to visualize the isochrones. The plugin already renders these on the map, but you can add additional debug visualization by:
+
+1. Adding debug information to `RouteMapOverlay::DrawLine()`
+2. Dumping isochrone data to a file with `IsoRoute::Print()`
+
+== Data Model Details
+
+=== Handling Boat Polars
+
+Polars define a boat's performance characteristics based on wind speed and angle:
+
+[source,cpp]
+----
+class Polar {
+    // Wind speeds for which we have polar data
+    std::vector<double> wind_speeds;
+    
+    // Boat speeds indexed by [wind speed][true wind angle]
+    std::vector<std::map<double, double>> speeds;
+    
+    // Get boat speed for given wind conditions
+    double Speed(double WindAngle, double WindSpeed, 
+                 PolarSpeedStatus* status = nullptr,
+                 bool bound = true, bool optimize = false);
+};
+----
+
+=== Weather Data Interface
+
+The plugin can use weather data from:
+
+1. GRIB files via OpenCPN's GRIB plugin
+2. Climatology data using statistical weather patterns
+3. Current data from various sources
+
+Weather data queries are handled by functions like:
+
+[source,cpp]
+----
+// Get wind data at a position
+static bool GribWind(RouteMapConfiguration& configuration, 
+                    double lat, double lon, 
+                    double& twd, double& tws);
+
+// Get current data at a position
+static bool GribCurrent(RouteMapConfiguration& configuration, 
+                       double lat, double lon, 
+                       double& currentDir, double& currentSpeed);
+
+// Get combined weather data
+static bool ReadWindAndCurrents(RouteMapConfiguration& configuration, 
+                               RoutePoint* p, double& twd, double& tws, 
+                               double& windDirOverWater, double& windSpeedOverWater, 
+                               double& currentDir, double& currentSpeed,
+                               climatology_wind_atlas& atlas, int& data_mask);
+----
+
+== UI Integration
+
+The main UI classes:
+
+1. `WeatherRouting`: Primary dialog for the plugin
+2. `ConfigurationDialog`: For configuring route parameters
+3. `BoatDialog`: For managing boat polars
+4. `StatisticsDialog`: For route statistics
+5. `ReportDialog`: For detailed route reports
+6. `PlotDialog`: For visualizing route data
+
+== Integration with OpenCPN
+
+=== Plugin Entry Points
+
+The plugin integration starts with the `weather_routing_pi` class, which:
+
+1. Initializes the plugin with `Init()`
+2. Renders routes on the OpenCPN chart with `RenderOverlay()` and `RenderGLOverlay()`
+3. Handles toolbar tool callbacks with `OnToolbarToolCallback()`
+4. Processes position fixes with `SetPositionFixEx()`
+
+=== Interacting with OpenCPN Features
+
+The plugin interacts with OpenCPN through:
+
+1. Getting boat position from PlugIn_Position_Fix_Ex
+2. Detecting land with the PlugIn_GSHHS_CrossesLand function
+3. Detecting boundaries with the ODFindClosestBoundaryLineCrossing function
+4. Exchanging weather data with the GRIB plugin
+
+== Conclusion
+
+The Weather Routing plugin is a sophisticated tool based on advanced routing algorithms and detailed boat performance modeling. By understanding its core classes and algorithms, you can contribute effectively to its development and extend its capabilities.
+
+Remember to:
+
+1. Follow the existing code style and architecture
+2. Test thoroughly with different weather conditions and boat polars
+3. Ensure backward compatibility with existing configuration files
+4. Document your changes both in code and for users
