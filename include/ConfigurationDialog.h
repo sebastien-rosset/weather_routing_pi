@@ -36,6 +36,25 @@
 class WeatherRouting;
 class weather_routing_pi;
 
+/**
+ * Implements business logic for the weather routing configuration dialog.
+ *
+ * This class extends ConfigurationDialogBase with implementation of event
+ * handlers and business logic for manipulating routing configurations. It
+ * manages the data binding between UI controls and the RouteMapConfiguration
+ * data model.
+ *
+ * Key functionality includes:
+ * - Loading configuration values into UI controls
+ * - Saving control values back to configuration objects
+ * - Handling UI events (button clicks, value changes)
+ * - Supporting editing of multiple configurations simultaneously
+ * - Managing color-coding for multi-configuration editing
+ *
+ * The class tracks which controls have been edited using the m_edited_controls
+ * list and only applies changes from those controls when updating
+ * configurations.
+ */
 class ConfigurationDialog : public ConfigurationDialogBase {
 public:
   ConfigurationDialog(WeatherRouting& weatherrouting);

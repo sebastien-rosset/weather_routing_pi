@@ -297,6 +297,15 @@ void ConfigurationDialog::SetConfigurations(
   SET_CHECKBOX(AllowDataDeficient);
   SET_SPIN_VALUE(WindStrength, (int)((*it).WindStrength * 100));
 
+  SET_SPIN_VALUE(UpwindEfficiency, (int)((*it).UpwindEfficiency * 100));
+  SET_SPIN_VALUE(DownwindEfficiency, (int)((*it).DownwindEfficiency * 100));
+#if 0
+  // TODO: enable when library is implemented to determine night time
+  // based on location and time.
+  SET_SPIN_VALUE(NightCumulativeEfficiency,
+                 (int)((*it).NightCumulativeEfficiency * 100));
+#endif
+
   m_bBlockUpdate = false;
 }
 
@@ -342,6 +351,13 @@ void ConfigurationDialog::OnResetAdvanced(wxCommandEvent& event) {
   m_cbAnchoring->SetValue(false);
   m_cIntegrator->SetSelection(0);
   m_sWindStrength->SetValue(100);
+  m_sUpwindEfficiency->SetValue(100);
+  m_sDownwindEfficiency->SetValue(100);
+#if 0
+  // TODO: enable when library is implemented to determine night time
+  // based on location and time.
+  m_sNightCumulativeEfficiency->SetValue(100);
+#endif
   m_sTackingTime->SetValue(0);
   m_sSafetyMarginLand->SetValue(0.);
 
@@ -499,6 +515,22 @@ void ConfigurationDialog::Update() {
     GET_SPIN(MaxLatitude);
     GET_SPIN(TackingTime);
     GET_SPIN(WindVSCurrent);
+
+    if (m_sWindStrength->IsEnabled())
+      configuration.WindStrength = m_sWindStrength->GetValue() / 100.0;
+
+    if (m_sUpwindEfficiency->IsEnabled())
+      configuration.UpwindEfficiency = m_sUpwindEfficiency->GetValue() / 100.0;
+    if (m_sDownwindEfficiency->IsEnabled())
+      configuration.DownwindEfficiency =
+          m_sDownwindEfficiency->GetValue() / 100.0;
+#if 0
+    // TODO: enable when library is implemented to determine night time
+    // based on location and time.
+    if (m_sNightCumulativeEfficiency->IsEnabled())
+      configuration.NightCumulativeEfficiency =
+          m_sNightCumulativeEfficiency->GetValue() / 100.0;
+#endif
 
     GET_CHECKBOX(AvoidCycloneTracks);
     GET_SPIN(CycloneMonths);

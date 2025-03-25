@@ -1968,6 +1968,17 @@ bool WeatherRouting::OpenXML(wxString filename, bool reportfailure) {
             AttributeBool(e, "AllowDataDeficient", false);
         configuration.WindStrength = AttributeDouble(e, "WindStrength", 1);
 
+        configuration.UpwindEfficiency =
+            AttributeDouble(e, "UpwindEfficiency", 1.);
+        configuration.DownwindEfficiency =
+            AttributeDouble(e, "DownwindEfficiency", 1.);
+#if 0
+        // TODO: enable this when library is implemented to determine the
+        // sunrise/sunset times based on the boat's position.
+        configuration.NightCumulativeEfficiency =
+            AttributeDouble(e, "NightCumulativeEfficiency", 1.);
+#endif
+
         configuration.DetectLand = AttributeBool(e, "DetectLand", true);
         configuration.SafetyMarginLand =
             AttributeDouble(e, "SafetyMarginLand", 0.);
@@ -2089,6 +2100,16 @@ void WeatherRouting::SaveXML(wxString filename) {
     c->SetAttribute("ClimatologyType", configuration.ClimatologyType);
     c->SetAttribute("AllowDataDeficient", configuration.AllowDataDeficient);
     c->SetDoubleAttribute("WindStrength", configuration.WindStrength);
+
+    c->SetDoubleAttribute("UpwindEfficiency", configuration.UpwindEfficiency);
+    c->SetDoubleAttribute("DownwindEfficiency",
+                          configuration.DownwindEfficiency);
+#if 0
+    // TODO: enable after library is implemented to determine the sunrise/sunset
+    // times based on the boat's position.
+    c->SetDoubleAttribute("NightCumulativeEfficiency",
+                          configuration.NightCumulativeEfficiency);
+#endif
 
     c->SetAttribute("DetectLand", configuration.DetectLand);
     c->SetAttribute("SafetyMarginLand", configuration.SafetyMarginLand);

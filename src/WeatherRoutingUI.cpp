@@ -1515,6 +1515,9 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_sMaxLatitude = new wxSpinCtrl(sbConstraints1->GetStaticBox(), wxID_ANY,
                                   wxEmptyString, wxDefaultPosition,
                                   wxSize(140, -1), wxSP_ARROW_KEYS, 0, 90, 90);
+  m_sMaxLatitude->SetToolTip(
+      _("Maximum latitude to allow during routing.\nRoutes with latitudes "
+        "above this value will be avoided."));
   fgSizer951->Add(m_sMaxLatitude, 1, wxALL | wxEXPAND, 5);
 
   m_staticText131 =
@@ -1532,6 +1535,9 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_sWindVSCurrent = new wxSpinCtrl(
       sbConstraints1->GetStaticBox(), wxID_ANY, wxT("0"), wxDefaultPosition,
       wxSize(140, -1), wxSP_ARROW_KEYS, 0, 100, 0);
+  m_sWindVSCurrent->SetToolTip(
+      _("Maximum difference between wind and current speed to allow during "
+        "routing.\nRoutes with differences above this value will be avoided."));
   fgSizer951->Add(m_sWindVSCurrent, 1, wxALL | wxEXPAND, 5);
 
   fgSizer951->Add(0, 0, 1, wxEXPAND, 5);
@@ -1545,6 +1551,9 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_sMaxCourseAngle = new wxSpinCtrl(
       sbConstraints1->GetStaticBox(), wxID_ANY, wxEmptyString,
       wxDefaultPosition, wxSize(140, -1), wxSP_ARROW_KEYS, 0, 180, 180);
+  m_sMaxCourseAngle->SetToolTip(
+      _("Maximum course angle to allow during routing.\nRoutes with course "
+        "angles above this value will be avoided."));
   fgSizer951->Add(m_sMaxCourseAngle, 1, wxALL | wxEXPAND, 3);
 
   m_staticText1251 =
@@ -1562,6 +1571,9 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_sMaxSearchAngle = new wxSpinCtrl(
       sbConstraints1->GetStaticBox(), wxID_ANY, wxEmptyString,
       wxDefaultPosition, wxSize(140, -1), wxSP_ARROW_KEYS, 0, 180, 120);
+  m_sMaxSearchAngle->SetToolTip(
+      _("Maximum search angle to allow during routing.\nRoutes with search "
+        "angles above this value will be avoided."));
   fgSizer951->Add(m_sMaxSearchAngle, 1, wxALL | wxEXPAND, 3);
 
   m_staticText125 =
@@ -1624,10 +1636,11 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   fgSizer1072->Add(sbConstraints1, 1, wxALL | wxEXPAND, 5);
 
   wxFlexGridSizer* fgSizer109;
-  fgSizer109 = new wxFlexGridSizer(2, 0, 0, 0);
+  fgSizer109 = new wxFlexGridSizer(3, 0, 0, 0);
   fgSizer109->AddGrowableCol(0);
   fgSizer109->AddGrowableRow(0);
   fgSizer109->AddGrowableRow(1);
+  fgSizer109->AddGrowableRow(2);
   fgSizer109->SetFlexibleDirection(wxBOTH);
   fgSizer109->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
 
@@ -1648,11 +1661,25 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_cbInvertedRegions = new wxCheckBox(sbOptions1->GetStaticBox(), wxID_ANY,
                                        _("Inverted Regions"), wxDefaultPosition,
                                        wxDefaultSize, wxCHK_3STATE);
+  m_cbInvertedRegions->SetToolTip(_(
+      "When enabled, inverts the handling of regions in the routing algorithm, "
+      "which can help find alternative routes in complex scenarios."));
+  m_cbInvertedRegions->SetToolTip(_(
+      "When enabled, inverts the handling of regions in the routing algorithm, "
+      "which can help find alternative routes in complex scenarios."));
   fgSizer1121->Add(m_cbInvertedRegions, 0, wxALL, 5);
 
   m_cbAnchoring =
       new wxCheckBox(sbOptions1->GetStaticBox(), wxID_ANY, _("Anchoring"),
                      wxDefaultPosition, wxDefaultSize, wxCHK_3STATE);
+  m_cbAnchoring->SetToolTip(
+      _("When enabled, allows the boat to remain stationary (anchor) during "
+        "routing calculations. This can create routes with strategic waiting "
+        "periods for better weather conditions."));
+  m_cbAnchoring->SetToolTip(
+      _("When enabled, allows the boat to remain stationary (anchor) during "
+        "routing calculations. This can create routes with strategic waiting "
+        "periods when facing strong currents."));
   fgSizer1121->Add(m_cbAnchoring, 0, wxALL, 5);
 
   fgSizer113->Add(fgSizer1121, 1, wxEXPAND, 5);
@@ -1671,6 +1698,10 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_cIntegrator =
       new wxComboBox(sbOptions1->GetStaticBox(), wxID_ANY, wxEmptyString,
                      wxDefaultPosition, wxDefaultSize, 0, NULL, wxCB_READONLY);
+  m_cIntegrator->SetToolTip(
+      _("Select the integration method used for route calculations. Newton is "
+        "faster while Runge Kutta offers more precision in complex weather "
+        "situations."));
   m_cIntegrator->Append(_("Newton"));
   m_cIntegrator->Append(_("Runge Kutta"));
   fgSizer115->Add(m_cIntegrator, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
@@ -1691,6 +1722,10 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_sWindStrength = new wxSpinCtrl(
       sbOptions1->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition,
       wxSize(140, -1), wxSP_ARROW_KEYS, 0, 999, 100);
+  m_sWindStrength->SetToolTip(
+      _("Adjust the wind strength used in calculations as a percentage of the "
+        "forecast value. Values below 100% are more conservative, while values "
+        "above 100% assume stronger winds than predicted."));
   fgSizer1071->Add(m_sWindStrength, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
 
   m_staticText1301 =
@@ -1715,6 +1750,10 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_sTackingTime = new wxSpinCtrl(sbOptions1->GetStaticBox(), wxID_ANY,
                                   wxEmptyString, wxDefaultPosition,
                                   wxSize(140, -1), wxSP_ARROW_KEYS, 0, 1000, 1);
+  m_sTackingTime->SetToolTip(
+      _("Set the time in seconds needed to complete a tack maneuver. Higher "
+        "values create more realistic routing that accounts for the speed loss "
+        "during tacking."));
   fgSizer1151->Add(m_sTackingTime, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
 
   m_staticText121 =
@@ -1740,6 +1779,10 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
       new wxSpinCtrlDouble(sbOptions1->GetStaticBox(), wxID_ANY, wxEmptyString,
                            wxDefaultPosition, wxSize(140, -1), wxSP_ARROW_KEYS,
                            0., 100., 0. /* initial value */, 0.1 /* inc */);
+  m_sSafetyMarginLand->SetToolTip(
+      _("Specify a minimum distance in nautical miles to maintain from land "
+        "during routing calculations. Higher values create routes that stay "
+        "further offshore for increased safety."));
   fgSizer11511->Add(m_sSafetyMarginLand, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
 
   m_staticText1211 =
@@ -1753,6 +1796,89 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   sbOptions1->Add(fgSizer113, 1, wxEXPAND, 5);
 
   fgSizer109->Add(sbOptions1, 1, wxEXPAND | wxALL, 5);
+
+  // Efficiency section
+  wxStaticBoxSizer* sbEfficiency;
+  sbEfficiency = new wxStaticBoxSizer(
+      new wxStaticBox(m_pAdvanced, wxID_ANY, _("Polar Efficiency")),
+      wxVERTICAL);
+
+  wxFlexGridSizer* fgSizerEfficiency;
+  fgSizerEfficiency = new wxFlexGridSizer(0, 3, 0, 0);
+  fgSizerEfficiency->SetFlexibleDirection(wxBOTH);
+  fgSizerEfficiency->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
+
+  wxStaticText* m_staticTextUpwind =
+      new wxStaticText(sbEfficiency->GetStaticBox(), wxID_ANY, _("Upwind"),
+                       wxDefaultPosition, wxDefaultSize, 0);
+  m_staticTextUpwind->Wrap(-1);
+  fgSizerEfficiency->Add(m_staticTextUpwind, 0, wxALIGN_CENTER_VERTICAL | wxALL,
+                         5);
+
+  m_sUpwindEfficiency = new wxSpinCtrl(
+      sbEfficiency->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition,
+      wxSize(140, -1), wxSP_ARROW_KEYS, 0, 200, 100);
+  m_sUpwindEfficiency->SetToolTip(_("Efficiency factor for upwind sailing"));
+  fgSizerEfficiency->Add(m_sUpwindEfficiency, 0,
+                         wxALL | wxALIGN_CENTER_VERTICAL, 5);
+
+  wxStaticText* m_staticTextUpwindPC =
+      new wxStaticText(sbEfficiency->GetStaticBox(), wxID_ANY, _("%"),
+                       wxDefaultPosition, wxDefaultSize, 0);
+  m_staticTextUpwindPC->Wrap(-1);
+  fgSizerEfficiency->Add(m_staticTextUpwindPC, 0,
+                         wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+  wxStaticText* m_staticTextDownwind =
+      new wxStaticText(sbEfficiency->GetStaticBox(), wxID_ANY, _("Downwind"),
+                       wxDefaultPosition, wxDefaultSize, 0);
+  m_staticTextDownwind->Wrap(-1);
+  fgSizerEfficiency->Add(m_staticTextDownwind, 0,
+                         wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+  m_sDownwindEfficiency = new wxSpinCtrl(
+      sbEfficiency->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition,
+      wxSize(140, -1), wxSP_ARROW_KEYS, 0, 200, 100);
+  m_sDownwindEfficiency->SetToolTip(
+      _("Efficiency factor for downwind sailing"));
+  fgSizerEfficiency->Add(m_sDownwindEfficiency, 0,
+                         wxALL | wxALIGN_CENTER_VERTICAL, 5);
+
+  wxStaticText* m_staticTextDownwindPC =
+      new wxStaticText(sbEfficiency->GetStaticBox(), wxID_ANY, _("%"),
+                       wxDefaultPosition, wxDefaultSize, 0);
+  m_staticTextDownwindPC->Wrap(-1);
+  fgSizerEfficiency->Add(m_staticTextDownwindPC, 0,
+                         wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+#if 0
+  // TODO: enable night efficiency settings after implementing library
+  // to calculate sunrise/sunset times for a given location.
+  wxStaticText* m_staticTextNight =
+      new wxStaticText(sbEfficiency->GetStaticBox(), wxID_ANY, _("Night"),
+                       wxDefaultPosition, wxDefaultSize, 0);
+  m_staticTextNight->Wrap(-1);
+  fgSizerEfficiency->Add(m_staticTextNight, 0, wxALIGN_CENTER_VERTICAL | wxALL,
+                         5);
+
+  m_sNightCumulativeEfficiency = new wxSpinCtrl(
+      sbEfficiency->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition,
+      wxSize(140, -1), wxSP_ARROW_KEYS, 0, 200, 100);
+  m_sNightCumulativeEfficiency->SetToolTip(
+      _("Cumulative efficiency factor for night sailing"));
+  fgSizerEfficiency->Add(m_sNightCumulativeEfficiency, 0,
+                         wxALL | wxALIGN_CENTER_VERTICAL, 5);
+
+  wxStaticText* m_staticTextNightPC =
+      new wxStaticText(sbEfficiency->GetStaticBox(), wxID_ANY, _("%"),
+                       wxDefaultPosition, wxDefaultSize, 0);
+  m_staticTextNightPC->Wrap(-1);
+  fgSizerEfficiency->Add(m_staticTextNightPC, 0,
+                         wxALIGN_CENTER_VERTICAL | wxALL, 5);
+#endif
+
+  sbEfficiency->Add(fgSizerEfficiency, 1, wxEXPAND, 5);
+  fgSizer109->Add(sbEfficiency, 1, wxEXPAND | wxALL, 5);
 
   wxStaticBoxSizer* sbCourses;
   sbCourses = new wxStaticBoxSizer(
@@ -1809,8 +1935,7 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
 
   sbCourses->Add(bSizer3, 1, wxEXPAND, 5);
 
-  fgSizer109->Add(sbCourses, 1,
-                  wxEXPAND | wxTOP | wxRIGHT | wxLEFT | wxALIGN_BOTTOM, 5);
+  fgSizer109->Add(sbCourses, 1, wxEXPAND | wxALL, 5);
 
   fgSizer1072->Add(fgSizer109, 1, wxEXPAND | wxALL, 5);
 
@@ -2277,6 +2402,19 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_sSafetyMarginLand->Connect(
       wxEVT_COMMAND_SPINCTRLDOUBLE_UPDATED,
       wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
+  m_sUpwindEfficiency->Connect(
+      wxEVT_COMMAND_SPINCTRL_UPDATED,
+      wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
+  m_sDownwindEfficiency->Connect(
+      wxEVT_COMMAND_SPINCTRL_UPDATED,
+      wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
+#if 0
+  // TODO: enable night efficiency settings after implementing library
+  // to calculate sunrise/sunset times for a given location.
+  m_sNightCumulativeEfficiency->Connect(
+      wxEVT_COMMAND_SPINCTRL_UPDATED,
+      wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
+#endif
   m_sFromDegree->Connect(
       wxEVT_COMMAND_SPINCTRL_UPDATED,
       wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
@@ -2735,6 +2873,19 @@ ConfigurationDialogBase::~ConfigurationDialogBase() {
   m_sSafetyMarginLand->Disconnect(
       wxEVT_COMMAND_SPINCTRLDOUBLE_UPDATED,
       wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
+  m_sUpwindEfficiency->Disconnect(
+      wxEVT_COMMAND_SPINCTRL_UPDATED,
+      wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
+  m_sDownwindEfficiency->Disconnect(
+      wxEVT_COMMAND_SPINCTRL_UPDATED,
+      wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
+#if 0
+  // TODO: enable night efficiency settings after implementing library
+  // to calculate sunrise/sunset times for a given location.
+  m_sNightCumulativeEfficiency->Disconnect(
+      wxEVT_COMMAND_SPINCTRL_UPDATED,
+      wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
+#endif
   m_sFromDegree->Disconnect(
       wxEVT_COMMAND_SPINCTRL_UPDATED,
       wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
