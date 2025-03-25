@@ -496,7 +496,10 @@ double Polar::Speed(double twa, double tws, PolarSpeedStatus* status,
       return NAN;
     } else if (tws > wind_speeds[wind_speeds.size() - 1].tws) {
       if (status) *status = POLAR_SPEED_WIND_TOO_STRONG;
-      return NAN;
+      if (bound)
+        return NAN;  // When bound is true (default), maintain original behavior
+      // When bound is false, use the max wind speed in the polar
+      tws = wind_speeds[wind_speeds.size() - 1].tws;
     }
   }
 

@@ -1946,9 +1946,9 @@ bool WeatherRouting::OpenXML(wxString filename, bool reportfailure) {
         configuration.MaxSearchAngle =
             AttributeDouble(e, "MaxSearchAngle", 120);
         configuration.MaxTrueWindKnots =
-            AttributeDouble(e, "MaxTrueWindKnots", 100);
+            AttributeDouble(e, "MaxTrueWindKnots", 50);
         configuration.MaxApparentWindKnots =
-            AttributeDouble(e, "MaxApparentWindKnots", 100);
+            AttributeDouble(e, "MaxApparentWindKnots", 50);
 
         configuration.MaxSwellMeters = AttributeDouble(e, "MaxSwellMeters", 20);
         configuration.MaxLatitude = AttributeDouble(e, "MaxLatitude", 90);
@@ -3108,8 +3108,8 @@ RouteMapConfiguration WeatherRouting::DefaultConfiguration() {
   configuration.MaxDivertedCourse = 90;
   configuration.MaxCourseAngle = 180;
   configuration.MaxSearchAngle = 120;
-  configuration.MaxTrueWindKnots = 100;
-  configuration.MaxApparentWindKnots = 100;
+  configuration.MaxTrueWindKnots = 50;      // Safety margin for wind speed
+  configuration.MaxApparentWindKnots = 50;  // Safety margin for wind speed
 
   configuration.MaxSwellMeters = 20;
   configuration.MaxLatitude = 90;
