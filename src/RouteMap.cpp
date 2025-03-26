@@ -978,10 +978,15 @@ bool Position::Propagate(IsoRouteList& routelist,
     return false;
   }
 
+  // Check if wind exceeds configured maximum limit (safety limit)
   if (windSpeedOverWater > configuration.MaxTrueWindKnots) {
     propagation_error = PROPAGATION_EXCEEDED_MAX_WIND;
     return false;
   }
+
+  // If wind exceeds polar data but is within safety limits, we'll continue with
+  // modified wind speed This is handled in the ComputeBoatSpeed function by
+  // passing inside_polar_bounds=false
 
   if (configuration.WindVSCurrent) {
     /* Calculate the wind vector (Wx, Wy) and ocean current vector (Cx, Cy). */
@@ -1051,18 +1056,17 @@ bool Position::Propagate(IsoRouteList& routelist,
         if (newpolar == -1 && polar >= 0) {
           newpolar = polar;
         }
-        if (status == PolarSpeedStatus::POLAR_SPEED_WIND_TOO_LIGHT) {
+        if (status == PolarSpeedStatus::POLAR_SPEED_WIND_TOO_LIGHT ||
+            status == PolarSpeedStatus::POLAR_SPEED_WIND_TOO_STRONG) {
           // In light winds, FindBestPolarForCondition() may return a polar
           // where the heading and wind are not in the sail plan, but this is
           // the best we can do. This is not an error, the boat will just not
           // move in this direction, and perhaps the wind will pick up later.
           // case PolarSpeedStatus::POLAR_SPEED_ANGLE_TOO_LOW:
           // case PolarSpeedStatus::POLAR_SPEED_ANGLE_TOO_HIGH:
-          //  @todo: how to handle case when wind is too strong?
-          //  If the polar goes to 30 knots and the wind is 31 knots,
-          //  we might still want to use the polar. But if the wind is
-          //  hurricane force, we should not use that path.
-          //  case PolarSpeedStatus::POLAR_SPEED_WIND_TOO_STRONG:
+          // For strong wind, we use the max wind in the polar
+          // If the polar goes to 30 knots and the wind is 31 knots,
+          // we use the boat speed for 30 knots.
           inside_polar_bounds = false;
         } else {
           configuration.polar_status = status;
@@ -1365,18 +1369,17 @@ double RoutePoint::PropagateToPoint(double dlat, double dlon,
       if (newpolar == -1 && polar >= 0) {
         newpolar = polar;
       }
-      if (status == PolarSpeedStatus::POLAR_SPEED_WIND_TOO_LIGHT) {
+      if (status == PolarSpeedStatus::POLAR_SPEED_WIND_TOO_LIGHT ||
+          status == PolarSpeedStatus::POLAR_SPEED_WIND_TOO_STRONG) {
         // In light winds, FindBestPolarForCondition() may return a polar
         // where the heading and wind are not in the sail plan, but this is
         // the best we can do. This is not an error, the boat will just not
         // move in this direction, and perhaps the wind will pick up later.
         // case PolarSpeedStatus::POLAR_SPEED_ANGLE_TOO_LOW:
         // case PolarSpeedStatus::POLAR_SPEED_ANGLE_TOO_HIGH:
-        // @todo: how to handle case when wind is too strong?
+        // For strong wind, we use the max wind in the polar
         // If the polar goes to 30 knots and the wind is 31 knots,
-        // we might still want to use the polar. But if the wind is
-        // hurricane force, we should not use that path.
-        // case PolarSpeedStatus::POLAR_SPEED_WIND_TOO_STRONG:
+        // we use the boat speed for 30 knots.
         inside_polar_bounds = false;
         newpolar = polar;
         wxLogMessage(
