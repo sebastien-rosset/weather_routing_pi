@@ -248,7 +248,9 @@ void RouteMapOverlay::DrawLine(RoutePoint* p1, RoutePoint* p2, piDC& dc,
     glVertex2d(p2p.x, p2p.y);
   } else
 #endif
+  {
     dc.StrokeLine(p1p.x, p1p.y, p2p.x, p2p.y);
+  }
 }
 
 void RouteMapOverlay::DrawLine(RoutePoint* p1, wxColour& color1, RoutePoint* p2,
@@ -280,7 +282,9 @@ void RouteMapOverlay::DrawLine(RoutePoint* p1, wxColour& color1, RoutePoint* p2,
     glVertex2d(p2p.x, p2p.y);
   } else
 #endif
+  {
     dc.DrawLine(p1p.x, p1p.y, p2p.x, p2p.y);
+  }
 }
 
 static inline wxColour& PositionColor(Position* p, wxColour& grib_color,
@@ -778,8 +782,9 @@ void RouteMapOverlay::RenderCourse(bool cursor_route, piDC& dc,
       wxColor c = sailingConditionColor(sailingConditionLevel(*itt));
       DrawLine(to, c, from, lc, dc, vp);
       lc = c;
-    } else
+    } else {
       DrawLine(to, from, dc, vp);
+    }
   }
 
 #ifndef __OCPN__ANDROID__

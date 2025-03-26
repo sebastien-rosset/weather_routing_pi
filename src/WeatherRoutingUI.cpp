@@ -1851,9 +1851,6 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   fgSizerEfficiency->Add(m_staticTextDownwindPC, 0,
                          wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
-#if 0
-  // TODO: enable night efficiency settings after implementing library
-  // to calculate sunrise/sunset times for a given location.
   wxStaticText* m_staticTextNight =
       new wxStaticText(sbEfficiency->GetStaticBox(), wxID_ANY, _("Night"),
                        wxDefaultPosition, wxDefaultSize, 0);
@@ -1875,7 +1872,6 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_staticTextNightPC->Wrap(-1);
   fgSizerEfficiency->Add(m_staticTextNightPC, 0,
                          wxALIGN_CENTER_VERTICAL | wxALL, 5);
-#endif
 
   sbEfficiency->Add(fgSizerEfficiency, 1, wxEXPAND, 5);
   fgSizer109->Add(sbEfficiency, 1, wxEXPAND | wxALL, 5);
@@ -2408,13 +2404,9 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_sDownwindEfficiency->Connect(
       wxEVT_COMMAND_SPINCTRL_UPDATED,
       wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
-#if 0
-  // TODO: enable night efficiency settings after implementing library
-  // to calculate sunrise/sunset times for a given location.
   m_sNightCumulativeEfficiency->Connect(
       wxEVT_COMMAND_SPINCTRL_UPDATED,
       wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
-#endif
   m_sFromDegree->Connect(
       wxEVT_COMMAND_SPINCTRL_UPDATED,
       wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
@@ -2879,13 +2871,9 @@ ConfigurationDialogBase::~ConfigurationDialogBase() {
   m_sDownwindEfficiency->Disconnect(
       wxEVT_COMMAND_SPINCTRL_UPDATED,
       wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
-#if 0
-  // TODO: enable night efficiency settings after implementing library
-  // to calculate sunrise/sunset times for a given location.
   m_sNightCumulativeEfficiency->Disconnect(
       wxEVT_COMMAND_SPINCTRL_UPDATED,
       wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
-#endif
   m_sFromDegree->Disconnect(
       wxEVT_COMMAND_SPINCTRL_UPDATED,
       wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
