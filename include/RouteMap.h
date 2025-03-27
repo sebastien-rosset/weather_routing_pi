@@ -281,10 +281,10 @@ public:
   wxDateTime time;
   /** The time in seconds from the previous position to this position. */
   double delta;
-  double sog;  //!< Speed of boat over ground (knots).
-  double cog;  //!< Course of boat over ground (degrees).
-  double stw;  //!< Speed of boat through water (knots).
-  double ctw;  //!< Course of boat through water (degrees).
+  double sog;  //!< Speed Over Ground (SOG) in knots.
+  double cog;  //!< Course Over Ground in degrees.
+  double stw;  //!< Speed of boat through water in knots.
+  double ctw;  //!< Course of boat through water in degrees.
   /** Wind speed relative to the water's frame of reference in knots. */
   double VW;
   /**
@@ -294,12 +294,12 @@ public:
    * and the wind direction in degrees.
    */
   double twa;
-  double tws;           //!< Velocity of wind over ground (knots).
-  double twd;           //!< Wind direction over ground.
-  double currentSpeed;  //!< Velocity of current over ground (knots).
-  double currentDir;    //!< Sea current direction over ground.
-  double WVHT;          //!< Swell height (meters).
-  double VW_GUST;       //!< Gust wind speed (knots).
+  double tws;           //!< True Wind Speed (TWS) over ground in knots.
+  double twd;           //!< True Wind Direction (TWD) over ground in degrees.
+  double currentSpeed;  //!< Velocity of current over ground in knots.
+  double currentDir;    //!< Sea current direction over ground in degrees.
+  double WVHT;          //!< Swell height in meters.
+  double VW_GUST;       //!< Gust wind speed in knots.
 };
 
 class SkipPosition;

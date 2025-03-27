@@ -35,8 +35,6 @@
 #include "SettingsDialog.h"
 #include "georef.h"
 
-extern double g_WINDipFactor;
-
 void WR_GetCanvasPixLL(PlugIn_ViewPort* vp, wxPoint* pp, double lat,
                        double lon) {
   wxPoint2DDouble pix_double;
@@ -313,7 +311,8 @@ static wxColour TransparentColor(wxColor c) {
   return wxColor(c.Red(), c.Green(), c.Blue(), c.Alpha() * 7 / 24);
 }
 
-void RouteMapOverlay::RenderIsoRoute(IsoRoute* r, wxColour& grib_color,
+void RouteMapOverlay::RenderIsoRoute(IsoRoute* r, wxDateTime time,
+                                     wxColour& grib_color,
                                      wxColour& climatology_color, piDC& dc,
                                      PlugIn_ViewPort& vp) {
   SkipPosition* s = r->skippoints;
@@ -346,7 +345,7 @@ void RouteMapOverlay::RenderIsoRoute(IsoRoute* r, wxColour& grib_color,
   wxColour cyan(0, 255, 255), magenta(255, 0, 255);
   for (IsoRouteList::iterator it = r->children.begin(); it != r->children.end();
        ++it)
-    RenderIsoRoute(*it, cyan, magenta, dc, vp);
+    RenderIsoRoute(*it, time, cyan, magenta, dc, vp);
 }
 
 void RouteMapOverlay::RenderAlternateRoute(IsoRoute* r, bool each_parent,
@@ -381,6 +380,14 @@ void RouteMapOverlay::RenderAlternateRoute(IsoRoute* r, bool each_parent,
 static wxColour Darken(wxColour c) {
   return wxColour(c.Red() * 2 / 3, c.Green() * 2 / 3, c.Blue() * 2 / 3,
                   c.Alpha());
+}
+
+static double GetPlatformScaleFactor() {
+  double scale_factor = OCPN_GetDisplayContentScaleFactor();
+#ifdef __WXMSW__
+  scale_factor *= OCPN_GetWinDIPScaleFactor();
+#endif
+  return scale_factor;
 }
 
 void RouteMapOverlay::Render(wxDateTime time, SettingsDialog& settingsdialog,
@@ -513,9 +520,25 @@ void RouteMapOverlay::Render(wxDateTime time, SettingsDialog& settingsdialog,
 
       int IsoChronThickness = settingsdialog.m_sIsoChronThickness->GetValue();
       if (IsoChronThickness) {
-        SetWidth(dc, IsoChronThickness);
         Lock();
         int c = 0;
+        // Find the isochron closest to the GRIB time
+        IsoChron* closestIsochron = nullptr;
+        wxTimeSpan closestDiff =
+            wxTimeSpan::Days(999);  // A large initial value
+        if (time.IsValid()) {
+          for (IsoChronList::iterator i = origin.begin(); i != origin.end();
+               ++i) {
+            wxTimeSpan diff = (*i)->time - time;
+            if (diff.GetValue() < 0) {
+              diff = -diff;
+            }
+            if (diff < closestDiff) {
+              closestDiff = diff;
+              closestIsochron = *i;
+            }
+          }
+        }
         for (IsoChronList::iterator i = origin.begin(); i != origin.end();
              ++i) {
           Unlock();
@@ -523,10 +546,16 @@ void RouteMapOverlay::Render(wxDateTime time, SettingsDialog& settingsdialog,
                              routecolors[c][2], 224);
           wxColor climatology_color(255 - routecolors[c][0], routecolors[c][2],
                                     routecolors[c][1], 224);
-
+          // If this is the closest isochron to the selected GRIB time, use a
+          // thicker line
+          if (time.IsValid() && *i == closestIsochron) {
+            SetWidth(dc, IsoChronThickness * 3);
+          } else {
+            SetWidth(dc, IsoChronThickness);
+          }
           for (IsoRouteList::iterator j = (*i)->routes.begin();
                j != (*i)->routes.end(); ++j)
-            RenderIsoRoute(*j, grib_color, climatology_color, dc, nvp);
+            RenderIsoRoute(*j, time, grib_color, climatology_color, dc, nvp);
 
           if (++c == (sizeof routecolors) / (sizeof *routecolors)) c = 0;
           Lock();
@@ -584,7 +613,7 @@ void RouteMapOverlay::Render(wxDateTime time, SettingsDialog& settingsdialog,
       wxColour ownBlue(20, 83, 186);
       SetColor(dc, ownBlue, true);
       SetWidth(dc, RouteThickness, true);
-      double circle_size = 7 / g_WINDipFactor;
+      double circle_size = 10;  // logical pixels.
       dc.StrokeCircle(r.x, r.y, circle_size);
     }
 
@@ -828,9 +857,18 @@ void RouteMapOverlay::RenderBoatOnCourse(bool cursor_route, wxDateTime time,
     WR_GetCanvasPixLL(&vp, &r, plat + d * (it->lat - plat),
                       plon + d * heading_resolve(it->lon - plon));
 
-    SetWidth(dc, 4 / g_WINDipFactor, true);
-    double circle_size = 7 / g_WINDipFactor;
+    SetWidth(dc, 8, true);
+    double circle_size = 20;  // logical pixels
     dc.DrawCircle(r.x, r.y, circle_size);
+
+    // Outer circle
+    dc.SetPen(wxPen(*wxWHITE, 4));
+    // dc.SetBrush(wxBrush(*wxTRANSPARENT_BRUSH));
+    dc.DrawCircle(r.x, r.y, circle_size + 4);
+
+    // Inner circle
+    // dc.SetPen(wxPen(*wxBLACK, 1));
+    dc.DrawCircle(r.x, r.y, circle_size - 4);
     break;
   }
 }
@@ -839,7 +877,7 @@ void RouteMapOverlay::RenderWindBarbsOnRoute(piDC& dc, PlugIn_ViewPort& vp,
                                              int lineWidth, bool apparentWind) {
   /* Method to render wind barbs on the route that has been generated
    * by WeatherRouting plugin. The idead is to visualize the wind
-   * direction and strenght at any step of the trip.
+   * direction and strength at any step of the trip.
    *
    * Customization by: Sylvain Carlioz -- with Pavel Kalian's help ;-)
    * OpenCPN's licence
