@@ -157,6 +157,7 @@ add_definitions(-DUSE_S57)
 SET(SRCS
             src/weather_routing_pi.cpp
             src/WeatherRouting.cpp
+            src/SunCalculator.cpp
             src/ConfigurationDialog.cpp
             src/SettingsDialog.cpp
             src/PlotDialog.cpp
@@ -185,6 +186,7 @@ SET(SRCS
 SET (HDRS
             include/weather_routing_pi.h
             include/WeatherRouting.h
+            include/SunCalculator.h
             include/ConfigurationDialog.h
             include/SettingsDialog.h
             include/PlotDialog.h
