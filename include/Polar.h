@@ -25,6 +25,7 @@
 
 #include <vector>
 #include "PolygonRegion.h"
+#include <wx/wx.h>
 
 /**
  * Stores optimal sailing angles for best Velocity Made Good (VMG) in different
