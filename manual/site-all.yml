@@ -6,6 +6,7 @@ site:
   start_page: weather_routing::information.adoc
   start_page: weather_routing::configuration_defaults.adoc
   start_page: weather_routing::file_conversion.adoc
+  start_page: weather_routing::developer_guide.adoc
   
 
 content:
