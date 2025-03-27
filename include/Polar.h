@@ -25,6 +25,7 @@
 
 #include <vector>
 #include "PolygonRegion.h"
+#include <wx/wx.h>
 
 struct SailingVMG
 {
