@@ -1776,6 +1776,20 @@ public:
    */
   wxString GetRoutingErrorInfo();
 
+  /**
+   * Simplifies the route while maintaining compatibility with routing
+   * constraints.
+   *
+   * Takes a computed route and reduces its waypoints while ensuring the
+   * simplified route remains valid according to all configuration constraints.
+   * This makes the route easier to navigate while preserving its essential
+   * characteristics.
+   *
+   * @param epsilon Tolerance parameter controlling the degree of simplification
+   * @return true if simplification was successful, false otherwise
+   */
+  bool SimplifyRouting(double epsilon = 0.0001);
+
 protected:
   void SetFinished(bool destination) {
     m_bReachedDestination = destination;
@@ -1810,6 +1824,12 @@ protected:
    */
   bool ReduceList(IsoRouteList& merged, IsoRouteList& routelist,
                   RouteMapConfiguration& configuration);
+
+  /**
+   * Gets the destination position of the optimal route.
+   * @return Pointer to the destination position, or nullptr if not reached.
+   */
+  Position* GetDestination();
   /**
    * Finds the closest position to given coordinates across all isochrones.
    *
