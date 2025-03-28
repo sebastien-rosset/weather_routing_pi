@@ -370,9 +370,12 @@ WeatherRouting::WeatherRouting(wxWindow* parent, weather_routing_pi& plugin)
   m_panel->m_bCompute->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
                                wxCommandEventHandler(WeatherRouting::OnCompute),
                                NULL, this);
-  m_panel->m_bExport->Connect(
+  m_panel->m_bSaveAsTrack->Connect(
       wxEVT_COMMAND_BUTTON_CLICKED,
       wxCommandEventHandler(WeatherRouting::OnSaveAsTrack), NULL, this);
+  m_panel->m_bSaveAsRoute->Connect(
+      wxEVT_COMMAND_BUTTON_CLICKED,
+      wxCommandEventHandler(WeatherRouting::OnSaveAsRoute), NULL, this);
   m_panel->m_bExportRoute->Connect(
       wxEVT_COMMAND_BUTTON_CLICKED,
       wxCommandEventHandler(WeatherRouting::OnExportRouteAsGPX), NULL, this);
@@ -429,9 +432,12 @@ WeatherRouting::~WeatherRouting() {
   m_panel->m_bCompute->Disconnect(
       wxEVT_COMMAND_BUTTON_CLICKED,
       wxCommandEventHandler(WeatherRouting::OnCompute), NULL, this);
-  m_panel->m_bExport->Disconnect(
+  m_panel->m_bSaveAsTrack->Disconnect(
       wxEVT_COMMAND_BUTTON_CLICKED,
       wxCommandEventHandler(WeatherRouting::OnSaveAsTrack), NULL, this);
+  m_panel->m_bSaveAsRoute->Disconnect(
+      wxEVT_COMMAND_BUTTON_CLICKED,
+      wxCommandEventHandler(WeatherRouting::OnSaveAsRoute), NULL, this);
   m_panel->m_bExportRoute->Disconnect(
       wxEVT_COMMAND_BUTTON_CLICKED,
       wxCommandEventHandler(WeatherRouting::OnExportRouteAsGPX), NULL, this);
@@ -1634,6 +1640,13 @@ void WeatherRouting::OnSaveAsTrack(wxCommandEvent& event) {
     SaveAsTrack(**it);
 }
 
+void WeatherRouting::OnSaveAsRoute(wxCommandEvent& event) {
+  std::list<RouteMapOverlay*> routemapoverlays = CurrentRouteMaps(true);
+  for (std::list<RouteMapOverlay*>::iterator it = routemapoverlays.begin();
+       it != routemapoverlays.end(); it++)
+    SaveAsRoute(**it);
+}
+
 void WeatherRouting::OnExportRouteAsGPX(wxCommandEvent& event) {
   std::list<RouteMapOverlay*> routemapoverlays = CurrentRouteMaps(true);
   int nfail = 0;
@@ -2135,8 +2148,10 @@ void WeatherRouting::SetEnableConfigurationMenu() {
   m_mCompute->Enable(current);
   m_panel->m_bCompute->Enable(current);
   m_mSaveAsTrack->Enable(current);
+  m_mSaveAsRoute->Enable(current);
   m_mExportRouteAsGPX->Enable(current);
-  m_panel->m_bExport->Enable(current);
+  m_panel->m_bSaveAsTrack->Enable(current);
+  m_panel->m_bSaveAsRoute->Enable(current);
 
   m_mStop->Enable(m_WaitingRouteMaps.size() + m_RunningRouteMaps.size() > 0);
 
@@ -2718,6 +2733,62 @@ void WeatherRouting::SaveAsTrack(RouteMapOverlay& routemapoverlay) {
 
   wxMessageDialog mdlg(this,
                        _("Routing has been saved as a track in the 'Route and "
+                         "Mark' Manager\n"),
+                       _("Weather Routing"), wxOK);
+  mdlg.ShowModal();
+}
+
+void WeatherRouting::SaveAsRoute(RouteMapOverlay& routemapoverlay) {
+  std::list<PlotData> plotdata = routemapoverlay.GetPlotData(false);
+
+  if (plotdata.empty()) {
+    wxMessageDialog mdlg(this, _("Empty routing, nothing to save\n"),
+                         _("Weather Routing"), wxOK | wxICON_WARNING);
+    mdlg.ShowModal();
+    return;
+  }
+
+  PlugIn_Route* newRoute = new PlugIn_Route;
+  wxDateTime display_time = routemapoverlay.StartTime();
+  if (m_SettingsDialog.m_cbUseLocalTime->GetValue())
+    display_time = display_time.FromUTC();
+
+  newRoute->m_NameString =
+      _("Weather Route ") + " (" + display_time.Format(_T("%x %H:%M")) + ")";
+
+  RouteMapConfiguration c = routemapoverlay.GetConfiguration();
+  newRoute->m_StartString = c.Start;
+  newRoute->m_EndString = c.End;
+
+  for (auto const& it : plotdata) {
+    PlugIn_Waypoint* newPoint =
+        new PlugIn_Waypoint(it.lat, heading_resolve(it.lon), _T("circle"),
+                            _("Weather Route Point"));
+
+    newPoint->m_CreateTime = it.time;
+    newRoute->pWaypointList->Append(newPoint);
+  }
+
+  // last point, missing if config didn't succeed
+  Position* p = routemapoverlay.GetDestination();
+  if (p) {
+    PlugIn_Waypoint* newPoint = new PlugIn_Waypoint(
+        p->lat, p->lon, _T("circle"), _("Weather Route Destination"));
+    newPoint->m_CreateTime = routemapoverlay.EndTime();
+    newRoute->pWaypointList->Append(newPoint);
+  }
+
+  AddPlugInRoute(newRoute);
+  // Clean up waypoint list (ownership transferred to OpenCPN)
+  newRoute->pWaypointList->DeleteContents(true);
+  newRoute->pWaypointList->Clear();
+
+  delete newRoute;
+
+  GetParent()->Refresh();
+
+  wxMessageDialog mdlg(this,
+                       _("Routing has been saved as a route in the 'Route and "
                          "Mark' Manager\n"),
                        _("Weather Routing"), wxOK);
   mdlg.ShowModal();

@@ -90,6 +90,8 @@ protected:
   wxMenuItem* m_mStop;
   /** Menu item to save weather routing as a track in OpenCPN core. */
   wxMenuItem* m_mSaveAsTrack;
+  /** Menu item to save weather routing as a route in OpenCPN core. */
+  wxMenuItem* m_mSaveAsRoute;
   /** Menu item to export weather routing as GPX file. */
   wxMenuItem* m_mExportRouteAsGPX;
   /** Menu item to save all weather routing configurations as tracks in OpenCPN
@@ -168,6 +170,8 @@ protected:
   virtual void OnResetAll(wxCommandEvent& event) { event.Skip(); }
   /** Callback invoked when user clicks "Save as Track" menu item. */
   virtual void OnSaveAsTrack(wxCommandEvent& event) { event.Skip(); }
+  /** Callback invoked when user clicks "Save as Route" menu item. */
+  virtual void OnSaveAsRoute(wxCommandEvent& event) { event.Skip(); }
   /** Callback invoked when user clicks "Export as GPX" menu item. */
   virtual void OnExportRouteAsGPX(wxCommandEvent& event) { event.Skip(); }
   /** Callback invoked when user clicks "Save All as Tracks" menu item. */
@@ -248,6 +252,8 @@ protected:
   virtual void OnCompute(wxCommandEvent& event) { event.Skip(); }
   /** Callback invoked when user clicks "Save as Track" menu item. */
   virtual void OnSaveAsTrack(wxCommandEvent& event) { event.Skip(); }
+  /** Callback invoked when user clicks "Save as Route" menu item. */
+  virtual void OnSaveAsRoute(wxCommandEvent& event) { event.Skip(); }
   /** Callback invoked when user clicks "Export as GPX" menu item. */
   virtual void OnExportRouteAsGPX(wxCommandEvent& event) { event.Skip(); }
 
@@ -263,7 +269,8 @@ public:
    */
   wxListCtrl* m_lWeatherRoutes;
   wxButton* m_bCompute;
-  wxButton* m_bExport;
+  wxButton* m_bSaveAsTrack;
+  wxButton* m_bSaveAsRoute;
   wxButton* m_bExportRoute;
   wxGauge* m_gProgress;
 
