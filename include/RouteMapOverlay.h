@@ -295,12 +295,13 @@ private:
   /**
    * Renders a single isochron route.
    * @param r Pointer to the route to render.
+   * @param time The currently selected time in the GRIB timeline.
    * @param grib_color Color for grib-based segments.
    * @param climatology_color Color for climatology-based segments.
    * @param dc Device context for drawing.
    * @param vp ViewPort for coordinate transformations.
    */
-  void RenderIsoRoute(IsoRoute* r, wxColour& grib_color,
+  void RenderIsoRoute(IsoRoute* r, wxDateTime time, wxColour& grib_color,
                       wxColour& climatology_color, piDC& dc,
                       PlugIn_ViewPort& vp);
 
@@ -398,16 +399,66 @@ private:
   /** Last cursor longitude. */
   double last_cursor_lon;
 
-  /** Pointer to the last cursor position. */
+  /**
+   * Position on the route closest to where the user's cursor is hovering.
+   *
+   * This variable tracks which position on the computed route is nearest to the
+   * current cursor location on the chart. It's used to display
+   * position-specific data in the Cursor Position dialog and for visual
+   * highlighting on the chart.
+   *
+   * @see UpdateCursorPositionDialog() For updating the UI with this position's
+   * data
+   */
   Position* last_cursor_position;
 
-  /** Pointer to the destination position. */
+  /**
+   * The final computed position that exactly matches the destination
+   * coordinates.
+   *
+   * This position is created and set only when route propagation successfully
+   * reaches the exact destination point. If the route calculation reaches the
+   * area but can't precisely hit the destination (due to land barriers, etc.),
+   * this will remain null while last_destination_position will be set to the
+   * closest reachable position.
+   *
+   * @see UpdateDestination() Where this is set upon successful route completion
+   */
   Position* destination_position;
 
-  /** Pointer to the last destination position. */
+  /**
+   * Best position reached toward the destination during route calculation.
+   *
+   * This stores either:
+   * 1. The exact destination position (destination_position) if reached
+   * successfully
+   * 2. The closest calculated position to the destination if exact arrival
+   * isn't possible
+   *
+   * It's always set regardless of whether the exact destination is reached,
+   * making it the reliable reference for the route's endpoint in the UI and
+   * reporting functions.
+   *
+   * @see UpdateDestination() For the logic determining which position to use
+   */
   Position* last_destination_position;
 
-  /** Time at the cursor position. */
+  /**
+   * The timestamp when the cursor position is at the given point on the route.
+   *
+   * When the user hovers over a point on the calculated route, this variable
+   * stores the projected time when the vessel would reach that specific
+   * position according to the route calculation. This time value is used in the
+   * CursorPositionDialog to display temporal information alongside spatial
+   * coordinates.
+   *
+   * This time is retrieved from the RouteMapOverlay during cursor interaction
+   * via the GetLastCursorTime() method and is updated whenever the cursor moves
+   * to a different position on the route.
+   *
+   * The value is only valid when last_cursor_position is non-null, indicating
+   * that the cursor is currently over a valid position on the route.
+   */
   wxDateTime m_cursor_time;
 
   /** End time of the route. */

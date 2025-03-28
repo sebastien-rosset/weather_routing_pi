@@ -52,11 +52,28 @@
 
 #include "wxWTranslateCatalog.h"
 
-///////////////////////////////////////////////////////////////////////////
-
-///////////////////////////////////////////////////////////////////////////////
-/// Class WeatherRoutingBase
-///////////////////////////////////////////////////////////////////////////////
+/**
+ * Base class for the Weather Routing plugin's main interface.
+ *
+ * WeatherRoutingBase provides the foundational UI framework for the Weather
+ * Routing plugin, defining the menu structure, event handlers, and basic window
+ * layout.
+ *
+ * The class defines:
+ * - The main menu structure with File, Position, Configuration, and View
+ * options
+ * - Menu items for all major operations (Open, Save, Compute, etc.)
+ * - Event handler declarations for all UI interactions
+ * - Context menu for right-click operations
+ *
+ * This base UI class establishes the interface's overall structure but
+ * delegates the implementation of business logic to the derived WeatherRouting
+ * class.
+ *
+ * @see WeatherRouting The implementation class that inherits from this base
+ * class
+ * @see WeatherRoutingPanel The panel containing the list controls and buttons
+ */
 class WeatherRoutingBase : public wxFrame {
 private:
 protected:
@@ -161,6 +178,16 @@ protected:
   virtual void OnReport(wxCommandEvent& event) { event.Skip(); }
   virtual void OnPlot(wxCommandEvent& event) { event.Skip(); }
   virtual void OnCursorPosition(wxCommandEvent& event) { event.Skip(); }
+  /**
+   * Event handler for toggling display of the Route Position dialog.
+   *
+   * This base class handler for the route position dialog toggle. It is
+   * overridden in the derived WeatherRouting class to handle the actual UI
+   * state changes.
+   *
+   * @param event The command event (unused but required by event handler
+   * signature)
+   */
   virtual void OnRoutePosition(wxCommandEvent& event) { event.Skip(); }
   virtual void OnInformation(wxCommandEvent& event) { event.Skip(); }
   virtual void OnManual(wxCommandEvent& event) { event.Skip(); }
