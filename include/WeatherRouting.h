@@ -431,6 +431,8 @@ private:
   void OnFilter(wxCommandEvent& event);
   /** Callback invoked when user clicks "Save as Track" menu item. */
   void OnSaveAsTrack(wxCommandEvent& event);
+  /** Callback invoked when user clicks "Save as Route" menu item. */
+  void OnSaveAsRoute(wxCommandEvent& event);
   /** Export route as GPX file. */
   void OnExportRouteAsGPX(wxCommandEvent& event);
   /** Callback invoked when user clicks "Save All as Tracks" menu item. */
@@ -502,6 +504,8 @@ private:
   RouteMap* SelectedRouteMap();
   /** Save weather routing as OpenCPN track. */
   void SaveAsTrack(RouteMapOverlay& routemapoverlay);
+  /** Save weather routing as OpenCPN route. */
+  void SaveAsRoute(RouteMapOverlay& routemapoverlay);
   void ExportRoute(RouteMapOverlay& routemapoverlay);
   /**
    * Initiates route calculation for a specific route map overlay.
