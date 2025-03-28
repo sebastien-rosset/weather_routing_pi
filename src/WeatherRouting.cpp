@@ -2670,7 +2670,7 @@ void WeatherRouting::SaveAsTrack(RouteMapOverlay& routemapoverlay) {
   std::list<PlotData> plotdata = routemapoverlay.GetPlotData(false);
 
   if (plotdata.empty()) {
-    wxMessageDialog mdlg(this, _("Empty Route, nothing to export\n"),
+    wxMessageDialog mdlg(this, _("Empty routing, nothing to save\n"),
                          _("Weather Routing"), wxOK | wxICON_WARNING);
     mdlg.ShowModal();
     return;
@@ -2715,13 +2715,19 @@ void WeatherRouting::SaveAsTrack(RouteMapOverlay& routemapoverlay) {
   delete newPath;
 
   GetParent()->Refresh();
+
+  wxMessageDialog mdlg(this,
+                       _("Routing has been saved as a track in the 'Route and "
+                         "Mark' Manager\n"),
+                       _("Weather Routing"), wxOK);
+  mdlg.ShowModal();
 }
 
 void WeatherRouting::ExportRoute(RouteMapOverlay& routemapoverlay) {
   std::list<PlotData> plotdata = routemapoverlay.GetPlotData(false);
 
   if (plotdata.empty()) {
-    wxMessageDialog mdlg(this, _("Empty Route, nothing to export\n"),
+    wxMessageDialog mdlg(this, _("Empty Routing, nothing to export\n"),
                          _("Weather Routing"), wxOK | wxICON_WARNING);
     mdlg.ShowModal();
     return;

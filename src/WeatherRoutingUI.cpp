@@ -562,6 +562,8 @@ WeatherRoutingPanel::WeatherRoutingPanel(wxWindow* parent, wxWindowID id,
   m_bExport = new wxButton(sbSizer29->GetStaticBox(), wxID_ANY,
                            _("&Save routing as track"), wxDefaultPosition,
                            wxDefaultSize, 0);
+  m_bExport->SetToolTip(_(
+      "Save the selected routing as a track in the 'Route & Mark' Manager"));
   fgSizer116->Add(m_bExport, 0, wxALL, 5);
 
   m_bExportRoute = new wxButton(sbSizer29->GetStaticBox(), wxID_ANY,
