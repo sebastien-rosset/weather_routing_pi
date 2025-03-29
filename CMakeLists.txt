@@ -62,8 +62,8 @@ set(LONG_DESCRIPTION "WR features include: optimal routing subject to various co
 set(VERSION_MAJOR "1")
 set(VERSION_MINOR "15")
 set(VERSION_PATCH "21")
-set(VERSION_TWEAK "20")
-set(VERSION_DATE  "25/02/2025")#DD/MM/YYYY format
+set(VERSION_TWEAK "21")
+set(VERSION_DATE  "27/03/2025")#DD/MM/YYYY format
 set(OCPN_MIN_VERSION "ov58")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -160,6 +160,7 @@ add_definitions(-DUSE_S57)
 SET(SRCS
             src/weather_routing_pi.cpp
             src/WeatherRouting.cpp
+            src/SunCalculator.cpp
             src/ConfigurationDialog.cpp
             src/SettingsDialog.cpp
             src/PlotDialog.cpp
@@ -188,6 +189,7 @@ SET(SRCS
 SET (HDRS
             include/weather_routing_pi.h
             include/WeatherRouting.h
+            include/SunCalculator.h
             include/ConfigurationDialog.h
             include/SettingsDialog.h
             include/PlotDialog.h

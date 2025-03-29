@@ -329,7 +329,26 @@ public:
   void CursorRouteChanged();
   void UpdateColumns();
 
+  /**
+   * Updates the Cursor Position dialog with data from the currently selected
+   * route.
+   *
+   * This method refreshes the CursorPositionDialog with information about the
+   * route position closest to where the user's cursor is hovering on the chart.
+   *
+   * This method is called:
+   * 1. When cursor movements trigger position changes
+   * 2. Whenever the dialog is shown
+   * 3. Periodically during route rendering to keep information current
+   */
   void UpdateCursorPositionDialog();
+  /**
+   * Updates the Route Position dialog with detailed information about a
+   * position along the route.
+   *
+   * This method refreshes the RoutePositionDialog with information about the
+   * route position closest to the user's cursor on the chart.
+   */
   void UpdateRoutePositionDialog();
 
   /**
@@ -412,6 +431,8 @@ private:
   void OnFilter(wxCommandEvent& event);
   /** Callback invoked when user clicks "Save as Track" menu item. */
   void OnSaveAsTrack(wxCommandEvent& event);
+  /** Callback invoked when user clicks "Save as Route" menu item. */
+  void OnSaveAsRoute(wxCommandEvent& event);
   /** Export route as GPX file. */
   void OnExportRouteAsGPX(wxCommandEvent& event);
   /** Callback invoked when user clicks "Save All as Tracks" menu item. */
@@ -483,6 +504,8 @@ private:
   RouteMap* SelectedRouteMap();
   /** Save weather routing as OpenCPN track. */
   void SaveAsTrack(RouteMapOverlay& routemapoverlay);
+  /** Save weather routing as OpenCPN route. */
+  void SaveAsRoute(RouteMapOverlay& routemapoverlay);
   void ExportRoute(RouteMapOverlay& routemapoverlay);
   /**
    * Initiates route calculation for a specific route map overlay.
@@ -534,8 +557,49 @@ private:
 
   wxSize m_size;
 
-  // CUSTOMIZATION
+  /**
+   * Pointer to the closest Position object on the route to the user's cursor
+   * location.
+   *
+   * This member variable is used to track and display the position on the
+   * computed weather route closest to where the user has placed their cursor on
+   * the chart. It's utilized by:
+   *
+   * 1. The RoutePositionDialog to display detailed data about this specific
+   * route point
+   * 2. The Render method to visually highlight this position on the chart
+   *
+   * When the user moves their cursor over the chart, this pointer is updated to
+   * point to the closest calculated position on the route by
+   * getClosestRoutePositionFromCursor(). If a direct Position* cannot be
+   * obtained but plot data is available, a temporary position (m_savedPosition)
+   * may be used instead.
+   *
+   * This allows the user to explore detailed information about any point along
+   * the computed route by simply moving their cursor near that point on the
+   * chart.
+   *
+   * @see UpdateRoutePositionDialog() For the method that updates this pointer
+   * @see RouteMapOverlay::getClosestRoutePositionFromCursor() For the
+   * calculation method
+   * @see RoutePositionDialog For the UI that displays data from this position
+   */
   RoutePoint* m_positionOnRoute;
+  /**
+   * Temporary storage for position data when a direct Position* pointer is
+   * unavailable.
+   *
+   * When getClosestRoutePositionFromCursor() can find plot data for a point but
+   * not a direct Position* pointer, this member variable stores the position
+   * information to ensure the UI can still display details about that point on
+   * the route.
+   *
+   * This prevents information loss in situations where the route data is
+   * available in one form (PlotData) but not another (Position*).
+   *
+   * @see m_positionOnRoute The main position pointer this serves as a backup
+   * for
+   */
   RoutePoint m_savedPosition;
 };
 

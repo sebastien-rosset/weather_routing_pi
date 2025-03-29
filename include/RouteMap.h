@@ -61,6 +61,29 @@ enum WeatherForecastStatus {
 };
 
 /**
+ * Represents a wind rose summary of climatological wind data for a location.
+ *
+ * This data structure holds statistical wind data typically derived from
+ * historical weather patterns. The data is organized into 8 directional sectors
+ * (at 45 degree intervals), storing both wind speeds and frequency of
+ * occurrence.
+ */
+struct climatology_wind_atlas {
+  double W[8];  //!< Probability/weight of wind occurring in each direction
+                //!< sector (0-1)
+  double
+      VW[8];  //!< Most common wind speed (in knots) for each direction sector
+  double storm;  //!< Probability of storm conditions (0-1)
+  double calm;   //!< Probability of calm conditions (0-1)
+  /**Central wind direction (in degrees) for each sector:
+   * typically [0, 45, 90, 135, 180, 225, 270, 315]
+   */
+  double directions[8];
+};
+
+class WR_GribRecordSet;
+
+/**
  * A base class representing a geographical position that is part of a route.
  *
  * RoutePoint stores the essential information about a point along a route,
@@ -75,12 +98,13 @@ enum WeatherForecastStatus {
 class RoutePoint {
 public:
   RoutePoint(double latitude = 0., double longitude = 0., int sp = -1,
-             int t = 0, bool d = false)
+             int t = 0, int dm = 0, bool data_deficient = false)
       : lat(latitude),
         lon(longitude),
         polar(sp),
         tacks(t),
-        grib_is_data_deficient(d) {}
+        grib_is_data_deficient(data_deficient),
+        data_mask(dm) {}
 
   virtual ~RoutePoint() {};
 
@@ -121,6 +145,112 @@ public:
    */
   double PropagateToPoint(double dlat, double dlon, RouteMapConfiguration& cf,
                           double& heading, int& data_mask, bool end = true);
+
+  /**
+   * Calculates boat performance based on environmental conditions and desired
+   * heading.
+   *
+   * Given a specific boat heading relative to wind, this function calculates:
+   * 1. How fast the boat will move through water (speed through water)
+   * 2. The actual direction the boat will travel through water (course through
+   * water)
+   * 3. How fast the boat will move over ground after accounting for currents
+   * (speed over ground)
+   * 4. The actual direction the boat will travel over ground (course over
+   * ground)
+   *
+   * @param configuration Boat and route configuration settings
+   * @param timeseconds Duration in seconds for the calculation
+   * @param twd [in] Wind direction over ground (degrees)
+   * @param tws [in] Wind speed over ground (knots)
+   * @param windDirOverWater [in] Wind direction through water (degrees)
+   * @param windSpeedOverWater [in] Wind speed through water (knots)
+   * @param currentDir [in] Current direction (degrees)
+   * @param currentSpeed [in] Current speed (knots)
+   * @param twa [in] True Wind Angle (TWA) (degrees)
+   * @param atlas [in] Wind climatology atlas containing probability
+   * distributions
+   * @param data_mask [in/out] Bit mask indicating data sources (GRIB,
+   * climatology, etc.)
+   * @param ctw [in] Boat's bearing relative to true wind (W+twa), initialized
+   * by caller
+   * @param stw [out] Boat speed through water
+   * @param cog [out] Boat bearing over ground
+   * @param sog [out]Boat speed over ground
+   * @param dist [out] Distance traveled over ground (nm)
+   * @param newpolar [in] Index of the polar to use from the boat's polar array
+   * @param bound [in] If true, returns NAN when wind speed is outside the range
+   * defined in the polar data. If false, extrapolates the boat speed when wind
+   * speed is outside the polar data range.
+   *
+   * @return true if computation successful, false if NaN values detected
+   */
+  bool ComputeBoatSpeed(RouteMapConfiguration& configuration,
+                        double timeseconds, double twd, double tws,
+                        double windDirOverWater, double windSpeedOverWater,
+                        double currentDir, double currentSpeed, double twa,
+                        climatology_wind_atlas& atlas, double ctw, double& stw,
+                        double& cog, double& sog, double& dist, int newpolar,
+                        bool bound = true, const char* caller = "unknown");
+
+  /**
+   * Bit flags indicating what data sources were used for wind and current
+   * calculations and other routing conditions.
+   *
+   * These flags track various aspects of each position in the routing
+   * calculation:
+   * 1. The origin of wind and current data (GRIB or climatology)
+   * 2. Whether the data was "deficient" (outside optimal time/location range)
+   * 3. Environmental conditions like day/night status
+   *
+   * The flags can be combined using bitwise OR operations to represent multiple
+   * conditions simultaneously. For example, a position at night using GRIB
+   * current data and climatology wind data would have a data_mask containing:
+   * (GRIB_CURRENT | CLIMATOLOGY_WIND | NIGHT_TIME)
+   *
+   * These flags serve multiple purposes:
+   * - Visual differentiation in the route display (different colors for data
+   * sources)
+   * - Performance adjustments (efficiency factors for different conditions)
+   * - Analytical reporting of route segments and their data quality
+   *
+   * When examining a route, these flags provide important context about the
+   * reliability and characteristics of each segment.
+   */
+  enum DataMask {
+    /** Wind data originated from GRIB files. */
+    GRIB_WIND = 1,
+
+    /** Wind data originated from climatology data. */
+    CLIMATOLOGY_WIND = 2,
+
+    /**
+     * Wind data is from GRIB but is considered "data deficient".
+     * This typically means the data is from outside the requested time
+     * or location range but was used because better data was not available.
+     */
+    DATA_DEFICIENT_WIND = 4,
+
+    /** Current data originated from GRIB files. */
+    GRIB_CURRENT = 8,
+
+    /** Current data originated from climatology data. */
+    CLIMATOLOGY_CURRENT = 16,
+
+    /**
+     * Current data is from GRIB but is considered "data deficient".
+     * This typically means the data is from outside the requested time
+     * or location range but was used because better data was not available.
+     */
+    DATA_DEFICIENT_CURRENT = 32,
+
+    /**
+     * Indicates that this position occurs during nighttime.
+     * Used to apply nighttime efficiency factor and darker display colors.
+     */
+    NIGHT_TIME = 64
+  };
+  int data_mask;
 };
 
 /*
@@ -151,10 +281,10 @@ public:
   wxDateTime time;
   /** The time in seconds from the previous position to this position. */
   double delta;
-  double sog;  //!< Speed of boat over ground (knots).
-  double cog;  //!< Course of boat over ground (degrees).
-  double stw;  //!< Speed of boat through water (knots).
-  double ctw;  //!< Course of boat through water (degrees).
+  double sog;  //!< Speed Over Ground (SOG) in knots.
+  double cog;  //!< Course Over Ground in degrees.
+  double stw;  //!< Speed of boat through water in knots.
+  double ctw;  //!< Course of boat through water in degrees.
   /** Wind speed relative to the water's frame of reference in knots. */
   double VW;
   /**
@@ -164,12 +294,12 @@ public:
    * and the wind direction in degrees.
    */
   double twa;
-  double tws;           //!< Velocity of wind over ground (knots).
-  double twd;           //!< Wind direction over ground.
-  double currentSpeed;  //!< Velocity of current over ground (knots).
-  double currentDir;    //!< Sea current direction over ground.
-  double WVHT;          //!< Swell height (meters).
-  double VW_GUST;       //!< Gust wind speed (knots).
+  double tws;           //!< True Wind Speed (TWS) over ground in knots.
+  double twd;           //!< True Wind Direction (TWD) over ground in degrees.
+  double currentSpeed;  //!< Velocity of current over ground in knots.
+  double currentDir;    //!< Sea current direction over ground in degrees.
+  double WVHT;          //!< Swell height in meters.
+  double VW_GUST;       //!< Gust wind speed in knots.
 };
 
 class SkipPosition;
@@ -216,7 +346,7 @@ class Position : public RoutePoint {
 public:
   Position(double latitude, double longitude, Position* p = nullptr,
            double pheading = NAN, double pbearing = NAN, int sp = -1, int t = 0,
-           int dm = 0, bool df = false);
+           int data_mask = 0, bool data_deficient = false);
   Position(Position* p);
 
   SkipPosition* BuildSkipList();
@@ -290,16 +420,6 @@ public:
   bool propagated;
   bool drawn, copied;
 
-  // used for rendering
-  enum DataMask {
-    GRIB_WIND = 1,
-    CLIMATOLOGY_WIND = 2,
-    DATA_DEFICIENT_WIND = 4,
-    GRIB_CURRENT = 8,
-    CLIMATOLOGY_CURRENT = 16,
-    DATA_DEFICIENT_CURRENT = 32
-  };
-  int data_mask;
   /** Indicates why propagation failed. */
   PropagationError propagation_error;
 
@@ -311,6 +431,11 @@ private:
   wxString GetErrorInfo() const;
   /** Get detailed error information for debugging. */
   wxString GetDetailedErrorInfo() const;
+
+  bool rk_step(double timeseconds, double cog, double dist, double twa,
+               RouteMapConfiguration& configuration, WR_GribRecordSet* grib,
+               const wxDateTime& time, int newpolar, double& rk_BG,
+               double& rk_dist, int& data_mask);
 };
 
 /**

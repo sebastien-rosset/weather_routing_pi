@@ -137,15 +137,20 @@ WeatherRoutingBase::WeatherRoutingBase(wxWindow* parent, wxWindowID id,
 
   m_mConfiguration->AppendSeparator();
 
-  m_mSaveAsTrack = new wxMenuItem(m_mConfiguration, wxID_ANY,
-                                  wxString(_("Save routing as track")),
-                                  wxEmptyString, wxITEM_NORMAL);
+  m_mSaveAsTrack =
+      new wxMenuItem(m_mConfiguration, wxID_ANY, wxString(_("Save as track")),
+                     wxEmptyString, wxITEM_NORMAL);
   m_mConfiguration->Append(m_mSaveAsTrack);
 
-  m_mSaveAllAsTracks = new wxMenuItem(
-      m_mConfiguration, wxID_ANY, wxString(_("Save all routings as tracks")),
-      wxEmptyString, wxITEM_NORMAL);
+  m_mSaveAllAsTracks = new wxMenuItem(m_mConfiguration, wxID_ANY,
+                                      wxString(_("Save all as tracks")),
+                                      wxEmptyString, wxITEM_NORMAL);
   m_mConfiguration->Append(m_mSaveAllAsTracks);
+
+  m_mSaveAsRoute =
+      new wxMenuItem(m_mConfiguration, wxID_ANY, wxString(_("Save as route")),
+                     wxEmptyString, wxITEM_NORMAL);
+  m_mConfiguration->Append(m_mSaveAsRoute);
 
   m_mExportRouteAsGPX = new wxMenuItem(
       m_mConfiguration, wxID_ANY,
@@ -389,6 +394,10 @@ WeatherRoutingBase::WeatherRoutingBase(wxWindow* parent, wxWindowID id,
       m_mSaveAsTrack->GetId());
   m_mConfiguration->Bind(
       wxEVT_COMMAND_MENU_SELECTED,
+      wxCommandEventHandler(WeatherRoutingBase::OnSaveAsRoute), this,
+      m_mSaveAsRoute->GetId());
+  m_mConfiguration->Bind(
+      wxEVT_COMMAND_MENU_SELECTED,
       wxCommandEventHandler(WeatherRoutingBase::OnExportRouteAsGPX), this,
       m_mExportRouteAsGPX->GetId());
   m_mConfiguration->Bind(
@@ -547,7 +556,7 @@ WeatherRoutingPanel::WeatherRoutingPanel(wxWindow* parent, wxWindowID id,
 
   wxFlexGridSizer* fgSizer116;
   fgSizer116 = new wxFlexGridSizer(1, 0, 0, 0);
-  fgSizer116->AddGrowableCol(2);
+  fgSizer116->AddGrowableCol(3);
   fgSizer116->SetFlexibleDirection(wxBOTH);
   fgSizer116->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
 
@@ -559,13 +568,22 @@ WeatherRoutingPanel::WeatherRoutingPanel(wxWindow* parent, wxWindowID id,
         "configuration"));
   fgSizer116->Add(m_bCompute, 0, wxALL, 5);
 
-  m_bExport = new wxButton(sbSizer29->GetStaticBox(), wxID_ANY,
-                           _("&Save routing as track"), wxDefaultPosition,
-                           wxDefaultSize, 0);
-  fgSizer116->Add(m_bExport, 0, wxALL, 5);
+  m_bSaveAsTrack =
+      new wxButton(sbSizer29->GetStaticBox(), wxID_ANY, _("&Save as track"),
+                   wxDefaultPosition, wxDefaultSize, 0);
+  m_bSaveAsTrack->SetToolTip(
+      _("Save the selected routing as a track in the 'Route & Mark' Manager"));
+  fgSizer116->Add(m_bSaveAsTrack, 0, wxALL, 5);
+
+  m_bSaveAsRoute =
+      new wxButton(sbSizer29->GetStaticBox(), wxID_ANY, _("Save as &route"),
+                   wxDefaultPosition, wxDefaultSize, 0);
+  m_bSaveAsRoute->SetToolTip(
+      _("Save the selected routing as a route in the 'Route & Mark' Manager"));
+  fgSizer116->Add(m_bSaveAsRoute, 0, wxALL, 5);
 
   m_bExportRoute = new wxButton(sbSizer29->GetStaticBox(), wxID_ANY,
-                                _("Export routing as GPX route file"),
+                                _("Export as GPX route file"),
                                 wxDefaultPosition, wxDefaultSize, 0);
   fgSizer116->Add(m_bExportRoute, 0, wxALL, 5);
 
@@ -632,9 +650,12 @@ WeatherRoutingPanel::WeatherRoutingPanel(wxWindow* parent, wxWindowID id,
   m_bCompute->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
                       wxCommandEventHandler(WeatherRoutingPanel::OnCompute),
                       NULL, this);
-  m_bExport->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
-                     wxCommandEventHandler(WeatherRoutingPanel::OnSaveAsTrack),
-                     NULL, this);
+  m_bSaveAsTrack->Connect(
+      wxEVT_COMMAND_BUTTON_CLICKED,
+      wxCommandEventHandler(WeatherRoutingPanel::OnSaveAsTrack), NULL, this);
+  m_bSaveAsRoute->Connect(
+      wxEVT_COMMAND_BUTTON_CLICKED,
+      wxCommandEventHandler(WeatherRoutingPanel::OnSaveAsRoute), NULL, this);
 }
 
 WeatherRoutingPanel::~WeatherRoutingPanel() {
@@ -681,9 +702,12 @@ WeatherRoutingPanel::~WeatherRoutingPanel() {
   m_bCompute->Disconnect(wxEVT_COMMAND_BUTTON_CLICKED,
                          wxCommandEventHandler(WeatherRoutingPanel::OnCompute),
                          NULL, this);
-  m_bExport->Disconnect(
+  m_bSaveAsTrack->Disconnect(
       wxEVT_COMMAND_BUTTON_CLICKED,
       wxCommandEventHandler(WeatherRoutingPanel::OnSaveAsTrack), NULL, this);
+  m_bSaveAsRoute->Disconnect(
+      wxEVT_COMMAND_BUTTON_CLICKED,
+      wxCommandEventHandler(WeatherRoutingPanel::OnSaveAsRoute), NULL, this);
 }
 
 SettingsDialogBase::SettingsDialogBase(wxWindow* parent, wxWindowID id,
@@ -1851,9 +1875,6 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   fgSizerEfficiency->Add(m_staticTextDownwindPC, 0,
                          wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
-#if 0
-  // TODO: enable night efficiency settings after implementing library
-  // to calculate sunrise/sunset times for a given location.
   wxStaticText* m_staticTextNight =
       new wxStaticText(sbEfficiency->GetStaticBox(), wxID_ANY, _("Night"),
                        wxDefaultPosition, wxDefaultSize, 0);
@@ -1875,7 +1896,6 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_staticTextNightPC->Wrap(-1);
   fgSizerEfficiency->Add(m_staticTextNightPC, 0,
                          wxALIGN_CENTER_VERTICAL | wxALL, 5);
-#endif
 
   sbEfficiency->Add(fgSizerEfficiency, 1, wxEXPAND, 5);
   fgSizer109->Add(sbEfficiency, 1, wxEXPAND | wxALL, 5);
@@ -2408,13 +2428,9 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_sDownwindEfficiency->Connect(
       wxEVT_COMMAND_SPINCTRL_UPDATED,
       wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
-#if 0
-  // TODO: enable night efficiency settings after implementing library
-  // to calculate sunrise/sunset times for a given location.
   m_sNightCumulativeEfficiency->Connect(
       wxEVT_COMMAND_SPINCTRL_UPDATED,
       wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
-#endif
   m_sFromDegree->Connect(
       wxEVT_COMMAND_SPINCTRL_UPDATED,
       wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
@@ -2879,13 +2895,9 @@ ConfigurationDialogBase::~ConfigurationDialogBase() {
   m_sDownwindEfficiency->Disconnect(
       wxEVT_COMMAND_SPINCTRL_UPDATED,
       wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
-#if 0
-  // TODO: enable night efficiency settings after implementing library
-  // to calculate sunrise/sunset times for a given location.
   m_sNightCumulativeEfficiency->Disconnect(
       wxEVT_COMMAND_SPINCTRL_UPDATED,
       wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
-#endif
   m_sFromDegree->Disconnect(
       wxEVT_COMMAND_SPINCTRL_UPDATED,
       wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);

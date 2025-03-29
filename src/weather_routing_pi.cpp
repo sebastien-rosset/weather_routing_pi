@@ -37,8 +37,6 @@
 Json::Value g_ReceivedJSONMsg;
 wxString g_ReceivedMessage;
 
-double g_WINDipFactor;
-
 // Define minimum and maximum versions of the grib plugin supported
 #define GRIB_MAX_MAJOR 5
 #define GRIB_MAX_MINOR 0
@@ -159,8 +157,6 @@ int weather_routing_pi::Init() {
       new wxMenuItem(&dummy_menu, -1, _("Weather Route Analysis")), this,
       "Route");
   // SetCanvasMenuItemViz(m_route_menu_id, false, "Route");
-
-  g_WINDipFactor = 1.0;
 
   //    And load the configuration items
   LoadConfig();
@@ -390,16 +386,6 @@ void weather_routing_pi::SetPluginMessage(wxString& message_id,
           // char*)root[wxS("GUID")].AsString().mb_str());
         }
       }
-    }
-  }
-  // Capture some OCPN core parameters, if present
-  else if (message_id == _T("OpenCPN Config")) {
-    Json::Reader r;
-    Json::Value v;
-    r.parse(static_cast<std::string>(message_body), v);
-
-    if (v["OpenCPN Display DIP Scale Factor"].isDouble()) {
-      g_WINDipFactor = v["OpenCPN Display DIP Scale Factor"].asDouble();
     }
   }
 }
