@@ -17,13 +17,14 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  **************************************************************************/
 
- #include <gtest/gtest.h>
- #include <Polar.h>
+#include <gtest/gtest.h>
+#include <Polar.h>
 
-   // @todo: Why don't relative paths work?  Fix.
-   // @todo: Use a special test file for these tests, rather than those of a real boat, which may change.
- wxString 
-  testPolarFileName = "/Users/quinton/src/OpenCPN-clean/weather_routing_pi-Richard/weather_routing_pi/build/data/polars/Hallberg-Rassy_40.pol",
+wxString
+  testDataDir = TESTDATADIR,
+  testPolarFileRelativePath = "polars/Hallberg-Rassy_40_test.pol",
+  testPolarFileName = testDataDir + "/" + testPolarFileRelativePath,
+  // testPolarFileName = "/Users/quinton/src/OpenCPN-clean/weather_routing_pi-Richard/weather_routing_pi/build/data/polars/Hallberg-Rassy_40.pol",
   testFileOpenMessage("");
  
   // Demonstrate some basic assertions.
@@ -48,6 +49,10 @@ TEST(PolarTests, OpenFailed) {
 
 TEST(PolarTests, OpenSuccess) {
   Polar p;
+  std::cout << "TESTDATADIR: " << testDataDir << std::endl;
+  std::cout << "testPolarFileRelativePath: " << testPolarFileRelativePath << std::endl;
+  std::cout << "testPolarFileName: " << testPolarFileName << std::endl;
+
   bool success = p.Open(testPolarFileName, testFileOpenMessage);
   EXPECT_EQ(testFileOpenMessage.ToStdString(), std::string(""));
   EXPECT_EQ(success, true);
@@ -65,8 +70,9 @@ TEST(PolarTests, ClosestVWiBasic) {
 
 TEST(PolarTests, SpeedBasic) {
   Polar p;
+  PolarSpeedStatus status;
   p.Open(testPolarFileName, testFileOpenMessage);
-  double speed = p.Speed(10, 10, false, false);
+  double speed = p.Speed(10, 10, &status, false);
   EXPECT_NEAR(speed, 1.3, 1e-6);
 }
 

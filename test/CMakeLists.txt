@@ -83,5 +83,11 @@ set(TEST_SRC
 # Add the test
 add_test(NAME weather_routing_pi_tests COMMAND weather_routing_pi_tests)
 
+target_compile_definitions(weather_routing_pi_tests
+    PUBLIC
+        USE_MOCK_DEFS CMAKE_BINARY_DIR="${CMAKE_BINARY_DIR}"
+        TESTDATADIR="${CMAKE_CURRENT_LIST_DIR}/testdata"
+)
+
 include(GoogleTest)
 gtest_discover_tests(weather_routing_pi_tests)
