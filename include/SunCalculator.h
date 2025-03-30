@@ -19,6 +19,9 @@
 
 #include <wx/wx.h>
 
+#include <vector>
+#include <algorithm>
+
 enum class DayLightStatus { Day, Night };
 
 class SunCalculator {

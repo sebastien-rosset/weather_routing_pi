@@ -39,6 +39,7 @@
 
 const wxString SettingsDialog::column_names[] = {"",  // "Visible" column
                                                  "Boat",
+                                                 "Start Type",
                                                  "Start",
                                                  "Start Time",
                                                  "End",
@@ -59,6 +60,7 @@ const wxString SettingsDialog::column_names[] = {"",  // "Visible" column
                                                  "Upwind Percentage",
                                                  "Port Starboard",
                                                  "Tacks",
+                                                 "Jibes",
                                                  "Sailing Comfort",
                                                  "State"};
 

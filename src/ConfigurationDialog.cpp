@@ -277,6 +277,7 @@ void ConfigurationDialog::SetConfigurations(
   SET_SPIN(MaxSwellMeters);
   SET_SPIN(MaxLatitude);
   SET_SPIN(TackingTime);
+  SET_SPIN(JibingTime);
   SET_SPIN(WindVSCurrent);
 
   SET_CHECKBOX(AvoidCycloneTracks);
@@ -351,6 +352,7 @@ void ConfigurationDialog::OnResetAdvanced(wxCommandEvent& event) {
   m_sDownwindEfficiency->SetValue(100);
   m_sNightCumulativeEfficiency->SetValue(100);
   m_sTackingTime->SetValue(0);
+  m_sJibingTime->SetValue(0);
   m_sSafetyMarginLand->SetValue(0.);
 
   m_sFromDegree->SetValue(0);
@@ -506,6 +508,7 @@ void ConfigurationDialog::Update() {
     GET_SPIN(MaxSwellMeters);
     GET_SPIN(MaxLatitude);
     GET_SPIN(TackingTime);
+    GET_SPIN(JibingTime);
     GET_SPIN(WindVSCurrent);
 
     if (m_sWindStrength->IsEnabled())

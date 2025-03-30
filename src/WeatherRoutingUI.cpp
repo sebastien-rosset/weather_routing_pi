@@ -6,6 +6,7 @@
 ///////////////////////////////////////////////////////////////////////////
 
 #include "WeatherRoutingUI.h"
+#include <vector>
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -1760,6 +1761,8 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
 
   fgSizer113->Add(fgSizer1071, 1, wxEXPAND, 5);
 
+  // Begin Tacking time.
+
   wxFlexGridSizer* fgSizer1151;
   fgSizer1151 = new wxFlexGridSizer(1, 0, 0, 0);
   fgSizer1151->SetFlexibleDirection(wxBOTH);
@@ -1787,6 +1790,40 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   fgSizer1151->Add(m_staticText121, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
   fgSizer113->Add(fgSizer1151, 1, wxEXPAND, 5);
+
+  // End Tacking time.
+
+  // Begin Jibing time.
+
+  wxFlexGridSizer* fgSizer1152;
+  fgSizer1152 = new wxFlexGridSizer(1, 0, 0, 0);
+  fgSizer1152->SetFlexibleDirection(wxBOTH);
+  fgSizer1152->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
+
+  m_staticText25 =
+      new wxStaticText(sbOptions1->GetStaticBox(), wxID_ANY, _("Jibing Time"),
+                       wxDefaultPosition, wxDefaultSize, 0);
+  m_staticText25->Wrap(-1);
+  fgSizer1152->Add(m_staticText25, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+  m_sJibingTime = new wxSpinCtrl(sbOptions1->GetStaticBox(), wxID_ANY,
+                                 wxEmptyString, wxDefaultPosition,
+                                 wxSize(140, -1), wxSP_ARROW_KEYS, 0, 1000, 1);
+  m_sJibingTime->SetToolTip(
+      _("Set the time in seconds needed to complete a jibe maneuver. Higher "
+        "values create more realistic routing that accounts for the speed loss "
+        "during jibing."));
+  fgSizer1152->Add(m_sJibingTime, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+
+  m_staticText122 =
+      new wxStaticText(sbOptions1->GetStaticBox(), wxID_ANY, _("Seconds"),
+                       wxDefaultPosition, wxDefaultSize, 0);
+  m_staticText122->Wrap(-1);
+  fgSizer1152->Add(m_staticText122, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+  fgSizer113->Add(fgSizer1152, 1, wxEXPAND, 5);
+
+  // End Jibing time.
 
   wxFlexGridSizer* fgSizer11511;
   fgSizer11511 = new wxFlexGridSizer(1, 0, 0, 0);
@@ -2415,6 +2452,67 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_sTackingTime->Connect(
       wxEVT_COMMAND_SPINCTRL_UPDATED,
       wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
+  //
+  m_sJibingTime->Connect(
+      wxEVT_LEFT_DOWN, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sJibingTime->Connect(
+      wxEVT_LEFT_UP, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sJibingTime->Connect(
+      wxEVT_MIDDLE_DOWN,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sJibingTime->Connect(
+      wxEVT_MIDDLE_UP, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sJibingTime->Connect(
+      wxEVT_RIGHT_DOWN,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sJibingTime->Connect(
+      wxEVT_RIGHT_UP, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sJibingTime->Connect(
+      wxEVT_AUX1_DOWN, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sJibingTime->Connect(
+      wxEVT_AUX1_UP, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sJibingTime->Connect(
+      wxEVT_AUX2_DOWN, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sJibingTime->Connect(
+      wxEVT_AUX1_UP, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sJibingTime->Connect(
+      wxEVT_MOTION, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sJibingTime->Connect(
+      wxEVT_LEFT_DCLICK,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sJibingTime->Connect(
+      wxEVT_MIDDLE_DCLICK,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sJibingTime->Connect(
+      wxEVT_RIGHT_DCLICK,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sJibingTime->Connect(
+      wxEVT_AUX1_DCLICK,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sJibingTime->Connect(
+      wxEVT_AUX2_DCLICK,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sJibingTime->Connect(
+      wxEVT_LEAVE_WINDOW,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sJibingTime->Connect(
+      wxEVT_ENTER_WINDOW,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sJibingTime->Connect(
+      wxEVT_MOUSEWHEEL,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sJibingTime->Connect(
+      wxEVT_COMMAND_SPINCTRL_UPDATED,
+      wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
   m_sSafetyMarginLand->Connect(
       wxEVT_MOTION,
       wxMouseEventHandler(ConfigurationDialogBase::EnableSpinDouble), NULL,
@@ -2883,6 +2981,68 @@ ConfigurationDialogBase::~ConfigurationDialogBase() {
   m_sTackingTime->Disconnect(
       wxEVT_COMMAND_SPINCTRL_UPDATED,
       wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
+
+  //
+  m_sJibingTime->Disconnect(
+      wxEVT_LEFT_DOWN, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sJibingTime->Disconnect(
+      wxEVT_LEFT_UP, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sJibingTime->Disconnect(
+      wxEVT_MIDDLE_DOWN,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sJibingTime->Disconnect(
+      wxEVT_MIDDLE_UP, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sJibingTime->Disconnect(
+      wxEVT_RIGHT_DOWN,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sJibingTime->Disconnect(
+      wxEVT_RIGHT_UP, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sJibingTime->Disconnect(
+      wxEVT_AUX1_DOWN, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sJibingTime->Disconnect(
+      wxEVT_AUX1_UP, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sJibingTime->Disconnect(
+      wxEVT_AUX2_DOWN, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sJibingTime->Disconnect(
+      wxEVT_AUX1_UP, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sJibingTime->Disconnect(
+      wxEVT_MOTION, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sJibingTime->Disconnect(
+      wxEVT_LEFT_DCLICK,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sJibingTime->Disconnect(
+      wxEVT_MIDDLE_DCLICK,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sJibingTime->Disconnect(
+      wxEVT_RIGHT_DCLICK,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sJibingTime->Disconnect(
+      wxEVT_AUX1_DCLICK,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sJibingTime->Disconnect(
+      wxEVT_AUX2_DCLICK,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sJibingTime->Disconnect(
+      wxEVT_LEAVE_WINDOW,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sJibingTime->Disconnect(
+      wxEVT_ENTER_WINDOW,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sJibingTime->Disconnect(
+      wxEVT_MOUSEWHEEL,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sJibingTime->Disconnect(
+      wxEVT_COMMAND_SPINCTRL_UPDATED,
+      wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
   m_sSafetyMarginLand->Disconnect(
       wxEVT_MOTION, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
       NULL, this);
@@ -2970,27 +3130,19 @@ PlotDialogBase::PlotDialogBase(wxWindow* parent, wxWindowID id,
   fgSizer78->SetFlexibleDirection(wxBOTH);
   fgSizer78->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
 
-  wxString m_cVariable1Choices[] = {_("Speed Over Ground (SOG)"),
-                                    _("Course Over Ground (COG)"),
-                                    _("Speed Over Water (SOW)"),
-                                    _("Course Over Water (COW)"),
-                                    _("Wind Velocity"),
-                                    _("Wind Direction"),
-                                    _("Wind Course"),
-                                    _("Wind Velocity Ground"),
-                                    _("Wind Direction Ground"),
-                                    _("Wind Course Ground"),
-                                    _("Apparent Wind Speed (AWS)"),
-                                    _("Apparent Wind Angle (AWA)"),
-                                    _("Wind Gust"),
-                                    _("Current Velocity"),
-                                    _("Current Direction"),
-                                    _("Sig Wave Height"),
-                                    _("Tacks")};
-  int m_cVariable1NChoices = sizeof(m_cVariable1Choices) / sizeof(wxString);
+  int variableInfoCount;
+  const VariableInfo* variableInfos = GetVariables(variableInfoCount);
+
+  // Create the display strings array for wxChoice
+  std::vector<wxString> variableChoices(variableInfoCount);
+  for (int i = 0; i < variableInfoCount; i++) {
+    variableChoices[i] = variableInfos[i].displayName;
+  }
+
   m_cVariable1 = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
-                              m_cVariable1NChoices, m_cVariable1Choices, 0);
-  m_cVariable1->SetSelection(3);
+                              variableInfoCount, variableChoices.data(), 0);
+  m_cVariable1->SetSelection(
+      GetVariableIndexFromEnum(APPARENT_WIND_SPEED_OVER_WATER));
   fgSizer78->Add(m_cVariable1, 1, wxALL | wxEXPAND | wxALIGN_CENTER_VERTICAL,
                  5);
 
@@ -3003,27 +3155,10 @@ PlotDialogBase::PlotDialogBase(wxWindow* parent, wxWindowID id,
 
   fgSizer78->Add(m_stMousePosition1, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
-  wxString m_cVariable2Choices[] = {_("Speed Over Ground (SOG)"),
-                                    _("Course Over Ground (COG)"),
-                                    _("Speed Over Water (SOW)"),
-                                    _("Course Over Water (COW)"),
-                                    _("Wind Velocity"),
-                                    _("Wind Direction"),
-                                    _("Wind Course"),
-                                    _("Wind Velocity Ground"),
-                                    _("Wind Direction Ground"),
-                                    _("Wind Course Ground"),
-                                    _("Apparent Wind Speed (AWS)"),
-                                    _("Apparent Wind Angle (AWA)"),
-                                    _("Wind Gust"),
-                                    _("Current Velocity"),
-                                    _("Current Direction"),
-                                    _("Sig Wave Height"),
-                                    _("Tacks")};
-  int m_cVariable2NChoices = sizeof(m_cVariable2Choices) / sizeof(wxString);
   m_cVariable2 = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
-                              m_cVariable2NChoices, m_cVariable2Choices, 0);
-  m_cVariable2->SetSelection(5);
+                              variableInfoCount, variableChoices.data(), 0);
+  m_cVariable2->SetSelection(
+      GetVariableIndexFromEnum(TRUE_WIND_SPEED_OVER_WATER));
   fgSizer78->Add(m_cVariable2, 1, wxALL | wxALIGN_CENTER_VERTICAL | wxEXPAND,
                  5);
 
@@ -3035,27 +3170,9 @@ PlotDialogBase::PlotDialogBase(wxWindow* parent, wxWindowID id,
 
   fgSizer78->Add(m_stMousePosition2, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
-  wxString m_cVariable3Choices[] = {_("Speed Over Ground (SOG)"),
-                                    _("Course Over Ground (COG)"),
-                                    _("Speed Over Water (SOW)"),
-                                    _("Course Over Water (COW)"),
-                                    _("Wind Velocity"),
-                                    _("Wind Direction"),
-                                    _("Wind Course"),
-                                    _("Wind Velocity Ground"),
-                                    _("Wind Direction Ground"),
-                                    _("Wind Course Ground"),
-                                    _("Apparent Wind Speed (AWS)"),
-                                    _("Apparent Wind Angle (AWA)"),
-                                    _("Wind Gust"),
-                                    _("Current Velocity"),
-                                    _("Current Direction"),
-                                    _("Sig Wave Height"),
-                                    _("Tacks")};
-  int m_cVariable3NChoices = sizeof(m_cVariable3Choices) / sizeof(wxString);
   m_cVariable3 = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
-                              m_cVariable3NChoices, m_cVariable3Choices, 0);
-  m_cVariable3->SetSelection(11);
+                              variableInfoCount, variableChoices.data(), 0);
+  m_cVariable3->SetSelection(GetVariableIndexFromEnum(SPEED_THROUGH_WATER));
   fgSizer78->Add(m_cVariable3, 1, wxALL | wxALIGN_CENTER_VERTICAL | wxEXPAND,
                  5);
 
@@ -3439,6 +3556,29 @@ AboutDialogBase::AboutDialogBase(wxWindow* parent, wxWindowID id,
   m_bClose->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
                     wxCommandEventHandler(AboutDialogBase::OnClose), NULL,
                     this);
+}
+
+PlotDialogBase::Variable PlotDialogBase::GetVariableEnumFromIndex(
+    int index) const {
+  int count;
+  const VariableInfo* infos = GetVariables(count);
+
+  if (index >= 0 && index < count) {
+    return infos[index].enumValue;
+  }
+  return SPEED_OVER_GROUND;  // Default value
+}
+
+int PlotDialogBase::GetVariableIndexFromEnum(Variable variable) const {
+  int count;
+  const VariableInfo* infos = GetVariables(count);
+
+  for (int i = 0; i < count; i++) {
+    if (infos[i].enumValue == variable) {
+      return i;
+    }
+  }
+  return -1;  // Not found
 }
 
 AboutDialogBase::~AboutDialogBase() {
@@ -4832,6 +4972,17 @@ CursorPositionDialog::CursorPositionDialog(wxWindow* parent, wxWindowID id,
   m_stTacks->Wrap(-1);
   fgSizer91->Add(m_stTacks, 0, wxALL | wxEXPAND, 5);
 
+  //
+  m_staticText127 = new wxStaticText(this, wxID_ANY, _("Jibes"),
+                                     wxDefaultPosition, wxDefaultSize, 0);
+  m_staticText127->Wrap(-1);
+  fgSizer91->Add(m_staticText127, 0, wxALL, 5);
+
+  m_stJibes = new wxStaticText(this, wxID_ANY, wxEmptyString, wxDefaultPosition,
+                               wxDefaultSize, 0);
+  m_stJibes->Wrap(-1);
+  fgSizer91->Add(m_stJibes, 0, wxALL | wxEXPAND, 5);
+
   m_staticText122 = new wxStaticText(this, wxID_ANY, _("Weather Data"),
                                      wxDefaultPosition, wxDefaultSize, 0);
   m_staticText122->Wrap(-1);
@@ -5021,6 +5172,16 @@ RoutePositionDialog::RoutePositionDialog(wxWindow* parent, wxWindowID id,
                                wxDefaultSize, 0);
   m_stTacks->Wrap(-1);
   fgSizer91->Add(m_stTacks, 0, wxALL | wxEXPAND, 5);
+
+  m_staticText127 = new wxStaticText(this, wxID_ANY, _("Jibes"),
+                                     wxDefaultPosition, wxDefaultSize, 0);
+  m_staticText127->Wrap(-1);
+  fgSizer91->Add(m_staticText127, 0, wxALL, 5);
+
+  m_stJibes = new wxStaticText(this, wxID_ANY, wxEmptyString, wxDefaultPosition,
+                               wxDefaultSize, 0);
+  m_stJibes->Wrap(-1);
+  fgSizer91->Add(m_stJibes, 0, wxALL | wxEXPAND, 5);
 
   m_staticText122 = new wxStaticText(this, wxID_ANY, _("Weather Data"),
                                      wxDefaultPosition, wxDefaultSize, 0);

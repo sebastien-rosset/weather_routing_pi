@@ -1,9 +1,4 @@
 /***************************************************************************
- *
- * Project:  OpenCPN Weather Routing plugin
- * Author:   Sean D'Epagnier
- *
- ***************************************************************************
  *   Copyright (C) 2015 by Sean D'Epagnier                                 *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -20,8 +15,7 @@
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
  *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,  USA.         *
- ***************************************************************************
- */
+ ***************************************************************************/
 
 #include <wx/wx.h>
 #include <wx/glcanvas.h>
@@ -160,7 +154,7 @@ void LineBufferOverlay::setLineBuffer() {
                    round(dec / 2.));
   }
 
-  float alpha = 0.38;
+  float alpha = 0.38f;
   int b1 = dec - windArrowSize + (2 * m_lineWidth) +
            ceil((m_lineWidth / 2) * sin(alpha));  // Position of 1st barb
   int b2 = dec - windArrowSize +
