@@ -6,20 +6,20 @@ message(STATUS "Building weather routing plugin tests")
 
 enable_testing ()
 
-message(STATUS "Downloading and building gtest from source")
+message(STATUS "Downloading and building gtest from source (if required)")
 # As per https://google.github.io/googletest/quickstart-cmake.html
 include(FetchContent)
 FetchContent_Declare(
     googletest
     GIT_REPOSITORY https://github.com/google/googletest.git
     GIT_TAG v1.16.0 # Released 2025-02-07
+    FIND_PACKAGE_ARGS NAMES googletest VERSION 1.16.0  # Only download and build if it's not already available via find_package
   )
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 # Find required packages
-find_package(GTest REQUIRED)
 find_package(wxWidgets COMPONENTS 
 core 
 base 
