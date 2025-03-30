@@ -35,7 +35,7 @@ class LineBuffer {
 public:
   LineBuffer() {
     count = 0;
-    lines = NULL;
+    lines = nullptr;
   }
   ~LineBuffer() { delete[] lines; }
 

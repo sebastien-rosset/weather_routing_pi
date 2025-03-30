@@ -247,7 +247,7 @@ void BoatDialog::OnPaintPlot(wxPaintEvent& event) {
     double windspeed = polar.wind_speeds[VWi].tws;
     for (unsigned int Wi = 0; Wi < polar.degree_steps.size(); Wi++) {
       double W = polar.degree_steps[Wi];
-      double stw;
+      double stw = 0;
       if (selection < 2)
         stw = polar.Speed(W, windspeed);
       else
@@ -321,7 +321,7 @@ void BoatDialog::OnPaintPlot(wxPaintEvent& event) {
   /* boat speeds */
   if (plottype == 0) {
     for (unsigned int VWi = 0; VWi < polar.wind_speeds.size(); VWi++) {
-      double VW, aws;
+      double VW = 0, aws = 0;
       switch (selection) {
         case 0:
         case 1:
@@ -335,7 +335,7 @@ void BoatDialog::OnPaintPlot(wxPaintEvent& event) {
       }
 
       bool lastvalid = false;
-      int lx, ly;
+      int lx = 0, ly = 0;
       //            for(unsigned int Wi = 0; Wi<polar.degree_steps.size()+full;
       //            Wi++) {
       //              double W =
@@ -344,7 +344,7 @@ void BoatDialog::OnPaintPlot(wxPaintEvent& event) {
       double Wn = polar.degree_steps[polar.degree_steps.size() - 1];
       double Wd = Wn - W0, Ws = Wd / floor(Wd);
       for (double W = W0; W <= Wn; W += Ws) {
-        double stw;
+        double stw = 0;
         switch (selection) {
           case 0:
           case 1:
@@ -362,7 +362,7 @@ void BoatDialog::OnPaintPlot(wxPaintEvent& event) {
           continue;
         }
 
-        double a;
+        double a = 0;
 
         switch (selection) {
           case 0:
@@ -392,13 +392,13 @@ void BoatDialog::OnPaintPlot(wxPaintEvent& event) {
     }
   } else {
     for (unsigned int Wi = 0; Wi < polar.degree_steps.size(); Wi++) {
-      double W = polar.degree_steps[Wi], stw;
+      double W = polar.degree_steps[Wi], stw = 0;
 
       bool lastvalid = false;
-      int lx, ly;
+      int lx = 0, ly = 0;
       for (unsigned int VWi = 0; VWi < polar.wind_speeds.size(); VWi++) {
         double windspeed = polar.wind_speeds[VWi].tws;
-        double VW, aws;
+        double VW = 0, aws = 0;
         switch (selection) {
           case 0:
           case 1:
@@ -429,7 +429,7 @@ void BoatDialog::OnPaintPlot(wxPaintEvent& event) {
         }
 
 #if 0
-                double a;
+                double a = 0;
 
                 switch(selection) {
                 case 0: case 2: a = W; break;
@@ -481,7 +481,7 @@ void BoatDialog::OnPaintPlot(wxPaintEvent& event) {
 
       double stw = polar.Speed(W, VW);
 
-      double a;
+      double a = 0;
       switch (selection) {
         case 0:
         case 2:
@@ -554,7 +554,7 @@ void BoatDialog::OnPaintCrossOverChart(wxPaintEvent& event) {
   dc.SetTextForeground(wxColour(0, 55, 75));
 
   bool full = m_cbFullPlot->GetValue();
-  double scale;
+  double scale = 0;
   int xc = full ? w / 2 : 0;
   if (polar) scale = wxMin(full ? w / 2 : w, h / 2) / 40.0;
 

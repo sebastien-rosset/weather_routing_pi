@@ -103,7 +103,7 @@ public:
 private:
   void Put(const PolygonRegion& region, int winding_rule, bool reverse);
   void PutContours(TESStesselator* tess, bool reverse) const;
-  void InitMem() { memsize = 0, mem = NULL; }
+  void InitMem() { memsize = 0, mem = nullptr; }
   void AllocateMem();
   void FreeMem() { /*delete [] mem;*/ }
 
