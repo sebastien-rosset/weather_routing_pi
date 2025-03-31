@@ -232,7 +232,7 @@ void Boat::GenerateCrossOverChart(void* arg, void (*status)(void*, int, int)) {
 
     segments.splice(segments.end(), wrapped_segments);
     Polars[p].CrossOverRegion = PolygonRegion(segments);
-    Polars[p].CrossOverRegion.Simplify(1e-1);
+    Polars[p].CrossOverRegion.Simplify(1e-1f);
   }
   if (status) status(arg, Polars.size(), Polars.size());
 }

@@ -440,6 +440,9 @@ protected:
   wxStaticText* m_staticText24;
   wxSpinCtrl* m_sTackingTime;
   wxStaticText* m_staticText121;
+  wxStaticText* m_staticText25;
+  wxSpinCtrl* m_sJibingTime;
+  wxStaticText* m_staticText122;
   wxStaticText* m_staticText241;
   wxSpinCtrlDouble* m_sSafetyMarginLand;
   wxStaticText* m_staticText1211;
@@ -521,6 +524,120 @@ protected:
   virtual void OnUpdatePlot(wxScrollEvent& event) { event.Skip(); }
   virtual void OnUpdatePlotVariable(wxCommandEvent& event) { event.Skip(); }
   virtual void OnUpdateRoute(wxCommandEvent& event) { event.Skip(); }
+
+  /**
+   * Navigation and weather variables used in route calculations.
+   *
+   * This enum represents various navigation parameters related to vessel
+   * movement, wind conditions, and sea state that are used in weather routing
+   * calculations.
+   */
+  enum Variable {
+    /** Vessel's Speed Over Ground (SOG), relative to the earth's surface in
+       knots. */
+    SPEED_OVER_GROUND,
+    /** Course Over Ground (COG), relative to the earth's surface in degrees. */
+    COURSE_OVER_GROUND,
+    /** Vessel's Speed Through Water (STW) in knots. */
+    SPEED_THROUGH_WATER,
+    /** Vessel's Course Through Water (CTW) relative to the water in degrees -
+       differs from heading by accounting for leeway */
+    COURSE_THROUGH_WATER,
+    /** True Wind Speed relative to the water's frame of reference in knots. */
+    TRUE_WIND_SPEED_OVER_WATER,
+    /** True Wind Angle between vessel's Course Through Water and the True Wind
+     * Angle, in degrees. */
+    TRUE_WIND_ANGLE_OVER_WATER,
+    /** True Wind Direction (TWD) relative to the vessel's course over water in
+       degrees. */
+    TRUE_WIND_DIRECTION_OVER_WATER,
+    /** True Wind Speed (TWS) relative to the earth's surface in knots. */
+    TRUE_WIND_SPEED_OVER_GROUND,
+    /** True Wind Angle (TWA) relative to the vessel's course over ground in
+       degrees. */
+    TRUE_WIND_ANGLE_OVER_GROUND,
+    /** True Wind Direction (TWD) in degrees relative to true north -
+       meteorological, where wind is coming FROM */
+    TRUE_WIND_DIRECTION_OVER_GROUND,
+    /**
+     * Apparent Wind Speed (AWS), as experienced by the vessel in knots.
+     * This is the wind speed relative to the vessel's frame of reference,
+     * taking into account the vessel's speed and direction.
+     * It is calculated as the vector sum of the true wind speed and the
+     * vessel's speed through the water.
+     */
+    APPARENT_WIND_SPEED_OVER_WATER,
+    /** Apparent Wind Angle (AWA) between vessel heading and apparent wind in
+       degrees. */
+    APPARENT_WIND_ANGLE_OVER_WATER,
+    /** Maximum wind speed in gusts in knots */
+    WIND_GUST,
+    /** Water current speed in knots */
+    CURRENT_VELOCITY,
+    /** Water current direction in degrees (from direction) */
+    CURRENT_DIRECTION,
+    /** Significant wave height in meters */
+    SIG_WAVE_HEIGHT,
+    /** Number of tacking maneuvers in a sailing route. */
+    TACKS,
+    /** Number of jibes in a sailing route. */
+    JIBES,
+  };
+
+  /**
+   * Structure to hold information about weather routing variables.
+   *
+   * This structure contains the enum value and display name of a weather
+   * routing variable. It is used to populate the UI with available variables
+   * for selection.
+   */
+  struct VariableInfo {
+    Variable enumValue;
+    wxString displayName;
+  };
+
+  /**
+   * Get the list of available weather routing variables.
+   *
+   * This function returns an array of VariableInfo structures, each containing
+   * the enum value and display name of a variable. The count of variables is
+   * also returned through the count parameter.
+   *
+   * @param count Reference to an integer to store the number of variables.
+   * @return Pointer to an array of VariableInfo structures.
+   */
+  static const VariableInfo* GetVariables(int& count) {
+    static const VariableInfo variableInfos[] = {
+        {SPEED_OVER_GROUND, _("Speed Over Ground (SOG)")},
+        {COURSE_OVER_GROUND, _("Course Over Ground (COG)")},
+        {SPEED_THROUGH_WATER, _("Speed Through Water (STW)")},
+        {COURSE_THROUGH_WATER, _("Course Through Water (CTW)")},
+        {TRUE_WIND_DIRECTION_OVER_GROUND, _("TWD over Ground")},
+        {TRUE_WIND_SPEED_OVER_GROUND, _("TWS over Ground")},
+        {TRUE_WIND_ANGLE_OVER_GROUND, _("TWA over Ground")},
+        {TRUE_WIND_DIRECTION_OVER_WATER, _("TWD over Water")},
+        {TRUE_WIND_SPEED_OVER_WATER, _("TWS Over Water")},
+        {TRUE_WIND_ANGLE_OVER_WATER, _("TWA Over Water")},
+        {APPARENT_WIND_SPEED_OVER_WATER, _("AWS over Water")},
+        {APPARENT_WIND_ANGLE_OVER_WATER, _("AWA over Water")},
+        {WIND_GUST, _("Wind Gust")},
+        {CURRENT_VELOCITY, _("Current Velocity")},
+        {CURRENT_DIRECTION, _("Current Direction")},
+        {SIG_WAVE_HEIGHT, _("Significant Wave Height")},
+        {TACKS, _("Tacks")},
+        {JIBES, _("Jibes")},
+    };
+
+    static const int variableInfoCount =
+        sizeof(variableInfos) / sizeof(VariableInfo);
+    count = variableInfoCount;
+    return variableInfos;
+  }
+
+  /** Get the enum value of a variable based on its index in the UI list. */
+  Variable GetVariableEnumFromIndex(int index) const;
+  /** Get the index of a variable in the UI list based on its enum value. */
+  int GetVariableIndexFromEnum(Variable variable) const;
 
 public:
   wxRadioButton* m_rbCursorRoute;
@@ -632,8 +749,8 @@ public:
   void m_splitter2OnIdle(wxIdleEvent&) {
     m_splitter2->SetSashPosition(0);
     m_splitter2->Disconnect(
-        wxEVT_IDLE, wxIdleEventHandler(BoatDialogBase::m_splitter2OnIdle), NULL,
-        this);
+        wxEVT_IDLE, wxIdleEventHandler(BoatDialogBase::m_splitter2OnIdle),
+        nullptr, this);
   }
 };
 
@@ -825,6 +942,7 @@ protected:
   wxStaticText* m_staticText124;
   wxStaticText* m_staticText130;
   wxStaticText* m_staticText126;
+  wxStaticText* m_staticText127;
   wxStaticText* m_staticText122;
   wxStdDialogButtonSizer* m_sdbSizer5;
   wxButton* m_sdbSizer5OK;
@@ -835,6 +953,7 @@ public:
   wxStaticText* m_stPolar;
   wxStaticText* m_stSailChanges;
   wxStaticText* m_stTacks;
+  wxStaticText* m_stJibes;
   wxStaticText* m_stWeatherData;
 
   CursorPositionDialog(wxWindow* parent, wxWindowID id = wxID_ANY,
@@ -865,6 +984,7 @@ protected:
   wxStaticText* m_staticText124;
   wxStaticText* m_staticText130;
   wxStaticText* m_staticText126;
+  wxStaticText* m_staticText127;
   wxStaticText* m_staticText122;
   wxStdDialogButtonSizer* m_sdbSizer5;
   wxButton* m_sdbSizer5OK;
@@ -884,6 +1004,7 @@ public:
   wxStaticText* m_stPolar;
   wxStaticText* m_stSailChanges;
   wxStaticText* m_stTacks;
+  wxStaticText* m_stJibes;
   wxStaticText* m_stWeatherData;
 
   RoutePositionDialog(wxWindow* parent, wxWindowID id = wxID_ANY,

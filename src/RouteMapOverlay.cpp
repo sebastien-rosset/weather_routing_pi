@@ -193,7 +193,9 @@ void RouteMapOverlay::RouteAnalysis(PlugIn_Route* proute) {
   m_bUpdated = true;
   m_UpdateOverlay = true;
   last_destination_position = new Position(
-      data.lat, data.lon, nullptr, /*minH*/ NAN, NAN, data.polar, true, 0);
+      data.lat, data.lon, nullptr /* position */, NAN /* heading */,
+      NAN /* bearing*/, data.polar, 0 /* tacks */, 0 /* jibes */,
+      0 /* data_mask */, true /* data_deficient */);
 
   last_cursor_plotdata = last_destination_plotdata;
   if (ok) {
@@ -695,15 +697,15 @@ int RouteMapOverlay::sailingConditionLevel(const PlotData& plot) const {
   // Wind impact exponentially on sailing comfort
   // We propose a power 3 function as difficulties increase exponentially
   // Over 30knts, it starts to be tough
-  double WV = plot.VW;
-  double WV_normal = pow(WV / MAX_WV, 3);
+  double twsOverWater = plot.twsOverWater;
+  double WV_normal = pow(twsOverWater / MAX_WV, 3);
 
   // Wind direction impact on sailing comfort.
   // Ex: if you decide to sail upwind with 30knts, it is not the same
   // conditions as if you sail downwind (impact of waves, heel, and more).
   // Use a normal distribution to set the maximum difficulty at 35° upwind,
   // and reduce when we go downwind.
-  double AW = heading_resolve(plot.ctw - plot.twa);
+  double AW = heading_resolve(plot.ctw - plot.twdOverWater);
   double teta = 30;
   double mu = 35;
   double amp = 20;
@@ -912,8 +914,9 @@ void RouteMapOverlay::RenderWindBarbsOnRoute(piDC& dc, PlugIn_ViewPort& vp,
     //
     //   cog sog : boat speed over ground
     //   ctw  stw  : boat speed over water
-    float windSpeed = it->VW;
-    float windDirection = it->twa;  // heading_resolve(it->ctw - it->W);
+    float windSpeed = it->twsOverWater;
+    float windDirection =
+        it->twdOverWater;  // heading_resolve(it->ctw - it->W);
 
     // By default, display true wind
     float finalWindSpeed = windSpeed;
@@ -923,9 +926,10 @@ void RouteMapOverlay::RenderWindBarbsOnRoute(piDC& dc, PlugIn_ViewPort& vp,
       finalWindSpeed = Polar::VelocityApparentWind(
           it->stw, heading_resolve(it->ctw - windDirection), windSpeed);
       finalWindDirection = heading_resolve(
-          it->ctw - Polar::DirectionApparentWind(
-                        finalWindSpeed, it->stw,
-                        heading_resolve(it->ctw - windDirection), it->VW));
+          it->ctw -
+          Polar::DirectionApparentWind(finalWindSpeed, it->stw,
+                                       heading_resolve(it->ctw - windDirection),
+                                       it->twsOverWater));
     }
 
     // Draw barbs
@@ -1495,10 +1499,10 @@ double RouteMapOverlay::RouteInfo(enum RouteInfoType type, bool cursor_route) {
         if (total < it->sog) total = it->sog;
         break;
       case AVGWIND:
-        total += it->VW;
+        total += it->twsOverWater;
         break;
       case MAXWIND:
-        if (total < it->VW) total = it->VW;
+        if (total < it->twsOverWater) total = it->twsOverWater;
         break;
       case MAXWINDGUST:
         if (total < it->VW_GUST) total = it->VW_GUST;
@@ -1516,10 +1520,10 @@ double RouteMapOverlay::RouteInfo(enum RouteInfoType type, bool cursor_route) {
         if (total < it->WVHT) total = it->WVHT;
         break;
       case PERCENTAGE_UPWIND:
-        if (fabs(heading_resolve(it->ctw - it->twa)) < 90) total++;
+        if (fabs(heading_resolve(it->ctw - it->twdOverWater)) < 90) total++;
         break;
       case PORT_STARBOARD:
-        if (heading_resolve(it->ctw - it->twa) > 0) total++;
+        if (heading_resolve(it->ctw - it->twdOverWater) > 0) total++;
         break;
       // CUSTOMIZATION
       // Comfort on route
@@ -1537,6 +1541,8 @@ double RouteMapOverlay::RouteInfo(enum RouteInfoType type, bool cursor_route) {
   switch (type) {
     case TACKS:
       return plotdata.size() ? plotdata.back().tacks : 0;
+    case JIBES:
+      return plotdata.size() ? plotdata.back().jibes : 0;
     case DISTANCE:
       if (total == 0)
         total = NAN;
@@ -1642,6 +1648,7 @@ void RouteMapOverlay::UpdateDestination() {
     Position* endp;
     double minH;
     bool mintacked;
+    bool minjibes;
     int mindata_mask;
 
     for (IsoRouteList::iterator it = isochron->routes.begin();
@@ -1652,7 +1659,7 @@ void RouteMapOverlay::UpdateDestination() {
       configuration.time = isochron->time;
       configuration.UsedDeltaTime = isochron->delta;
       (*it)->PropagateToEnd(configuration, mindt, endp, minH, mintacked,
-                            mindata_mask);
+                            minjibes, mindata_mask);
     }
     Unlock();
 
@@ -1667,7 +1674,8 @@ void RouteMapOverlay::UpdateDestination() {
     } else {
       destination_position =
           new Position(configuration.EndLat, configuration.EndLon, endp, minH,
-                       NAN, endp->polar, endp->tacks + mintacked, mindata_mask);
+                       NAN, endp->polar, endp->tacks + mintacked,
+                       endp->jibes + minjibes, mindata_mask);
 
       m_EndTime = isochron->time + wxTimeSpan::Milliseconds(1000 * mindt);
       isochron->delta = mindt;

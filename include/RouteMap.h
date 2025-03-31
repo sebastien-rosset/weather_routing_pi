@@ -97,21 +97,27 @@ class WR_GribRecordSet;
  */
 class RoutePoint {
 public:
-  RoutePoint(double latitude = 0., double longitude = 0., int sp = -1,
-             int t = 0, int dm = 0, bool data_deficient = false)
+  RoutePoint(double latitude = 0., double longitude = 0., int polar_ = -1,
+             int tacks_ = 0, int jibes_ = 0, int data_mask_ = 0,
+             bool data_deficient = false)
       : lat(latitude),
         lon(longitude),
-        polar(sp),
-        tacks(t),
+        polar(polar_),
+        tacks(tacks_),
+        jibes(jibes_),
         grib_is_data_deficient(data_deficient),
-        data_mask(dm) {}
+        data_mask(data_mask_) {}
 
   virtual ~RoutePoint() {};
 
   double lat;
   double lon;
-  int polar; /* which polar in the boat we are using */
-  int tacks; /* how many times we have tacked to get to this position */
+  /** The index of the polar to use at this position. */
+  int polar;
+  /** The number of tack maneuvers to get to this position. */
+  int tacks;
+  /** The number of jibe maneuvers to get to this position. */
+  int jibes;
 
   bool grib_is_data_deficient;
 
@@ -283,22 +289,60 @@ public:
   double delta;
   double sog;  //!< Speed Over Ground (SOG) in knots.
   double cog;  //!< Course Over Ground in degrees.
-  double stw;  //!< Speed of boat through water in knots.
-  double ctw;  //!< Course of boat through water in degrees.
-  /** Wind speed relative to the water's frame of reference in knots. */
-  double VW;
+  double stw;  //!< Speed Through Water (STW) in knots.
+  double ctw;  //!< Course Through Water (CTW) in degrees.
   /**
-   * True Wind Angle (TWA)
+   * True Wind Speed relative to water (TWS over water) in knots, as predicted
+   * by the forecast.
    *
-   * Represents the relative angle between vessel's course through water (CTW)
-   * and the wind direction in degrees.
+   * This is the wind speed relative to the water's frame of reference.
+   * Calculated from weather models/GRIBs for routing purposes.
+   *
+   * @note If the estimate is accurate, this should match the TWS value
+   * displayed by standard marine instruments, which typically calculate TWS
+   * using apparent wind data and the vessel's speed through water.
    */
-  double twa;
-  double tws;           //!< True Wind Speed (TWS) over ground in knots.
-  double twd;           //!< True Wind Direction (TWD) over ground in degrees.
+  double twsOverWater;
+  /**
+   * True Wind Direction relative to water (TWD over water) in degrees, as
+   * predicted by the forecast.
+   *
+   * The direction FROM which the true wind is coming, measured
+   * in degrees clockwise from true north (0-359°).
+   * This is relative to water, affected by water current.
+   *
+   * @note If the estimate is accurate, this should match the TWD value
+   * displayed by standard marine instruments, which typically calculate TWD
+   * using apparent wind data and the vessel's speed through water.
+   */
+  double twdOverWater;
+  /**
+   * True Wind Speed (TWS) over ground in knots, as predicted by the forecast.
+   *
+   * The wind speed relative to land/ground, regardless of water current.
+   * Calculated from weather models/GRIBs for routing purposes.
+   *
+   * @note This corresponds to the wind speed values provided in weather
+   * forecasts and GRIB files. Not typically displayed on standard marine
+   * instruments unless they specifically calculate ground-referenced wind.
+   */
+  double twsOverGround;
+  /**
+   * True Wind Direction (TWD) over ground in degrees, as predicted by the
+   * forecast.
+   *
+   * The direction FROM which the true wind is coming, measured
+   * in degrees clockwise from true north (0-359°).
+   * This is relative to ground, not affected by water current.
+   *
+   * @note This corresponds to the wind direction values provided in weather
+   * forecasts and GRIB files. May differ from instrument-displayed TWD if
+   * significant current is present.
+   */
+  double twdOverGround;
   double currentSpeed;  //!< Velocity of current over ground in knots.
   double currentDir;    //!< Sea current direction over ground in degrees.
-  double WVHT;          //!< Swell height in meters.
+  double WVHT;          //!< Significant swell height in meters.
   double VW_GUST;       //!< Gust wind speed in knots.
 };
 
@@ -345,8 +389,9 @@ enum PropagationError {
 class Position : public RoutePoint {
 public:
   Position(double latitude, double longitude, Position* p = nullptr,
-           double pheading = NAN, double pbearing = NAN, int sp = -1, int t = 0,
-           int data_mask = 0, bool data_deficient = false);
+           double pheading = NAN, double pbearing = NAN, int polar_ = -1,
+           int tacks_ = 0, int jibes_ = 0, int data_mask_ = 0,
+           bool data_deficient_ = false);
   Position(Position* p);
 
   SkipPosition* BuildSkipList();
@@ -671,11 +716,12 @@ public:
    * @param endp [out] Position from which the end is reached
    * @param minH [out] Final heading at destination
    * @param mintacked [out] Whether tacking occurred on final approach
+   * @param minjibed [out] Whether jibing occurred on final approach
    * @param mindata_mask [out] Data source mask for the final approach
    */
   void PropagateToEnd(RouteMapConfiguration& configuration, double& mindt,
                       Position*& endp, double& minH, bool& mintacked,
-                      int& mindata_mask);
+                      bool& minjibed, int& mindata_mask);
 
   /**
    * Counts the number of skip positions in this route.
@@ -1133,6 +1179,13 @@ struct RouteMapConfiguration {
    * The penalty time is added to the route calculation for each tack.
    */
   double TackingTime;
+
+  /**
+   * The penalty time to jibe the boat, in seconds.
+   *
+   * The penalty time is added to the route calculation for each tack.
+   */
+  double JibingTime;
 
   /**
    * Maximum opposing wind vs current value to avoid dangerous sea conditions.

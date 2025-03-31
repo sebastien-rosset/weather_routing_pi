@@ -1,9 +1,4 @@
 /***************************************************************************
- *
- * Project:  OpenCPN Weather Routing plugin
- * Author:   Sean D'Epagnier
- *
- ***************************************************************************
  *   Copyright (C) 2015 by Sean D'Epagnier                                 *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -20,15 +15,14 @@
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
  *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,  USA.         *
- ***************************************************************************
- *
- */
+ ***************************************************************************/
 
 #include <wx/wx.h>
 #include <wx/stdpaths.h>
 
 #include <stdlib.h>
 #include <math.h>
+#include <cmath>  // For std::isnan
 #include <time.h>
 
 #include "Utilities.h"
@@ -86,39 +80,48 @@ void PlotDialog::OnMouseEventsPlot(wxMouseEvent& event) {
   }
 }
 
-double PlotDialog::GetValue(PlotData& data, int var) {
-  switch (var) {
+double PlotDialog::GetValue(PlotData& data, Variable variable) {
+  switch (variable) {
     case SPEED_OVER_GROUND:
       return data.sog;
     case COURSE_OVER_GROUND:
       return positive_degrees(data.cog);
 
-    case SPEED_OVER_WATER:
+    case SPEED_THROUGH_WATER:
       return data.stw;
-    case COURSE_OVER_WATER:
+    case COURSE_THROUGH_WATER:
       return positive_degrees(data.ctw);
 
-    case WIND_VELOCITY:
-      return data.VW;
-    case WIND_DIRECTION:
-      return heading_resolve(data.ctw - data.twa);
-    case WIND_COURSE:
-      return positive_degrees(data.twa);
+    case TRUE_WIND_SPEED_OVER_WATER:
+      // This would be the same as the TWS reading on the boat, if the
+      // estimate is accurate.
+      // The TWS reading from the vane and anemometer provides the apparent wind
+      // speed, which is then corrected for the boat's speed through the water
+      // to get the TWS over water.
+      return data.twsOverWater;
+    case TRUE_WIND_ANGLE_OVER_WATER:
+      // Find the angle between the direction the boat is traveling through
+      // water (Course Through Water or CTW) and the direction from which the
+      // true wind is coming (True Wind Direction over water or TWD-Water).
+      return heading_resolve(data.ctw - data.twdOverWater);
+    case TRUE_WIND_DIRECTION_OVER_WATER:
+      return positive_degrees(data.twdOverWater);
 
-    case WIND_VELOCITY_GROUND:
-      return data.tws;
-    case WIND_DIRECTION_GROUND:
-      return heading_resolve(data.cog - data.twd);
-    case WIND_COURSE_GROUND:
-      return positive_degrees(data.twd);
+    case TRUE_WIND_SPEED_OVER_GROUND:
+      return data.twsOverGround;
+    case TRUE_WIND_ANGLE_OVER_GROUND:
+      return heading_resolve(data.cog - data.twdOverGround);
+    case TRUE_WIND_DIRECTION_OVER_GROUND:
+      return positive_degrees(data.twdOverGround);
 
-    case APPARENT_WIND_SPEED:
+    case APPARENT_WIND_SPEED_OVER_WATER:
       return Polar::VelocityApparentWind(
-          data.stw, GetValue(data, WIND_DIRECTION), data.VW);
-    case APPARENT_WIND_ANGLE: {
+          data.stw, GetValue(data, TRUE_WIND_ANGLE_OVER_WATER),
+          data.twsOverWater);
+    case APPARENT_WIND_ANGLE_OVER_WATER: {
       return Polar::DirectionApparentWind(
-          GetValue(data, APPARENT_WIND_SPEED), data.stw,
-          GetValue(data, WIND_DIRECTION), data.VW);
+          GetValue(data, APPARENT_WIND_SPEED_OVER_WATER), data.stw,
+          GetValue(data, TRUE_WIND_ANGLE_OVER_WATER), data.twsOverWater);
       case WIND_GUST:
         return data.VW_GUST;
     }
@@ -130,6 +133,8 @@ double PlotDialog::GetValue(PlotData& data, int var) {
       return data.WVHT;
     case TACKS:
       return data.tacks;
+    case JIBES:
+      return data.jibes;
   }
   return NAN;
 }
@@ -156,8 +161,8 @@ enum Type {
   CURRENT_DIRECTION,
   /** Significant wave height */
   WAVE_HEIGHT,
-  /** Tacking maneuvers count */
-  TACKS,
+  /** Tacking and Jibing maneuvers count */
+  TACKS_AND_JIBES,
   /** Absolute wind directions (meteorological) */
   WIND_COURSE,
   /** Invalid or undefined type */
@@ -166,22 +171,22 @@ enum Type {
 int PlotDialog::GetType(int var) {
   switch (var) {
     case SPEED_OVER_GROUND:
-    case SPEED_OVER_WATER:
+    case SPEED_THROUGH_WATER:
       return SPEED;
     case COURSE_OVER_GROUND:
-    case COURSE_OVER_WATER:
+    case COURSE_THROUGH_WATER:
       return COURSE;
-    case WIND_VELOCITY:
-    case WIND_VELOCITY_GROUND:
-    case APPARENT_WIND_SPEED:
+    case TRUE_WIND_SPEED_OVER_WATER:
+    case TRUE_WIND_SPEED_OVER_GROUND:
+    case APPARENT_WIND_SPEED_OVER_WATER:
     case WIND_GUST:
       return WIND_SPEED;
-    case WIND_DIRECTION:
-    case WIND_DIRECTION_GROUND:
-    case APPARENT_WIND_ANGLE:
+    case TRUE_WIND_ANGLE_OVER_WATER:
+    case TRUE_WIND_ANGLE_OVER_GROUND:
+    case APPARENT_WIND_ANGLE_OVER_WATER:
       return WIND_DIRECTION;
-    case WIND_COURSE:
-    case WIND_COURSE_GROUND:
+    case TRUE_WIND_DIRECTION_OVER_WATER:
+    case TRUE_WIND_DIRECTION_OVER_GROUND:
       return WIND_COURSE;
     case CURRENT_VELOCITY:
       return CURRENT_SPEED;
@@ -190,7 +195,8 @@ int PlotDialog::GetType(int var) {
     case SIG_WAVE_HEIGHT:
       return WAVE_HEIGHT;
     case TACKS:
-      return TACKS;
+    case JIBES:
+      return TACKS_AND_JIBES;
   }
   return INVALID;
 }
@@ -201,30 +207,41 @@ void PlotDialog::GetScale() {
     bool first = true;
     for (std::list<PlotData>::iterator it = m_PlotData.begin();
          it != m_PlotData.end(); it++) {
-      double value = GetValue(*it, cVariable[i]->GetSelection());
+      Variable variable =
+          GetVariableEnumFromIndex(cVariable[i]->GetSelection());
+      double value = GetValue(*it, variable);
       if (first) {
         m_StartTime = (*it).time;
         m_mintime = m_maxtime = 0.;
         m_minvalue[i] = m_maxvalue[i] = value;
         first = false;
       } else {
-        double time = ((*it).time - m_StartTime).GetSeconds().ToDouble();
-        m_mintime = MIN(time, m_mintime);
-        m_maxtime = MAX(time, m_maxtime);
+        // Make sure both datetimes are valid before performing subtraction
+        if ((*it).time.IsValid() && m_StartTime.IsValid()) {
+          double time = ((*it).time - m_StartTime).GetSeconds().ToDouble();
+          m_mintime = MIN(time, m_mintime);
+          m_maxtime = MAX(time, m_maxtime);
+        } else {
+          // Skip this point if either datetime is invalid
+          continue;
+        }
         m_minvalue[i] = MIN(value, m_minvalue[i]);
         m_maxvalue[i] = MAX(value, m_maxvalue[i]);
       }
     }
   }
 
-  // force same scales for comparible datatypes
-  for (int i = 0; i < 2; i++)
-    for (int j = i + 1; j < 3; j++)
+  // force same scales for comparable datatypes
+  for (int i = 0; i < 2; i++) {
+    for (int j = i + 1; j < 3; j++) {
+      // Use the same scale if variables are of the same type
       if (GetType(cVariable[i]->GetSelection()) ==
           GetType(cVariable[j]->GetSelection())) {
         m_minvalue[i] = m_minvalue[j] = wxMin(m_minvalue[i], m_minvalue[j]);
         m_maxvalue[i] = m_maxvalue[j] = wxMax(m_maxvalue[i], m_maxvalue[j]);
       }
+    }
+  }
 }
 
 static wxString ReadableTime(int seconds) {
@@ -265,8 +282,21 @@ void PlotDialog::OnPaintPlot(wxPaintEvent& event) {
     bool first = true;
     for (std::list<PlotData>::iterator it = m_PlotData.begin();
          it != m_PlotData.end(); it++) {
+      // Validate timestamps before subtraction
+      if (!(*it).time.IsValid() || !m_StartTime.IsValid()) {
+        continue;  // Skip invalid points
+      }
+
       double time = ((*it).time - m_StartTime).GetSeconds().ToDouble();
-      double value = GetValue(*it, cVariable[i]->GetSelection());
+      Variable variable =
+          GetVariableEnumFromIndex(cVariable[i]->GetSelection());
+      double value = GetValue(*it, variable);
+
+      // Verify calculated values are valid (not NaN)
+      if (std::isnan(time) || std::isnan(value) || m_maxtime == m_mintime ||
+          m_maxvalue[i] == m_minvalue[i]) {
+        continue;  // Skip invalid points
+      }
 
       int x =
           w *
@@ -288,17 +318,22 @@ void PlotDialog::OnPaintPlot(wxPaintEvent& event) {
   // the current time position by the GRIB file
   wxDateTime gribTime =
       m_WeatherRouting.m_ConfigurationDialog.m_GribTimelineTime;
-  double cursorTime = (gribTime - m_StartTime).GetSeconds().ToDouble();
-  if (cursorTime <= m_maxtime || cursorTime >= m_mintime) {
-    int x_cursor =
-        w * (scale * ((cursorTime - m_mintime) / (m_maxtime - m_mintime) -
-                      position) +
-             position);
 
-    wxColor orange(255, 165, 0);
-    wxPen cursorPen(orange, 3, wxPENSTYLE_DOT);
-    dc.SetPen(cursorPen);
-    dc.DrawLine(x_cursor, 0, x_cursor, h);
+  // Check for valid timestamps and avoid division by zero
+  if (gribTime.IsValid() && m_StartTime.IsValid() && m_maxtime > m_mintime) {
+    double cursorTime = (gribTime - m_StartTime).GetSeconds().ToDouble();
+    if (!std::isnan(cursorTime) && cursorTime <= m_maxtime &&
+        cursorTime >= m_mintime) {
+      int x_cursor =
+          w * (scale * ((cursorTime - m_mintime) / (m_maxtime - m_mintime) -
+                        position) +
+               position);
+
+      wxColor orange(255, 165, 0);
+      wxPen cursorPen(orange, 3, wxPENSTYLE_DOT);
+      dc.SetPen(cursorPen);
+      dc.DrawLine(x_cursor, 0, x_cursor, h);
+    }
   }
   // ----------------------------------------------------------------
 

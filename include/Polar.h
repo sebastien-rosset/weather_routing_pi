@@ -127,17 +127,17 @@ enum PolarSpeedStatus {
 class Polar {
 public:
   /**
-   * Calculates the apparent wind speed.
+   * Calculates the Apparent Wind Speed (AWS).
    *
-   * This function computes the apparent wind speed (AWS) that a vessel
+   * This function computes the Apparent Wind Speed (AWS) that a vessel
    * experiences, based on the vessel's speed through water and the
    * water-relative wind.
    * The calculation uses the law of cosines: c² = a² + b² * - 2ab·cos(C)
    *
    * @param stw Speed Through Water - the vessel's speed relative to the water
-   * in knots
-   * @param relativeWindAngle The angle between the vessel's course through
-   * water and the true wind direction (relative to water) in degrees.
+   * in knots.
+   * @param relativeWindAngle The angle between the vessel's Course Through
+   * Water (CTW) and the True Wind Direction (relative to water) in degrees.
    * @param waterWindSpeed Wind speed relative to the water's frame of reference
    * in knots
    *
@@ -480,7 +480,9 @@ private:
    * Stores boat performance data for a specific wind speed.
    */
   struct SailingWindSpeed {
-    SailingWindSpeed(double nVW) : tws(nVW) {}
+    SailingWindSpeed(double nVW) : tws(nVW) {
+      VMG.values[0] = VMG.values[1] = VMG.values[2] = VMG.values[3] = NAN;
+    }
 
     /** True wind speed in knots. */
     float tws;

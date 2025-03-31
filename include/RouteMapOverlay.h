@@ -77,6 +77,7 @@ public:
     PERCENTAGE_UPWIND,  //!< Percentage of time sailing upwind
     PORT_STARBOARD,     //!< Percentage of time on port tack
     TACKS,              //!< Number of tacks performed
+    JIBES,              //!< Number of jibes performed
     COMFORT             //!< Sailing comfort level
   };
 

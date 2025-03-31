@@ -149,8 +149,10 @@ public:
   /** Distribution between port and starboard tacks. */
   wxString PortStarboard;
 
-  /** Number of tacks/gybes performed. */
+  /** Number of tacks performed. */
   wxString Tacks;
+  /** Number of jibes performed */
+  wxString Jibes;
 
   /** Current computation state of the route. */
   wxString State;
@@ -209,6 +211,7 @@ public:
   enum {
     VISIBLE = 0,        //!< Route visibility toggle state
     BOAT,               //!< Boat configuration file name
+    START_TYPE,         //!< Starting position type (boat or named)
     START,              //!< Starting position name/coordinates
     STARTTIME,          //!< Route departure time
     END,                //!< Destination position name/coordinates
@@ -228,7 +231,8 @@ public:
     MAXSWELL,           //!< Maximum swell height encountered in meters
     UPWIND_PERCENTAGE,  //!< Percentage of time spent sailing upwind
     PORT_STARBOARD,     //!< Distribution between port and starboard tacks
-    TACKS,              //!< Number of tacks/gybes performed
+    TACKS,              //!< Number of tacks performed
+    JIBES,              //!< Number of jibes performed
     COMFORT,            //!< Comfort/safety metrics for conditions
     STATE,              //!< Current computation state of route
     NUM_COLS            //!< Total number of display columns

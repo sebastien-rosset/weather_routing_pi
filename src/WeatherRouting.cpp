@@ -75,6 +75,7 @@ WeatherRoute::~WeatherRoute() { delete routemapoverlay; }
 
 const wxString WeatherRouting::column_names[NUM_COLS] = {_("Visible"),
                                                          _("Boat"),
+                                                         _("Start Type"),
                                                          _("Start"),
                                                          _("Start Time"),
                                                          _("End"),
@@ -95,6 +96,7 @@ const wxString WeatherRouting::column_names[NUM_COLS] = {_("Visible"),
                                                          _("Upwind Percentage"),
                                                          _("Port Starboard"),
                                                          _("Tacks"),
+                                                         _("Jibes"),
                                                          _("Comfort"),
                                                          _("State")};
 
@@ -805,6 +807,7 @@ static void CursorPositionDialogMessage(CursorPositionDialog& dlg,
   dlg.m_stPolar->SetLabel(_T(""));
   dlg.m_stSailChanges->SetLabel(_T(""));
   dlg.m_stTacks->SetLabel(_T(""));
+  dlg.m_stJibes->SetLabel(_T(""));
   dlg.m_stWeatherData->SetLabel(_T(""));
   dlg.Fit();
 }
@@ -816,6 +819,7 @@ static void RoutePositionDialogMessage(RoutePositionDialog& dlg, wxString msg) {
   dlg.m_stPolar->SetLabel(_T(""));
   dlg.m_stSailChanges->SetLabel(_T(""));
   dlg.m_stTacks->SetLabel(_T(""));
+  dlg.m_stJibes->SetLabel(_T(""));
   dlg.m_stWeatherData->SetLabel(_T(""));
   dlg.Fit();
 }
@@ -859,6 +863,7 @@ void WeatherRouting::UpdateCursorPositionDialog() {
   dlg.m_stSailChanges->SetLabel(wxString::Format(_T("%d"), p->SailChanges()));
 
   dlg.m_stTacks->SetLabel(wxString::Format(_T("%d"), p->tacks));
+  dlg.m_stJibes->SetLabel(wxString::Format(_T("%d"), p->jibes));
 
   wxString weatherdata;
   wxString grib = _("Grib") + _T(" ");
@@ -952,6 +957,8 @@ void WeatherRouting::UpdateRoutePositionDialog() {
 
   // TACKS
   dlg.m_stTacks->SetLabel(wxString::Format(_T("%d"), data.tacks));
+  // JIBES
+  dlg.m_stJibes->SetLabel(wxString::Format(_T("%d"), data.jibes));
 
   // BOAT SPEED
   if (std::abs(data.stw - data.sog) > 0.1) {
@@ -973,12 +980,12 @@ void WeatherRouting::UpdateRoutePositionDialog() {
 
   // WIND SPEED
   // RouteInfo(RouteMapOverlay::COMFORT);
-  dlg.m_stTWS->SetLabel(wxString::Format(_T("%.0f knts"), data.VW));
+  dlg.m_stTWS->SetLabel(wxString::Format(_T("%.0f knts"), data.twsOverWater));
 
   // WIND: TRUE WIND ANGLE
   // For wind direction, specify if it is
   // coming from starboard or port side.
-  double windDirection = heading_resolve(data.ctw - data.twa);
+  double windDirection = heading_resolve(data.ctw - data.twdOverWater);
   wxString windDirectionLabel;
   if (windDirection <= 0)
     windDirectionLabel =
@@ -990,12 +997,12 @@ void WeatherRouting::UpdateRoutePositionDialog() {
 
   // WIND: APPARENT WIND SPEED
   float apparentWindSpeed =
-      Polar::VelocityApparentWind(data.stw, windDirection, data.VW);
+      Polar::VelocityApparentWind(data.stw, windDirection, data.twsOverWater);
   dlg.m_stAWS->SetLabel(wxString::Format(_T("%.0f knts"), apparentWindSpeed));
 
   // WIND: APPARENT WIND SPEED
   float apparentWindDirection = Polar::DirectionApparentWind(
-      apparentWindSpeed, data.stw, windDirection, data.VW);
+      apparentWindSpeed, data.stw, windDirection, data.twsOverWater);
   wxString apparentWindDirectionLabel;
   if (apparentWindDirection <= 0)
     apparentWindDirectionLabel = wxString::Format(_T("%.0f\u00B0 starboard"),
@@ -1966,6 +1973,7 @@ bool WeatherRouting::OpenXML(wxString filename, bool reportfailure) {
         configuration.MaxSwellMeters = AttributeDouble(e, "MaxSwellMeters", 20);
         configuration.MaxLatitude = AttributeDouble(e, "MaxLatitude", 90);
         configuration.TackingTime = AttributeDouble(e, "TackingTime", 0);
+        configuration.JibingTime = AttributeDouble(e, "JibingTime", 0);
         configuration.WindVSCurrent = AttributeDouble(e, "WindVSCurrent", 0);
 
         configuration.AvoidCycloneTracks =
@@ -2099,6 +2107,7 @@ void WeatherRouting::SaveXML(wxString filename) {
     c->SetAttribute("MaxSwellMeters", configuration.MaxSwellMeters);
     c->SetAttribute("MaxLatitude", configuration.MaxLatitude);
     c->SetAttribute("TackingTime", configuration.TackingTime);
+    c->SetAttribute("JibingTime", configuration.JibingTime);
     c->SetAttribute("WindVSCurrent", configuration.WindVSCurrent);
 
     c->SetAttribute("AvoidCycloneTracks", configuration.AvoidCycloneTracks);
@@ -2336,6 +2345,8 @@ void WeatherRoute::Update(WeatherRouting* wr, bool stateonly) {
 
     Tacks = wxString::Format(
         _T("%.0f"), routemapoverlay->RouteInfo(RouteMapOverlay::TACKS));
+    Jibes = wxString::Format(
+        _T("%.0f"), routemapoverlay->RouteInfo(RouteMapOverlay::JIBES));
 
     // CUSTOMIZATION
     // Display sailing comfort
@@ -2426,6 +2437,13 @@ void WeatherRouting::UpdateItem(long index, bool stateonly) {
           index, columns[BOAT],
           wxFileName(weatherroute->BoatFilename).GetName());
       m_panel->m_lWeatherRoutes->SetColumnWidth(columns[BOAT], wxLIST_AUTOSIZE);
+    }
+
+    if (columns[START_TYPE] >= 0) {
+      m_panel->m_lWeatherRoutes->SetItem(index, columns[START_TYPE],
+                                         weatherroute->StartType);
+      m_panel->m_lWeatherRoutes->SetColumnWidth(columns[START_TYPE],
+                                                wxLIST_AUTOSIZE);
     }
 
     if (columns[START] >= 0) {
@@ -2563,6 +2581,13 @@ void WeatherRouting::UpdateItem(long index, bool stateonly) {
       m_panel->m_lWeatherRoutes->SetItem(index, columns[TACKS],
                                          weatherroute->Tacks);
       m_panel->m_lWeatherRoutes->SetColumnWidth(columns[TACKS],
+                                                wxLIST_AUTOSIZE);
+    }
+
+    if (columns[JIBES] >= 0) {
+      m_panel->m_lWeatherRoutes->SetItem(index, columns[JIBES],
+                                         weatherroute->Jibes);
+      m_panel->m_lWeatherRoutes->SetColumnWidth(columns[JIBES],
                                                 wxLIST_AUTOSIZE);
     }
 
@@ -3183,6 +3208,7 @@ RouteMapConfiguration WeatherRouting::DefaultConfiguration() {
   configuration.MaxSwellMeters = 20;
   configuration.MaxLatitude = 90;
   configuration.TackingTime = 0;
+  configuration.JibingTime = 0;
   configuration.WindVSCurrent = 0;
 
   configuration.AvoidCycloneTracks = false;

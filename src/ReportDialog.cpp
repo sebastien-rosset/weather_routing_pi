@@ -146,6 +146,8 @@ void ReportDialog::SetRouteMapOverlays(
     if (d) {
       page += _("Number of tacks") + wxString::Format(_T(": %d "), d->tacks) +
               _T("<dt>");
+      page += _("Number of jibes") + wxString::Format(_T(": %d "), d->jibes) +
+              _T("<dt>");
     }
 
     // CUSTOMIZATION
@@ -241,7 +243,7 @@ void ReportDialog::GenerateRoutesReport() {
 
     /* determine fastest time */
     wxTimeSpan fastest_time;
-    RouteMapOverlay* fastest;
+    RouteMapOverlay* fastest = nullptr;
 
     std::multimap<wxDateTime, RouteMapOverlay*> sort_by_start;
     bool any_bad = false;

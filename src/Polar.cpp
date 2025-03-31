@@ -100,7 +100,7 @@ double interp_value(double x, double x1, double x2, double y1, double y2) {
   return x2 - x1 ? (y2 - y1) * (x - x1) / (x2 - x1) + y1 : y1;
 }
 
-/* compute apparent wind speed from boat speed and true wind */
+/** Compute apparent wind speed from boat speed and true wind */
 double Polar::VelocityApparentWind(double stw, double W, double VW) {
   return sqrt(VW * VW + stw * stw +
               2 * VW * stw *
@@ -855,7 +855,7 @@ bool Polar::InsideCrossOverContour(float twa, float tws, bool optimize_tacking,
   }
 
   // yeah motor boat...
-  if (tws == 0.) tws = 0.01;
+  if (tws == 0.) tws = 0.01f;
   // CrossOverRegion is a polygon that defines the valid combinations of wind
   // angle and wind speed for a specific sail configuration (polar). For
   // example:
