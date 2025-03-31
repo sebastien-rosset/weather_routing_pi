@@ -277,7 +277,46 @@ public:
   RouteMapOverlay* m_RouteMapOverlayNeedingGrib;
 
   void RebuildList();
-  std::list<RouteMapOverlay*> m_RunningRouteMaps, m_WaitingRouteMaps;
+  /**
+   * List of route map overlays currently being computed in background threads.
+   *
+   * This list tracks all route map overlays that have active computation
+   * threads. The WeatherRouting class uses this list to:
+   * - Monitor computation progress of each route
+   * - Check if any routes need updated GRIB data during computation
+   * - Limit the number of concurrent computations based on settings
+   * - Update the UI when computations complete
+   *
+   * Routes move from m_WaitingRouteMaps to m_RunningRouteMaps when computation
+   * threads are started, then are removed when computation completes.
+   *
+   * @see m_WaitingRouteMaps For routes waiting to be computed
+   * @see RouteMapOverlay::Running() To check if computation is still active
+   * @see OnComputationTimer() For the timer handler that processes this list
+   */
+  std::list<RouteMapOverlay*> m_RunningRouteMaps;
+  /**
+   * List of route map overlays queued for computation but not yet started.
+   *
+   * This list contains route map overlays that have been scheduled for
+   * computation but are waiting for resources to become available (e.g., when
+   * the number of concurrent computations is limited by settings).
+   */
+  std::list<RouteMapOverlay*> m_WaitingRouteMaps;
+  /**
+   * Master list of all weather routes managed by the application.
+   *
+   * This list contains all weather routes created by the user, regardless of
+   * computation state. Each WeatherRoute object contains a RouteMapOverlay that
+   * handles the actual route calculation and a collection of formatted UI
+   * strings for displaying route information.
+   *
+   * The WeatherRouting class maintains this list for:
+   * - Displaying routes in the UI list control
+   * - Saving/loading route configurations
+   * - Generating statistics, reports, and plots
+   * - Performing batch operations on multiple routes
+   */
   std::list<WeatherRoute*> m_WeatherRoutes;
 
   void GenerateBatch();
@@ -532,8 +571,11 @@ private:
   void DeleteRouteMaps(std::list<RouteMapOverlay*> routemapoverlays);
   RouteMapConfiguration DefaultConfiguration();
 
+  /** The dialog to display routing statistics. */
   StatisticsDialog m_StatisticsDialog;
+  /** The dialog to display a routing report. */
   ReportDialog m_ReportDialog;
+  /** The dialog to display routing plots (wind, current, boat speed, etc). */
   PlotDialog m_PlotDialog;
   FilterRoutesDialog m_FilterRoutesDialog;
 
@@ -548,9 +590,14 @@ private:
   int m_RoutesToRun;
   bool m_bSkipUpdateCurrentItems;
 
-  bool m_bShowConfiguration, m_bShowConfigurationBatch, m_bShowRoutePosition;
-  bool m_bShowSettings, m_bShowStatistics, m_bShowReport, m_bShowPlot,
-      m_bShowFilter;
+  bool m_bShowConfiguration;
+  bool m_bShowConfigurationBatch;
+  bool m_bShowRoutePosition;
+  bool m_bShowSettings;
+  bool m_bShowStatistics;
+  bool m_bShowReport;
+  bool m_bShowPlot;
+  bool m_bShowFilter;
 
   wxPoint m_downPos, m_startPos, m_startMouse;
   wxTimer m_tDownTimer;
