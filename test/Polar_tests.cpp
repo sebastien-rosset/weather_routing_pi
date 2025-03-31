@@ -27,14 +27,6 @@ wxString
   // testPolarFileName = "/Users/quinton/src/OpenCPN-clean/weather_routing_pi-Richard/weather_routing_pi/build/data/polars/Hallberg-Rassy_40.pol",
   testFileOpenMessage("");
  
-  // Demonstrate some basic assertions.
-TEST(PolarTests, AssertionsBasic) {
-  // Expect two strings not to be equal.
-  EXPECT_STRNE("hello", "world");
-  // Expect equality.
-  EXPECT_EQ(7 * 6, 42);
-}
-
 TEST(PolarTests, ConstructorBasic) {
   Polar p;
   EXPECT_EQ(p.FileName, "");
