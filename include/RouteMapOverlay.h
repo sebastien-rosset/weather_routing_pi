@@ -51,8 +51,54 @@ private:
 };
 
 /**
- * Main class for the weather routing overlay.
- * Extends RouteMap to provide visualization and user interaction capabilities.
+ * The central class for weather routing calculation, visualization, and
+ * analysis.
+ *
+ * RouteMapOverlay extends the core RouteMap calculation engine with rendering
+ * capabilities and user interaction features. It serves as a bridge between the
+ * mathematical weather routing algorithms and the visual presentation of routes
+ * to the user.
+ *
+ * This class handles multiple complex tasks:
+ *
+ * 1. Route Computation:
+ *    - Spawns and manages background threads to calculate optimal sailing
+ * routes
+ *    - Interfaces with weather data (GRIB files and/or climatology)
+ *    - Implements isochrone propagation algorithms considering wind, currents,
+ * and obstacles
+ *    - Handles routing constraints (wind, waves, land avoidance, etc.)
+ *
+ * 2. Visualization:
+ *    - Renders calculated routes on the OpenCPN chart display
+ *    - Draws weather data visualization (wind barbs, currents)
+ *    - Manages color-coding of routes based on data source or sailing
+ * conditions
+ *    - Provides visual feedback on cursor interaction with routes
+ *
+ * 3. Route Analysis:
+ *    - Provides statistical information about routes (speed, distance, wind
+ * exposure)
+ *    - Tracks sailing maneuvers (tacks, jibes) and comfort levels
+ *    - Extracts route data for plotting and reporting
+ *
+ * 4. User Interface:
+ *    - Responds to cursor movement over calculated routes
+ *    - Provides data for position-specific information display
+ *    - Manages interactions with route editing features
+ *
+ * The class maintains multiple data structures for route representation,
+ * including isochrones (representing equal-time contours), position lists
+ * (representing specific points along routes), and visualization caches (for
+ * efficient rendering).
+ *
+ * Thread safety is managed through mutex locks, ensuring the computational
+ * threads don't corrupt data while it's being accessed for display or analysis.
+ *
+ * @see RouteMap The base class providing core routing algorithms
+ * @see WeatherRoute The UI representation of routes calculated by this class
+ * @see WeatherRouting The main UI controller that manages multiple
+ * RouteMapOverlays
  */
 class RouteMapOverlay : public RouteMap {
   friend class RouteMapOverlayThread;
