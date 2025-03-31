@@ -20,15 +20,7 @@
  #include <gtest/gtest.h>
  #include <Utilities.h>
 
- // Demonstrate some basic assertions.
-TEST(UtilitiesTests, AssertionsBasic) {
-    // Expect two strings not to be equal.
-    EXPECT_STRNE("hello", "world");
-    // Expect equality.
-    EXPECT_EQ(7 * 6, 42);
-  }
-
-  TEST(UtilitiesTests, deg2redBasic) {
+  TEST(UtilitiesTests, deg2radBasic) {
     EXPECT_DOUBLE_EQ(deg2rad(180), M_PI);
     EXPECT_DOUBLE_EQ(deg2rad(90), M_PI/2);
     EXPECT_DOUBLE_EQ(deg2rad(0), 0);

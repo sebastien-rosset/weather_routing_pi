@@ -20,167 +20,141 @@
 #include <gtest/gtest.h>
 #include <Polar.h>
 
-wxString
-  testDataDir = TESTDATADIR,
-  testPolarFileRelativePath = "polars/Hallberg-Rassy_40_test.pol",
-  testPolarFileName = testDataDir + "/" + testPolarFileRelativePath,
-  // testPolarFileName = "/Users/quinton/src/OpenCPN-clean/weather_routing_pi-Richard/weather_routing_pi/build/data/polars/Hallberg-Rassy_40.pol",
-  testFileOpenMessage("");
- 
-TEST(PolarTests, ConstructorBasic) {
-  Polar p;
-  EXPECT_EQ(p.FileName, "");
-} 
+class PolarTest: public ::testing::Test {
+protected:
+  wxString
+    m_testDataDir = TESTDATADIR,
+    m_testPolarFileRelativePath = "polars/Hallberg-Rassy_40_test.pol",
+    m_testPolarFileName = m_testDataDir + "/" + m_testPolarFileRelativePath,
+    m_testFileOpenMessage = "";
+    Polar m_polar;
 
-TEST(PolarTests, OpenFailed) {
-  Polar p;
-  wxString filename = "test.xml", message = "";
-  bool success = p.Open(filename, message);
+  PolarTest() {
+    // You can do set-up work for each test here.
+  }
+
+  ~PolarTest() override {
+    // You can do clean-up work that doesn't throw exceptions here.
+  }
+
+  void SetUp() override {
+    // Code here will be called immediately after the constructor (right
+    // before each test).
+    bool success = m_polar.Open(m_testPolarFileName, m_testFileOpenMessage);
+    EXPECT_EQ(success, true) << "Failed to open polar file: " << m_testPolarFileName;
+  }
+
+  void TearDown() override {
+    // Code here will be called immediately after each test (right
+    // before the destructor).
+  }
+};
+
+TEST_F(PolarTest, OpenFailed) {
+  Polar polar;
+  wxString filename = "invalid.xml", message = "";
+  bool success = polar.Open(filename, message);
   EXPECT_EQ(success, false);
 }
 
-TEST(PolarTests, OpenSuccess) {
-  Polar p;
-  std::cout << "TESTDATADIR: " << testDataDir << std::endl;
-  std::cout << "testPolarFileRelativePath: " << testPolarFileRelativePath << std::endl;
-  std::cout << "testPolarFileName: " << testPolarFileName << std::endl;
-
-  bool success = p.Open(testPolarFileName, testFileOpenMessage);
-  EXPECT_EQ(testFileOpenMessage.ToStdString(), std::string(""));
-  EXPECT_EQ(success, true);
-}
-
-TEST(PolarTests, ClosestVWiBasic) {
-  Polar p;
-  bool success = p.Open(testPolarFileName, testFileOpenMessage);
-  EXPECT_EQ(success, true);
+TEST_F(PolarTest, ClosestVWiBasic) {
   int VW1i, VW2i;
-  p.ClosestVWi(10, VW1i, VW2i);
+  m_polar.ClosestVWi(10, VW1i, VW2i);
   EXPECT_EQ(VW1i, 4);
   EXPECT_EQ(VW2i, 5);
 }
 
-TEST(PolarTests, SpeedBasic) {
-  Polar p;
+TEST_F(PolarTest, SpeedBasic) {
+  
   PolarSpeedStatus status;
-  p.Open(testPolarFileName, testFileOpenMessage);
-  double speed = p.Speed(10, 10, &status, false);
+  
+  double speed = m_polar.Speed(10, 10, &status, false);
   EXPECT_NEAR(speed, 1.3, 1e-6);
 }
 
-TEST(PolarTests, SpeedAtApparentWindDirectionBasic) {
-  Polar p;
-  p.Open(testPolarFileName, testFileOpenMessage);
-  double W;
-  double speed = p.SpeedAtApparentWindDirection(10, 10, &W);
+TEST_F(PolarTest, SpeedAtApparentWindDirectionBasic) {
+  double twa;
+  double speed = m_polar.SpeedAtApparentWindDirection(10, 10, &twa);
   EXPECT_NEAR(speed, 1.473, 1e-3);
-  EXPECT_NEAR(W, 11.444, 1e-3);
+  EXPECT_NEAR(twa, 11.444, 1e-3);
 }
 
-TEST(PolarTests, SpeedAtApparentWindBasic) {
-  Polar p;
-  p.Open(testPolarFileName, testFileOpenMessage);
+TEST_F(PolarTest, SpeedAtApparentWindBasic) {
   double TWA;
-  double speed = p.SpeedAtApparentWind(90, 10, &TWA);
+  double speed = m_polar.SpeedAtApparentWind(90, 10, &TWA);
   EXPECT_NEAR(speed, 7.669, 1e-3);
   EXPECT_NEAR(TWA, 127.498, 1e-3);
 }
 
-TEST(PolarTests, GetVMGTrueWindBasic) {
-  Polar p;
-  p.Open(testPolarFileName, testFileOpenMessage);
-  SailingVMG vmg = p.GetVMGTrueWind(10);
+TEST_F(PolarTest, GetVMGTrueWindBasic) {
+  SailingVMG vmg = m_polar.GetVMGTrueWind(10);
   EXPECT_NEAR(vmg.values[SailingVMG::STARBOARD_UPWIND], 44.998, 1e-3);
   EXPECT_NEAR(vmg.values[SailingVMG::PORT_UPWIND], 315.002, 1e-3);
   EXPECT_NEAR(vmg.values[SailingVMG::STARBOARD_DOWNWIND], 152.498, 1e-3);
   EXPECT_NEAR(vmg.values[SailingVMG::PORT_DOWNWIND], 207.501, 1e-3);
 }
 
-TEST(PolarTests, GetVMGApparentWindBasic) {
-  Polar p;
-  p.Open(testPolarFileName, testFileOpenMessage);
-  SailingVMG vmg = p.GetVMGApparentWind(10);
+TEST_F(PolarTest, GetVMGApparentWindBasic) {
+  SailingVMG vmg = m_polar.GetVMGApparentWind(10);
   EXPECT_NEAR(vmg.values[SailingVMG::STARBOARD_UPWIND], 45.873, 1e-3);
   EXPECT_NEAR(vmg.values[SailingVMG::PORT_UPWIND], 314.127, 1e-3);
   EXPECT_NEAR(vmg.values[SailingVMG::STARBOARD_DOWNWIND], 169.359, 1e-3);
   EXPECT_NEAR(vmg.values[SailingVMG::PORT_DOWNWIND], 190.640, 1e-3);
 }
 
-TEST(PolarTests, TrueWindSpeedBasic) {
-  Polar p;
-  p.Open(testPolarFileName, testFileOpenMessage);
-  double speed = p.TrueWindSpeed(5, 90, 80);
+TEST_F(PolarTest, TrueWindSpeedBasic) {
+  double speed = m_polar.TrueWindSpeed(5, 90, 80);
   EXPECT_NEAR(speed, 4.428, 1e-3);
 }
 
-TEST(PolarTests, InterpolateSpeedsBasic) {
-  Polar p;
-  p.Open(testPolarFileName, testFileOpenMessage);
-  bool success = p.InterpolateSpeeds();
+TEST_F(PolarTest, InterpolateSpeedsBasic) {
+  bool success = m_polar.InterpolateSpeeds();
   EXPECT_EQ(success, false); // @todo: The call fails. Figure out why, and fix this test.
 }
 
-TEST(PolarTests, UpdateSpeedsBasic) {
-  Polar p;
-  p.Open(testPolarFileName, testFileOpenMessage);
-  p.UpdateSpeeds(); // @todo: The call succeeded, but did it do the right thing?  Test that.
+TEST_F(PolarTest, UpdateSpeedsBasic) {
+  m_polar.UpdateSpeeds(); // @todo: The call succeeded, but did it do the right thing?  Test that.
 }
 
-TEST(PolarTests, UpdateDegreeStepLookupBasic) {
-  Polar p;
-  p.Open(testPolarFileName, testFileOpenMessage);
-  p.UpdateDegreeStepLookup(); // @todo: The call succeeded, but did it do the right thing?  Test that.
+TEST_F(PolarTest, UpdateDegreeStepLookupBasic) {
+  m_polar.UpdateDegreeStepLookup(); // @todo: The call succeeded, but did it do the right thing?  Test that.
 }
 
-TEST(PolarTests, InsideCrossOverContourBasic) {
-  Polar p;
-  p.Open(testPolarFileName, testFileOpenMessage);
-  bool isInside = p.InsideCrossOverContour(10, 10, true);
+TEST_F(PolarTest, InsideCrossOverContourBasic) {
+  bool isInside = m_polar.InsideCrossOverContour(10, 10, true);
   EXPECT_EQ(isInside, false); // @todo: I think we need to load more polars to test this properly.
 }
 
-TEST(PolarTests, GenerateBasic) {
-  Polar p;
-  p.Open(testPolarFileName, testFileOpenMessage);
-  p.Generate(std::list<PolarMeasurement>()); // @todo: The call succeeded, but did it do the right thing?  Test that.
+TEST_F(PolarTest, GenerateBasic) {
+  m_polar.Generate(std::list<PolarMeasurement>()); // @todo: The call succeeded, but did it do the right thing?  Test that.
 }
 
-TEST(PolarTests, AddDegreeStepBasic) {
-  Polar p;
-  p.Open(testPolarFileName, testFileOpenMessage);
-  p.AddDegreeStep(10); // @todo: The call succeeded, but did it do the right thing?  Test that.
+TEST_F(PolarTest, AddDegreeStepBasic) {
+  m_polar.AddDegreeStep(10); // @todo: The call succeeded, but did it do the right thing?  Test that.
 }
 
-TEST(PolarTests, RemoveDegreeStepBasic) {
-  Polar p;
-  p.Open(testPolarFileName, testFileOpenMessage);
-  p.RemoveDegreeStep(10); // @todo: The call succeeded, but did it do the right thing?  Test that.
+TEST_F(PolarTest, RemoveDegreeStepBasic) {
+  m_polar.RemoveDegreeStep(10); // @todo: The call succeeded, but did it do the right thing?  Test that.
 }
 
-TEST(PolarTests, OptimizeTackingSpeedBasic) {
-  Polar p;
-  p.Open(testPolarFileName, testFileOpenMessage);
-  // p.OptimizeTackingSpeed(); // @todo: This method is not defined yet.
+TEST_F(PolarTest, OptimizeTackingSpeedBasic) {
+  // m_polar.OptimizeTackingSpeed(); // @todo: This method is not defined yet.
 }
 
-TEST(PolarTests, AddWindSpeedBasic) {
-  Polar p;
-  p.Open(testPolarFileName, testFileOpenMessage);
-  p.AddWindSpeed(10); // @todo: The call succeeded, but did it do the right thing?  Test that.
+TEST_F(PolarTest, AddWindSpeedBasic) {
+  m_polar.AddWindSpeed(10); // @todo: The call succeeded, but did it do the right thing?  Test that.
 }
 
-TEST(PolarTests, RemoveWindSpeedBasic) {
-  Polar p;
-  p.Open(testPolarFileName, testFileOpenMessage);
-  p.RemoveWindSpeed(10); // @todo: The call succeeded, but did it do the right thing?  Test that.
+TEST_F(PolarTest, RemoveWindSpeedBasic) {
+  m_polar.RemoveWindSpeed(10); // @todo: The call succeeded, but did it do the right thing?  Test that.
 }
 
-TEST(PolarTests, VelocityApparentWindBasic) {
+TEST_F(PolarTest, VelocityApparentWindBasic) {
   double speed = Polar::VelocityApparentWind(10, 10, 10);
   EXPECT_NEAR(speed, 19.923, 1e-3);
 }
 
-TEST(PolarTests, VelocityTrueWindBasic) {
+TEST_F(PolarTest, VelocityTrueWindBasic) {
   // Dead upwind
   double speed = Polar::VelocityTrueWind(5, 10, 0);
   EXPECT_NEAR(speed, -5.000, 1e-3);
@@ -198,7 +172,7 @@ TEST(PolarTests, VelocityTrueWindBasic) {
   EXPECT_NEAR(speed, 15.000, 1e-3);
 }
  
-TEST(PolarTests, DirectionApparentWindBasic) {
+TEST_F(PolarTest, DirectionApparentWindBasic) {
   // Returns 0 if aws is 0 (apparent wind direction undefined)
   double direction = Polar::DirectionApparentWind(0, 10, 10, 10);
   EXPECT_NEAR(direction, 0.000, 1e-3);
@@ -212,7 +186,7 @@ TEST(PolarTests, DirectionApparentWindBasic) {
   EXPECT_NEAR(direction, 75.522, 1e-3);
 }
 
-TEST(PolarTests, DirectionApparentWind2Basic) {
+TEST_F(PolarTest, DirectionApparentWind2Basic) {
   double direction = Polar::DirectionApparentWind(5, 90, 10);
   EXPECT_NEAR(direction, 63.434, 1e-3);
 }
