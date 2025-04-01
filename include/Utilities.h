@@ -93,5 +93,7 @@ double AttributeDouble(TiXmlElement* e, const char* name, double def);
 int AttributeInt(TiXmlElement* e, const char* name, int def);
 bool AttributeBool(TiXmlElement* e, const char* name, bool def);
 
+#include <wx/datetime.h>
+#include <wx/string.h>
 // CUSTOMIZATION
 wxString calculateTimeDelta(wxDateTime startTime, wxDateTime endTime);

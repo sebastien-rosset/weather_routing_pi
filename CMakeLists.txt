@@ -29,6 +29,9 @@
 
 set(CMLOC "CMakeLists: ")
 
+# Option to enable/disable testing
+option(OCPN_BUILD_TEST "Build plugin tests" OFF)
+
 # define minimum cmake version
 cmake_minimum_required(VERSION 3.5.1)
 if(COMMAND cmake_policy)
@@ -270,11 +273,12 @@ if (NOT OCPN_FLATPAK_CONFIG)
   add_subdirectory(opencpn-libs/pugixml)
   target_link_libraries(${PACKAGE_NAME} ocpn::pugixml)
 
-  IF(NOT UNIX)
-      add_subdirectory(opencpn-libs/bzip2)
-      target_link_libraries(${PACKAGE_NAME} ocpn::bzip2)
-  ENDIF(NOT UNIX)
-
+  # @todo Why would this not be required on UNIX?  
+  # @todo@ On macos the build fails without it, and macos is UNIX
+  # @todo See https://cmake.org/cmake/help/latest/variable/UNIX.html
+  add_subdirectory(opencpn-libs/bzip2)
+  target_link_libraries(${PACKAGE_NAME} ocpn::bzip2)
+ 
   add_subdirectory(opencpn-libs/libtess2)
   target_link_libraries(${PACKAGE_NAME} ocpn::libtess2)
 
@@ -327,3 +331,10 @@ get_property(
 foreach (dir ${dirs})
   message(STATUS "${CMLOC}dir='${dir}'")
 endforeach ()
+
+# Add the test directory if testing is enabled
+if(OCPN_BUILD_TEST)
+    message(STATUS "Building with tests enabled")
+    enable_testing()
+    add_subdirectory(test)
+endif()
