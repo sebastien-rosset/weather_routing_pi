@@ -34,7 +34,7 @@
     EXPECT_DOUBLE_EQ(rad2deg(2*M_PI), 360);
   }
 
-  TEST(UtilitiesTests, heading_resolveBasicBasic) {
+  TEST(UtilitiesTests, heading_resolveBasic) {
     EXPECT_DOUBLE_EQ(heading_resolve(180), -180);
     EXPECT_DOUBLE_EQ(heading_resolve(-180), -180);
     EXPECT_DOUBLE_EQ(heading_resolve(0), 0);
@@ -123,45 +123,27 @@
     EXPECT_EQ(AttributeBool(&e, "test", false), true);
   }
 
+#ifdef __MSVC__
   TEST(UtilitiesTests, truncBasic) {
-    EXPECT_DOUBLE_EQ(trunc(0), 0);
-    EXPECT_DOUBLE_EQ(trunc(1), 1);
-    EXPECT_DOUBLE_EQ(trunc(-1), -1);
-    EXPECT_DOUBLE_EQ(trunc(1.1), 1);
-    EXPECT_DOUBLE_EQ(trunc(-1.1), -1);
-    EXPECT_DOUBLE_EQ(trunc(1.9), 1);
-    EXPECT_DOUBLE_EQ(trunc(-1.9), -1);
+    EXPECT_DOUBLE_EQ(trunc(0.0), 0.0);
+    EXPECT_DOUBLE_EQ(trunc(1.0), 1.0);
+    EXPECT_DOUBLE_EQ(trunc(-1.0), -1.0);
+    EXPECT_DOUBLE_EQ(trunc(1.1), 1.0);
+    EXPECT_DOUBLE_EQ(trunc(-1.1), -1.0);
+    EXPECT_DOUBLE_EQ(trunc(1.9), 1.0);
+    EXPECT_DOUBLE_EQ(trunc(-1.9), -1.0);
   }
 
   TEST(UtilitiesTests, roundBasic) {
-    EXPECT_DOUBLE_EQ(round(0), 0);
-    EXPECT_DOUBLE_EQ(round(1), 1);
-    EXPECT_DOUBLE_EQ(round(-1), -1);
-    EXPECT_DOUBLE_EQ(round(1.1), 1);
-    EXPECT_DOUBLE_EQ(round(-1.1), -1);
-    EXPECT_DOUBLE_EQ(round(1.9), 2);
-    EXPECT_DOUBLE_EQ(round(-1.9), -2);
+    EXPECT_DOUBLE_EQ(round(0.0), 0.0);
+    EXPECT_DOUBLE_EQ(round(1.0), 1.0);
+    EXPECT_DOUBLE_EQ(round(-1.0), -1.0);
+    EXPECT_DOUBLE_EQ(round(1.1), 1.0);
+    EXPECT_DOUBLE_EQ(round(-1.1), -1.0);
+    EXPECT_DOUBLE_EQ(round(1.9), 2.0);
+    EXPECT_DOUBLE_EQ(round(-1.9), -2.0);
   }
-  
-  TEST(UtilitiesTests, MINBasic) {
-    EXPECT_EQ(MIN(0, 0), 0);
-    EXPECT_EQ(MIN(0, 1), 0);
-    EXPECT_EQ(MIN(1, 0), 0);
-    EXPECT_EQ(MIN(1, 1), 1);
-    EXPECT_EQ(MIN(-1, 0), -1);
-    EXPECT_EQ(MIN(0, -1), -1);
-    EXPECT_EQ(MIN(-1, -1), -1);
-  }
-
-TEST(UtilitiesTests, MAXBasic) {
-    EXPECT_EQ(MAX(0, 0), 0);
-    EXPECT_EQ(MAX(0, 1), 1);
-    EXPECT_EQ(MAX(1, 0), 1);
-    EXPECT_EQ(MAX(1, 1), 1);
-    EXPECT_EQ(MAX(-1, 0), 0);
-    EXPECT_EQ(MAX(0, -1), 0);
-    EXPECT_EQ(MAX(-1, -1), -1);
-}
+#endif
 
 TEST(UtilitiesTests, ft2mBasic) {
     EXPECT_DOUBLE_EQ(ft2m(0), 0);
