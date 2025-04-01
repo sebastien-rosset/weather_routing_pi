@@ -278,7 +278,7 @@ void PlotDialog::OnPaintPlot(wxPaintEvent& event) {
   for (int i = 0; i < 3; i++) {
     dc.SetPen(wxPen(colors[i], 3));
 
-    int lx, ly;
+    int lx = 0, ly = 0;
     bool first = true;
     for (std::list<PlotData>::iterator it = m_PlotData.begin();
          it != m_PlotData.end(); it++) {
