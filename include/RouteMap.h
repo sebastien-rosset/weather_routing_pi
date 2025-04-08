@@ -291,6 +291,13 @@ public:
   double cog;  //!< Course Over Ground in degrees.
   double stw;  //!< Speed Through Water (STW) in knots.
   double ctw;  //!< Course Through Water (CTW) in degrees.
+  /** Stability value for this position (0.0-1.0).
+   * Indicates how sensitive this point is to small changes.
+   * 0 = very sensitive/critical point, 1 = very stable/forgiving point. */
+  double stability_value;
+  /** Alternative route count for this position.
+   * Number of viable alternatives within the StabilityThreshold. */
+  int alt_route_count;
   /**
    * True Wind Speed relative to water (TWS over water) in knots, as predicted
    * by the forecast.
@@ -1086,6 +1093,9 @@ struct RouteMapConfiguration {
    */
   bool Update();
 
+  /** Initialize default values for stability analysis settings */
+  void InitializeStabilityDefaults();
+
   wxString RouteGUID; /* Route GUID if any */
   /** The name of starting position, which is resolved to StartLat/StartLon. */
   wxString Start;
@@ -1219,6 +1229,18 @@ struct RouteMapConfiguration {
   // climatology data.
   int CycloneMonths;
   int CycloneDays;
+
+  /** When true, calculate and store route stability data during routing.
+   * This provides information about how sensitive each point of the route is to
+   * small changes.
+   */
+  bool CalculateStability;
+
+  /** Maximum acceptable delay threshold for stability analysis (as percentage).
+   * Points with arrival times within this percentage of the optimal ETA
+   * are considered stable routing options.
+   */
+  double StabilityThreshold;
 
   /**
    * Controls whether GRIB weather data is used for weather routing
@@ -1775,6 +1797,19 @@ public:
   /** Collect error information from all positions in the most recent isochron.
    */
   wxString GetRoutingErrorInfo();
+
+  /**
+   * Calculates stability values for all route positions.
+   *
+   * This method analyzes all isochrones to determine how sensitive each
+   * route position is to small changes in course, weather, or departure time.
+   * The stability value indicates how "forgiving" a particular route segment
+   * is.
+   *
+   * @param stabilityThreshold The maximum acceptable delay percentage
+   * @return true if stability calculation succeeded
+   */
+  bool CalculateRoutingStability();
 
 protected:
   void SetFinished(bool destination) {

@@ -124,7 +124,8 @@ public:
     PORT_STARBOARD,     //!< Percentage of time on port tack
     TACKS,              //!< Number of tacks performed
     JIBES,              //!< Number of jibes performed
-    COMFORT             //!< Sailing comfort level
+    COMFORT,            //!< Sailing comfort level
+    STABILITY           //!< Average route stability
   };
 
   /**
@@ -322,6 +323,12 @@ public:
   /** Flag indicating if the end route should be visible. */
   bool m_bEndRouteVisible;
 
+  /** Flag indicating if the stability visualization should be shown. */
+  bool m_bShowStability;
+
+  /** Type of stability visualization to show (0-2). */
+  int m_StabilityVisualizationType;
+
   /**
    * Performs route analysis on a predefined route.
    * @param proute Pointer to the route to analyze.
@@ -381,7 +388,21 @@ private:
    * @param comfortRoute If true, colors the route by sailing comfort.
    */
   void RenderCourse(bool cursor_route, piDC& dc, PlugIn_ViewPort& vp,
-                    bool comfortRoute = false);
+                    bool comfortRoute = false, bool stabilityRoute = false);
+
+  /**
+   * Renders the route colored by stability values.
+   *
+   * This visualizes how sensitive different parts of a route are to changes,
+   * highlighting critical vs forgiving route segments.
+   *
+   * @param dc Device context for drawing
+   * @param vp ViewPort for coordinate transformations
+   * @param visualizationType Visualization style to use (0=heatmap,
+   * 1=corridors, 2=overlays)
+   */
+  void RenderStabilityVisualization(piDC& dc, PlugIn_ViewPort& vp,
+                                    int visualizationType);
 
   /**
    * Renders wind barbs along the route.

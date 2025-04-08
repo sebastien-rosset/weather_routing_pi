@@ -76,6 +76,8 @@ void* RouteMapOverlayThread::Entry() {
 RouteMapOverlay::RouteMapOverlay()
     : m_UpdateOverlay(true),
       m_bEndRouteVisible(false),
+      m_bShowStability(false),
+      m_StabilityVisualizationType(0),
       m_Thread(nullptr),
       last_cursor_lat(0),
       last_cursor_lon(0),
@@ -596,7 +598,16 @@ void RouteMapOverlay::Render(wxDateTime time, SettingsDialog& settingsdialog,
     SetColor(dc, DestinationColor, true);
     SetWidth(dc, RouteThickness, true);
     bool confortOnRoute = settingsdialog.m_cbDisplayComfort->GetValue();
-    RenderCourse(false, dc, vp, confortOnRoute);
+    bool stabilityOnRoute =
+        m_bShowStability && (m_StabilityVisualizationType == 0);
+    RenderCourse(false, dc, vp, confortOnRoute, stabilityOnRoute);
+
+    // Draw stability visualization if enabled (for corridor or overlay
+    // visualization types)
+    if (m_bShowStability && m_StabilityVisualizationType > 0) {
+      RenderStabilityVisualization(dc, vp, m_StabilityVisualizationType);
+    }
+
     SetColor(dc, Darken(DestinationColor), true);
     SetWidth(dc, RouteThickness / 2, true);
     RenderBoatOnCourse(false, time, dc, vp);
@@ -757,7 +768,8 @@ wxString RouteMapOverlay::sailingConditionText(int level) {
 // -----------------------------------------------------
 
 void RouteMapOverlay::RenderCourse(bool cursor_route, piDC& dc,
-                                   PlugIn_ViewPort& vp, bool comfortRoute) {
+                                   PlugIn_ViewPort& vp, bool comfortRoute,
+                                   bool stabilityRoute) {
   Position* pos =
       cursor_route ? last_cursor_position : last_destination_position;
   if (!pos) return;
@@ -766,8 +778,9 @@ void RouteMapOverlay::RenderCourse(bool cursor_route, piDC& dc,
 
   bool rte = !GetConfiguration().RouteGUID.IsEmpty();
   if (cursor_route == true) {
-    // never draw comfort if cursor route
+    // never draw comfort or stability if cursor route
     assert(comfortRoute == false);
+    assert(stabilityRoute == false);
     if (!rte) {
 #ifndef __OCPN__ANDROID__
       if (!dc.GetDC()) glBegin(GL_LINES);
@@ -783,12 +796,11 @@ void RouteMapOverlay::RenderCourse(bool cursor_route, piDC& dc,
   }
   Unlock();
 
-  /* ComfortDisplay Customization
+  /* ComfortDisplay/Stability Customization
    * ------------------------------------------------
    * To get weather data (wind, current, waves) on a
    * position and through time, iterate over the
    * position and in parallel on GetPlotData
-   * Thanks Sean for your help :-)
    */
   std::list<PlotData> plot = GetPlotData(false);
   std::list<PlotData>::reverse_iterator itt = plot.rbegin();
@@ -798,7 +810,15 @@ void RouteMapOverlay::RenderCourse(bool cursor_route, piDC& dc,
     return;
   }
 
-  wxColor lc = sailingConditionColor(sailingConditionLevel(*itt));
+  wxColor lc, sc;
+  if (comfortRoute) {
+    lc = sailingConditionColor(sailingConditionLevel(*itt));
+  } else if (stabilityRoute) {
+    // Stability color: red (0.0) to green (1.0)
+    double stability = itt->stability_value;
+    sc = wxColor(255 * (1.0 - stability), 255 * stability, 0);
+    lc = sc;
+  }
 
   /* draw lines to this route */
 #ifndef __OCPN__ANDROID__
@@ -813,6 +833,12 @@ void RouteMapOverlay::RenderCourse(bool cursor_route, piDC& dc,
       wxColor c = sailingConditionColor(sailingConditionLevel(*itt));
       DrawLine(to, c, from, lc, dc, vp);
       lc = c;
+    } else if (stabilityRoute) {
+      double stability = itt->stability_value;
+      // Stability color: red (0.0) to green (1.0)
+      wxColor c = wxColor(255 * (1.0 - stability), 255 * stability, 0);
+      DrawLine(to, c, from, sc, dc, vp);
+      sc = c;
     } else {
       DrawLine(to, from, dc, vp);
     }
@@ -1531,6 +1557,9 @@ double RouteMapOverlay::RouteInfo(enum RouteInfoType type, bool cursor_route) {
         current_comfort = sailingConditionLevel(*it);
         if (current_comfort > comfort) comfort = current_comfort;
         break;
+      case STABILITY:
+        total += it->stability_value;
+        break;
       default:
         break;
     }
@@ -1562,6 +1591,7 @@ double RouteMapOverlay::RouteInfo(enum RouteInfoType type, bool cursor_route) {
     case AVGWIND:
     case AVGCURRENT:
     case AVGSWELL:
+    case STABILITY:
       total /= count;
     default:
       break;

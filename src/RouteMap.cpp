@@ -670,6 +670,10 @@ bool RoutePoint::GetPlotData(RoutePoint* next, double dt,
   data.jibes = jibes;
   data.polar = polar;
 
+  // Initialize stability values
+  data.stability_value = 1.0;  // Default to fully stable
+  data.alt_route_count = 0;    // Default to no alternative routes
+
   data.WVHT = Swell(configuration, lat, lon);
   data.VW_GUST = Gust(configuration, lat, lon);
   data.delta = dt;
@@ -2897,6 +2901,11 @@ void IsoChron::ResetDrawnFlag() {
 
 weather_routing_pi* RouteMapConfiguration::s_plugin_instance = nullptr;
 
+void RouteMapConfiguration::InitializeStabilityDefaults() {
+  CalculateStability = false;
+  StabilityThreshold = 10.0;  // 10% acceptable delay threshold
+}
+
 RouteMapConfiguration::RouteMapConfiguration()
     : StartType(START_FROM_POSITION),
       UpwindEfficiency(1.),
@@ -2905,7 +2914,9 @@ RouteMapConfiguration::RouteMapConfiguration()
       StartLon(0),
       EndLon(0),
       grib(nullptr),
-      grib_is_data_deficient(false) {}
+      grib_is_data_deficient(false) {
+  InitializeStabilityDefaults();
+}
 
 double RouteMapConfiguration::GetBoatLat() {
   if (s_plugin_instance) return s_plugin_instance->m_boat_lat;

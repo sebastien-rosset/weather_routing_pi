@@ -321,6 +321,8 @@ public:
   wxCheckBox* m_cbDisplayWindBarbs;
   wxCheckBox* m_cbDisplayApparentWindBarbs;
   wxCheckBox* m_cbDisplayComfort;
+  wxCheckBox* m_cbDisplayStability;
+  wxChoice* m_cStabilityVisualization;
   wxSpinCtrl* m_sConcurrentThreads;
   wxCheckListBox* m_cblFields;
   wxCheckBox* m_cbUseLocalTime;

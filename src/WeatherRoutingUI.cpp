@@ -890,6 +890,36 @@ SettingsDialogBase::SettingsDialogBase(wxWindow* parent, wxWindowID id,
         "wave conditions"));
   fgSizer82->Add(m_cbDisplayComfort, 0, wxALL, 5);
 
+  m_cbDisplayStability = new wxCheckBox(m_scrolledWindow4, wxID_ANY,
+                                        _("Display Route Stability Analysis"),
+                                        wxDefaultPosition, wxDefaultSize, 0);
+  m_cbDisplayStability->SetToolTip(_(
+      "Show how sensitive different parts of the route are to small changes"));
+  fgSizer82->Add(m_cbDisplayStability, 0, wxALL, 5);
+
+  wxString m_cStabilityVisualizationChoices[] = {
+      _("Heat Map"), _("Stability Corridors"), _("Alternative Routes")};
+  int m_cStabilityVisualizationNChoices =
+      sizeof(m_cStabilityVisualizationChoices) / sizeof(wxString);
+  m_cStabilityVisualization = new wxChoice(
+      m_scrolledWindow4, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+      m_cStabilityVisualizationNChoices, m_cStabilityVisualizationChoices, 0);
+  m_cStabilityVisualization->SetSelection(0);
+  m_cStabilityVisualization->SetToolTip(
+      _("Select visualization type for route stability analysis"));
+  fgSizer82->Add(m_cStabilityVisualization, 0, wxALL, 5);
+
+  // Add stability visualization controls
+  m_cbDisplayStability = new wxCheckBox(m_scrolledWindow4, wxID_ANY,
+                                        _("Display Route Stability Analysis"),
+                                        wxDefaultPosition, wxDefaultSize, 0);
+  m_cbDisplayStability->SetToolTip(
+      _("Show stability analysis of the route to identify areas where small "
+        "changes "
+        "in course, weather, or departure time have minimal or significant "
+        "impact"));
+  fgSizer82->Add(m_cbDisplayStability, 0, wxALL, 5);
+
   fgSizer18->Add(fgSizer82, 1, wxEXPAND, 5);
 
   m_scrolledWindow4->SetSizer(fgSizer18);
@@ -1004,6 +1034,12 @@ SettingsDialogBase::SettingsDialogBase(wxWindow* parent, wxWindowID id,
   m_cbDisplayComfort->Connect(
       wxEVT_COMMAND_CHECKBOX_CLICKED,
       wxCommandEventHandler(SettingsDialogBase::OnUpdate), NULL, this);
+  m_cbDisplayStability->Connect(
+      wxEVT_COMMAND_CHECKBOX_CLICKED,
+      wxCommandEventHandler(SettingsDialogBase::OnUpdate), NULL, this);
+  m_cStabilityVisualization->Connect(
+      wxEVT_COMMAND_CHOICE_SELECTED,
+      wxCommandEventHandler(SettingsDialogBase::OnUpdate), NULL, this);
   m_cblFields->Connect(
       wxEVT_COMMAND_CHECKLISTBOX_TOGGLED,
       wxCommandEventHandler(SettingsDialogBase::OnUpdateColumns), NULL, this);
@@ -1057,6 +1093,12 @@ SettingsDialogBase::~SettingsDialogBase() {
       wxCommandEventHandler(SettingsDialogBase::OnUpdate), NULL, this);
   m_cbDisplayComfort->Disconnect(
       wxEVT_COMMAND_CHECKBOX_CLICKED,
+      wxCommandEventHandler(SettingsDialogBase::OnUpdate), NULL, this);
+  m_cbDisplayStability->Disconnect(
+      wxEVT_COMMAND_CHECKBOX_CLICKED,
+      wxCommandEventHandler(SettingsDialogBase::OnUpdate), NULL, this);
+  m_cStabilityVisualization->Disconnect(
+      wxEVT_COMMAND_CHOICE_SELECTED,
       wxCommandEventHandler(SettingsDialogBase::OnUpdate), NULL, this);
   m_cblFields->Disconnect(
       wxEVT_COMMAND_CHECKLISTBOX_TOGGLED,
