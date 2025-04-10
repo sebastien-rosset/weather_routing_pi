@@ -2773,7 +2773,7 @@ void WeatherRouting::SaveAsRoute(RouteMapOverlay& routemapoverlay) {
     return;
   }
 
-  PlugIn_Route* newRoute = new PlugIn_Route;
+  PlugIn_Route_Ex* newRoute = new PlugIn_Route_Ex();
   wxDateTime display_time = routemapoverlay.StartTime();
   if (m_SettingsDialog.m_cbUseLocalTime->GetValue())
     display_time = display_time.FromUTC();
@@ -2784,12 +2784,13 @@ void WeatherRouting::SaveAsRoute(RouteMapOverlay& routemapoverlay) {
   RouteMapConfiguration c = routemapoverlay.GetConfiguration();
   newRoute->m_StartString = c.Start;
   newRoute->m_EndString = c.End;
+  newRoute->m_isVisible = true;
 
   for (auto const& it : plotdata) {
-    PlugIn_Waypoint* newPoint =
-        new PlugIn_Waypoint(it.lat, heading_resolve(it.lon), _T("circle"),
+    PlugIn_Waypoint_Ex* newPoint =
+        new PlugIn_Waypoint_Ex(it.lat, heading_resolve(it.lon), _T("circle"),
                             _("Weather Route Point"));
-
+    //newPoint->m_PlannedSpeed = it.sog;
     newPoint->m_CreateTime = it.time;
     newRoute->pWaypointList->Append(newPoint);
   }
@@ -2797,13 +2798,13 @@ void WeatherRouting::SaveAsRoute(RouteMapOverlay& routemapoverlay) {
   // last point, missing if config didn't succeed
   Position* p = routemapoverlay.GetDestination();
   if (p) {
-    PlugIn_Waypoint* newPoint = new PlugIn_Waypoint(
+    PlugIn_Waypoint_Ex* newPoint = new PlugIn_Waypoint_Ex(
         p->lat, p->lon, _T("circle"), _("Weather Route Destination"));
     newPoint->m_CreateTime = routemapoverlay.EndTime();
     newRoute->pWaypointList->Append(newPoint);
   }
 
-  AddPlugInRoute(newRoute);
+  AddPlugInRouteEx(newRoute);
   // Clean up waypoint list (ownership transferred to OpenCPN)
   newRoute->pWaypointList->DeleteContents(true);
   newRoute->pWaypointList->Clear();
