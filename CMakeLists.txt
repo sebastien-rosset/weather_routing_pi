@@ -1,25 +1,26 @@
-##---------------------------------------------------------------------------
-## Author:      Sean d'Epagnier
-##***************************************************************************
-## *   Copyright (C) 2010 by Sean d'Epagnier                              *
-## *   License:     GPLv3+
-## *   This program is free software; you can redistribute it and/or modify  *
-## *   it under the terms of the GNU General Public License as published by  *
-## *   the Free Software Foundation; either version 2 of the License, or     *
-## *   (at your option) any later version.                                   *
-## *                                                                         *
-## *   This program is distributed in the hope that it will be useful,       *
-## *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
-## *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
-## *   GNU General Public License for more details.                          *
-## *                                                                         *
-## *   You should have received a copy of the GNU General Public License     *
-## *   along with this program; if not, write to the                         *
-## *   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx,                                       *
-## *   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx                                       *
-#-----------------------------------------------------------------------------
-# Frontend2 Author: Jon Gough Testplugin(TP) v1.0.329.0 29/03/2025  DD/MM/YYYY
-# buildCI:yes useODAPI:no validateJSON:no
+# ---------------------------------------------------------------------------
+# Author:      Sean d'Epagnier
+# License: GPL v3+   License:  wxWidgets
+# ---------------------------------------------------------------------------
+# -   Copyright (C) 2010 by Sean d'Epagnier                              *
+# -   License:     GPLv3+
+# - This program is free software; you can redistribute it and/or modify  *
+# - it under the terms of the GNU General Public License as published by  *
+# - the Free Software Foundation; either version 2 of the License, or     *
+# - (at your option) any later version.                                   *
+# - *
+# - This program is distributed in the hope that it will be useful,       *
+# - but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+# - MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+# - GNU General Public License for more details.                          *
+# - *
+# - You should have received a copy of the GNU General Public License     *
+# - along with this program; if not, write to the                         *
+# - xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx,                                       *
+# - xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx                                       *
+# -----------------------------------------------------------------------------
+# Frontend2 Author: Jon Gough Testplugin(TP) v1.0.331.0 06/04/2025 DD/MM/YYYY
+# format buildCI:yes useODAPI:no validateJSON:no
 # ---------------------------------------------------------------------------
 ## -- When changing this file do NOT change the order of the sections.    -- ##
 ## -- Make changes only between the section blocks identified             -- ##
@@ -33,18 +34,27 @@ set(CMLOC "CMakeLists: ")
 option(OCPN_BUILD_TEST "Build plugin tests" OFF)
 
 # define minimum cmake version
-cmake_minimum_required(VERSION 3.5.1)
+cmake_minimum_required(VERSION 3.10)
 if(COMMAND cmake_policy)
   if (POLICY CMP0043)
     cmake_policy(SET CMP0043 NEW)
   endif (POLICY CMP0043)
   cmake_policy(SET CMP0048 NEW)
+  if (POLICY CMP0068)
+    cmake_policy(SET CMP0068 NEW)
+  endif (POLICY CMP0068)
   if (POLICY CMP0076)
     cmake_policy(SET CMP0076 NEW)
   endif (POLICY CMP0076)
   if (POLICY CMP0077)
     cmake_policy(SET CMP0077 NEW)
   endif (POLICY CMP0077)
+  if (POLICY CMP0175)
+    cmake_policy(SET CMP0175 NEW)
+  endif (POLICY CMP0175)
+  if (POLICY CMP0177)
+    cmake_policy(SET CMP0177 NEW)
+  endif (POLICY CMP0177)
 endif (COMMAND cmake_policy)
 
 # set for vscode/vscodium
@@ -62,8 +72,8 @@ set(LONG_DESCRIPTION "WR features include: optimal routing subject to various co
 set(VERSION_MAJOR "1")
 set(VERSION_MINOR "15")
 set(VERSION_PATCH "21")
-set(VERSION_TWEAK "24")
-set(VERSION_DATE  "01/04/2025")#DD/MM/YYYY format
+set(VERSION_TWEAK "25")
+set(VERSION_DATE  "11/04/2025")#DD/MM/YYYY format
 set(OCPN_MIN_VERSION "ov58")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -82,13 +92,13 @@ set(BETA "beta")   #Standard Repos
 set(ALPHA "alpha") #Standard Repos
 
 # Set if  Cloudsmith Base Repository name does not match your Git Repository name.
-#set(CLOUDSMITH_BASE_REPOSITORY "${GIT_REPOSITORY_NAME}")
-#set(CLOUDSMITH_BASE_REPOSITORY "opencpn-plugins")  #Ricks's customization
-set(CLOUDSMITH_BASE_REPOSITORY "weather-routing")  #without the _pi
+#set (CLOUDSMITH_BASE_REPOSITORY "${GIT_REPOSITORY_NAME}")
+#set (CLOUDSMITH_BASE_REPOSITORY "opencpn-plugins")  # Ricks's customization
+set (CLOUDSMITH_BASE_REPOSITORY "weather-routing")  # without the _pi
 
 # Set the following to use OpenCPN cloudsmith repositories instead of own repositories
 set(CLOUDSMITH_USER "opencpn")
-# set(CLOUDSMITH_USER "rick-gleason")
+# set (CLOUDSMITH_USER "rick-gleason")
 
 set(XML_INFO_URL
     "https://opencpn.org/OpenCPN/plugins/weatherroute.html"
@@ -154,7 +164,7 @@ include("PluginConfigure")
 
 add_definitions(-DUSE_S57)
 
-## ----- Section above - Add your project SET(SRCS and SET(HDRS  etc.-------##
+## ---- Section Below - Add your project SET(SRCS and SET(HDRS  etc..
 
 
 SET(SRCS
@@ -230,7 +240,7 @@ add_definitions(-DPLUGIN_USE_SVG)
 ## This add_library  can be used in conditionals below.
 ##=============================================================
 
-SET(SRC ${SRCS} ${HDRS})
+set(SRC ${SRCS} ${HDRS} )
 
 ##=============================================================
 ## Modify/configure 'Include' Directories below for the Plugin
@@ -241,9 +251,8 @@ include_directories(BEFORE ${PROJECT_SOURCE_DIR}/include)
 ## Change target_sources to match your project needs.
 ##==============================================================
 
-target_sources(${PACKAGE_NAME} PUBLIC ${SRC})
+target_sources(${PACKAGE_NAME} PUBLIC ${SRC} )
 
-##==============================================================
 
 if (NOT OCPN_FLATPAK_CONFIG)
   # Build environment not available when flatpak is being configured so
@@ -276,6 +285,7 @@ if (NOT OCPN_FLATPAK_CONFIG)
   # @todo Why would this not be required on UNIX?  
   # @todo@ On macos the build fails without it, and macos is UNIX
   # @todo See https://cmake.org/cmake/help/latest/variable/UNIX.html
+  
   add_subdirectory(opencpn-libs/bzip2)
   target_link_libraries(${PACKAGE_NAME} ocpn::bzip2)
  
