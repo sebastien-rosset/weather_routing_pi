@@ -2878,7 +2878,7 @@ void WeatherRouting::ExportRoute(RouteMapOverlay& routemapoverlay) {
   wxString route_name_suffix = new_route.m_GUID.AfterLast('-').Truncate(4);
 
   for (auto const& it : plotdata) {
-    wxString wp_name("WX-Route-Point-");
+    wxString wp_name("RP-");
     wp_name += route_name_suffix;
     wxString np;
     np.Printf("-%d", ip1);
