@@ -419,10 +419,10 @@ image::wr-config-boat-polar-test-xml-stats-tab.jpg[title="WR Configuration Boat 
 *[Boat]/Polar-Test.xml* file.
 * Then “*Close*” *Weather Routing Configuration* Menu.
 
-=== 13. Compute "Configuration" in WeatherRoutingConfiguration.xml Menu
+=== 13. Compute "Routing" in WeatherRoutingConfiguration.xml Menu
 
 * In the _WR WeatherRoutingConfiguration.xml_ menu, highlight the
-_Configuration_ you've created and select *Compute*.
+_Routing_ you've created and select *Compute*.
 * Now new isochrones will be created and a weather routing from Boston to Halifax will be “*completed*”.
 
 image::wr-compute.jpg[title="WR Compute",width=550,link="_images/wr-compute.jpg"]

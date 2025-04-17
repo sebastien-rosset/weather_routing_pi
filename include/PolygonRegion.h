@@ -27,76 +27,87 @@
 #include <list>
 #include "tess.h"
 
-struct Point
-{
-    Point() {}
-    Point(float _x, float _y) : x(_x), y(_y) {}
-    float x, y;
+struct Point {
+  Point() {}
+  Point(float _x, float _y) : x(_x), y(_y) {}
+  float x, y;
 
-    bool operator==(const Point& point) const { return point.x == x && point.y == y; }
+  bool operator==(const Point& point) const {
+    return point.x == x && point.y == y;
+  }
 };
 
-struct Segment
-{
-    Segment() { p[0] = Point(0, 0), p[1] = Point(0, 0); }
-    Segment(const Point &p0, const Point &p1) {
-            p[0] = p0, p[1] = p1;
-        }
-    Point p[2];
+struct Segment {
+  Segment() { p[0] = Point(0, 0), p[1] = Point(0, 0); }
+  Segment(const Point& p0, const Point& p1) { p[0] = p0, p[1] = p1; }
+  Point p[2];
 };
 
-struct Contour
-{
-    Contour(const Contour &contour) { Init(contour.points, contour.n); }
-    Contour(const float *p, int n) { Init(p, n); }
-    Contour(const std::list<Point> &points);
-    ~Contour() { delete [] points; }
+struct Contour {
+  Contour(const Contour& contour) { Init(contour.points, contour.n); }
+  Contour(const float* p, int n) { Init(p, n); }
+  Contour(const std::list<Point>& points);
+  ~Contour() { delete[] points; }
 
-    Contour operator=(const Contour& contour) { delete [] points; Init(contour.points, contour.n); return *this; }
+  Contour operator=(const Contour& contour) {
+    delete[] points;
+    Init(contour.points, contour.n);
+    return *this;
+  }
 
-    void Init(const float *p, int c);
-    bool CCW();
-    void Reverse();
+  void Init(const float* p, int c);
+  bool CCW();
+  void Reverse();
 
-    void Simplify(float epsilon=1e-6);
-    
-    float *points;
-    int n;
+  void Simplify(float epsilon = 1e-6);
+
+  float* points;
+  int n;
 };
 
-class PolygonRegion
-{
+class PolygonRegion {
 public:
-    PolygonRegion() { InitMem(); }
-    PolygonRegion(int n, float *points);
-    PolygonRegion(std::list<Segment> &segments);
-    PolygonRegion(const std::string &str);
-    ~PolygonRegion() { FreeMem(); }
+  PolygonRegion() { InitMem(); }
+  PolygonRegion(int n, float* points);
+  PolygonRegion(std::list<Segment>& segments);
+  PolygonRegion(const std::string& str);
+  ~PolygonRegion() { FreeMem(); }
 
-    void Clear() { contours.clear(); }
-    bool Empty() const { return contours.empty(); }
-    void Print();
+  void Clear() { contours.clear(); }
+  bool Empty() const { return contours.empty(); }
+  void Print();
 
-    std::string toString();
+  std::string toString();
 
-    bool Contains(float x, float y);
+  /**
+   * Checks if a point is inside the polygon region.
+   *
+   * Determines if a point with coordinates (x, y) is contained within the
+   * polygon region using a ray casting algorithm. Points on the boundary are
+   * considered inside.
+   *
+   * @param x The x-coordinate of the point to check
+   * @param y The y-coordinate of the point to check
+   * @return true if the point is inside the region, false otherwise
+   */
+  bool Contains(float x, float y);
 
-    void Intersect(PolygonRegion &region);
-    void Union(PolygonRegion &region);
-    void Subtract(PolygonRegion &region);
+  void Intersect(PolygonRegion& region);
+  void Union(PolygonRegion& region);
+  void Subtract(PolygonRegion& region);
 
-    void Simplify(float epsilon=1e-6);
+  void Simplify(float epsilon = 1e-6);
 
-    TESStesselator* Tesselate(bool triangles);
-    
+  TESStesselator* Tesselate(bool triangles);
+
 private:
-    void Put( const PolygonRegion& region, int winding_rule, bool reverse);
-    void PutContours(TESStesselator *tess, bool reverse) const;
-    void InitMem() { memsize = 0, mem = NULL; }
-    void AllocateMem();
-    void FreeMem() { /*delete [] mem;*/ }
+  void Put(const PolygonRegion& region, int winding_rule, bool reverse);
+  void PutContours(TESStesselator* tess, bool reverse) const;
+  void InitMem() { memsize = 0, mem = nullptr; }
+  void AllocateMem();
+  void FreeMem() { /*delete [] mem;*/ }
 
-    std::list<Contour> contours;
-    unsigned char *mem;
-    int memsize;
+  std::list<Contour> contours;
+  unsigned char* mem;
+  int memsize;
 };

@@ -30,12 +30,11 @@
 
 class RouteMapOverlay;
 
-class StatisticsDialog : public StatisticsDialogBase
-{
+class StatisticsDialog : public StatisticsDialogBase {
 public:
-    StatisticsDialog( wxWindow *parent );
-    void SetRouteMapOverlays(std::list<RouteMapOverlay*> routemapoverlays);
-    void SetRunTime(wxTimeSpan RunTime);
+  StatisticsDialog(wxWindow* parent);
+  void SetRouteMapOverlays(std::list<RouteMapOverlay*> routemapoverlays);
+  void SetRunTime(wxTimeSpan RunTime);
 };
 
 #endif

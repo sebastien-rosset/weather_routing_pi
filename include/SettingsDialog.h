@@ -26,29 +26,25 @@
 #ifndef _WEATHER_ROUTING_SETTINGS_H_
 #define _WEATHER_ROUTING_SETTINGS_H_
 
-
 #include <wx/treectrl.h>
 #include <wx/fileconf.h>
 
 #include "WeatherRoutingUI.h"
 
-class SettingsDialog : public SettingsDialogBase
-{
+class SettingsDialog : public SettingsDialogBase {
 public:
-    SettingsDialog( wxWindow *parent );
+  SettingsDialog(wxWindow* parent);
 
-    void LoadSettings();
-    void SaveSettings();
+  void LoadSettings();
+  void SaveSettings();
 
-    void OnUpdateColor( wxColourPickerEvent& event ) { OnUpdate(); }
-    void OnUpdateSpin( wxSpinEvent& event ) { OnUpdate(); }
-    void OnUpdate( wxCommandEvent& event ) { OnUpdate(); }
-    void OnUpdate( );
-    void OnUpdateColumns( wxCommandEvent& event );
-    void OnHelp( wxCommandEvent& event );
-    static const wxString column_names[];
-
-
+  void OnUpdateColor(wxColourPickerEvent& event) { OnUpdate(); }
+  void OnUpdateSpin(wxSpinEvent& event) { OnUpdate(); }
+  void OnUpdate(wxCommandEvent& event) { OnUpdate(); }
+  void OnUpdate();
+  void OnUpdateColumns(wxCommandEvent& event);
+  void OnHelp(wxCommandEvent& event);
+  static const wxString column_names[];
 };
 
 #endif

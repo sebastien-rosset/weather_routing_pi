@@ -1,5 +1,6 @@
 src/weather_routing_pi.cpp
 src/WeatherRouting.cpp
+src/SunCalculator.cpp
 src/ConfigurationDialog.cpp
 src/SettingsDialog.cpp
 src/PlotDialog.cpp
@@ -25,6 +26,7 @@ src/GribRecord.cpp
 src/navobj_util.cpp
 include/weather_routing_pi.h
 include/WeatherRouting.h
+include/SunCalculator.h
 include/ConfigurationDialog.h
 include/SettingsDialog.h
 include/PlotDialog.h

@@ -28,24 +28,26 @@
 #include <iostream>
 #include <limits>
 
-# if !defined(M_PI)
-# define M_PI		3.14159265358979323846	/* pi */
-# endif
+#if !defined(M_PI)
+#define M_PI 3.14159265358979323846 /* pi */
+#endif
 
-# if !defined(NAN)
-# define NAN std::numeric_limits<double>::quiet_NaN ()
-# endif
+#if !defined(NAN)
+#define NAN std::numeric_limits<double>::quiet_NaN()
+#endif
 
-# if !defined(INFINITY)
-# define INFINITY std::numeric_limits<double>::infinity ()
-# endif
+#if !defined(INFINITY)
+#define INFINITY std::numeric_limits<double>::infinity()
+#endif
 
-inline double trunc(double d){ return (d>0) ? floor(d) : ceil(d) ; }
-inline double round(double n) { return n < 0.0 ? ceil(n - 0.5) : floor(n + 0.5); }
+inline double trunc(double d) { return (d > 0) ? floor(d) : ceil(d); }
+inline double round(double n) {
+  return n < 0.0 ? ceil(n - 0.5) : floor(n + 0.5);
+}
 
-# if !defined(snprintf)
-# define snprintf _snprintf
-# endif
+#if !defined(snprintf)
+#define snprintf _snprintf
+#endif
 #define vsnprintf _vsnprintf
 #define strcasecmp _stricmp
 #define strncasecmp _strnicmp
@@ -54,7 +56,7 @@ inline double round(double n) { return n < 0.0 ? ceil(n - 0.5) : floor(n + 0.5);
 #endif
 
 #ifdef __MINGW32__
-char *strtok_r(char *str, const char *delim, char **save);
+char* strtok_r(char* str, const char* delim, char** save);
 #endif
 
 #include <cmath>
@@ -76,10 +78,10 @@ double heading_resolve(double degrees);
 double positive_degrees(double degrees);
 double rad2posdeg(double radians);
 
-#define ft2m(X) (X*.3048)
-#define m2ft(X) (X*3.28084)
-#define m_s2knots(X) (X*1.94384)
-#define knots2m_s(X) (X*.514444)
+#define ft2m(X) (X * .3048)
+#define m2ft(X) (X * 3.28084)
+#define m_s2knots(X) (X * 1.94384)
+#define knots2m_s(X) (X * .514444)
 
 double square(double x);
 double cube(double x);
@@ -87,9 +89,11 @@ double cube(double x);
 double average_longitude(double lon1, double lon2);
 
 class TiXmlElement;
-double AttributeDouble(TiXmlElement *e, const char *name, double def);
-int AttributeInt(TiXmlElement *e, const char *name, int def);
-bool AttributeBool(TiXmlElement *e, const char *name, bool def);
+double AttributeDouble(TiXmlElement* e, const char* name, double def);
+int AttributeInt(TiXmlElement* e, const char* name, int def);
+bool AttributeBool(TiXmlElement* e, const char* name, bool def);
 
+#include <wx/datetime.h>
+#include <wx/string.h>
 // CUSTOMIZATION
 wxString calculateTimeDelta(wxDateTime startTime, wxDateTime endTime);

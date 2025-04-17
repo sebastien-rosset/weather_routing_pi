@@ -28,12 +28,11 @@
 
 #include "WeatherRoutingUI.h"
 
-class AboutDialog : public AboutDialogBase
-{
+class AboutDialog : public AboutDialogBase {
 public:
-    AboutDialog( wxWindow *parent );
-    void OnAboutAuthor( wxCommandEvent& event );
-    void OnClose( wxCommandEvent& event ) { EndModal(wxID_OK); }   
+  AboutDialog(wxWindow* parent);
+  void OnAboutAuthor(wxCommandEvent& event);
+  void OnClose(wxCommandEvent& event) { EndModal(wxID_OK); }
 };
 
 #endif

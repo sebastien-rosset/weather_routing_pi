@@ -34,46 +34,40 @@
 
 class weather_routing_pi;
 class WeatherRouting;
+class RouteMapOverlay;
 
-class PlotDialog : public PlotDialogBase
-{
+class PlotDialog : public PlotDialogBase {
 public:
+  PlotDialog(WeatherRouting& weatherrouting);
+  ~PlotDialog();
 
-    PlotDialog( WeatherRouting &weatherrouting );
-    ~PlotDialog();
-
-    void SetRouteMapOverlay(RouteMapOverlay *routemapoverlay);
-
-private:
-    enum Variable { SPEED_OVER_GROUND, COURSE_OVER_GROUND, SPEED_OVER_WATER,
-                    COURSE_OVER_WATER, WIND_VELOCITY, WIND_DIRECTION, WIND_COURSE,
-                    WIND_VELOCITY_GROUND, WIND_DIRECTION_GROUND, WIND_COURSE_GROUND,
-                    APPARENT_WIND_SPEED, APPARENT_WIND_ANGLE, WIND_GUST,
-                    CURRENT_VELOCITY, CURRENT_DIRECTION, SIG_WAVE_HEIGHT, TACKS };
-
-    void OnMouseEventsPlot( wxMouseEvent& event );
-    void OnPaintPlot( wxPaintEvent& event );
-    void OnSizePlot( wxSizeEvent& event ) { m_PlotWindow->Refresh(); }
-    void OnUpdatePlot( wxScrollEvent& event ) { m_PlotWindow->Refresh(); }
-    void OnUpdatePlotVariable( wxCommandEvent& event ) { GetScale(); m_PlotWindow->Refresh(); }
-    void OnUpdateRoute( wxCommandEvent& event );
-    void OnUpdateUI( wxUpdateUIEvent& event );
+  void SetRouteMapOverlay(RouteMapOverlay* routemapoverlay);
 
 private:
+  void OnMouseEventsPlot(wxMouseEvent& event);
+  void OnPaintPlot(wxPaintEvent& event);
+  void OnSizePlot(wxSizeEvent& event) { m_PlotWindow->Refresh(); }
+  void OnUpdatePlot(wxScrollEvent& event) { m_PlotWindow->Refresh(); }
+  void OnUpdatePlotVariable(wxCommandEvent& event) {
+    GetScale();
+    m_PlotWindow->Refresh();
+  }
+  void OnUpdateRoute(wxCommandEvent& event);
+  void OnUpdateUI(wxUpdateUIEvent& event);
 
-    double GetValue(PlotData &data, int var);
-    int GetType(int var);
-    void GetScale();
+private:
+  double GetValue(PlotData& data, Variable variable);
+  int GetType(int var);
+  void GetScale();
 
-    wxDateTime m_StartTime;
+  wxDateTime m_StartTime;
 
-    double m_mintime, m_maxtime;
-    double m_minvalue[3], m_maxvalue[3];
+  double m_mintime, m_maxtime;
+  double m_minvalue[3], m_maxvalue[3];
 
-    std::list<PlotData> m_PlotData;
+  std::list<PlotData> m_PlotData;
 
-    WeatherRouting &m_WeatherRouting;
-
+  WeatherRouting& m_WeatherRouting;
 };
 
 #endif

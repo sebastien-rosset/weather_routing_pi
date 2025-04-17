@@ -54,14 +54,12 @@
 wxString GetUUID(void);
 int GetRandomNumber(int range_min, int range_max);
 
-
 class SimpleRoutePoint {
-
 public:
-  SimpleRoutePoint(double lat, double lon, const wxString &icon_ident,
-             const wxString &name, const wxString &sGUID = wxEmptyString);
+  SimpleRoutePoint(double lat, double lon, const wxString& icon_ident,
+                   const wxString& name, const wxString& sGUID = wxEmptyString);
 
-  SimpleRoutePoint(SimpleRoutePoint *orig);
+  SimpleRoutePoint(SimpleRoutePoint* orig);
   SimpleRoutePoint();
   virtual ~SimpleRoutePoint(void) {};
 
@@ -251,53 +249,51 @@ private:
 };
 
 class SimpleRoute {
-
 public:
-    SimpleRoute(){};
+  SimpleRoute() {};
 
-    virtual ~SimpleRoute() {
-        for (size_t i = 0; i < m_vec_points.size(); i++) {
-            delete m_vec_points[i];
-        }
+  virtual ~SimpleRoute() {
+    for (size_t i = 0; i < m_vec_points.size(); i++) {
+      delete m_vec_points[i];
     }
+  }
 
-    bool AddPoint(SimpleRoutePoint *point){
-        m_vec_points.push_back(point);
-        return true;
-    }
+  bool AddPoint(SimpleRoutePoint* point) {
+    m_vec_points.push_back(point);
+    return true;
+  }
 
-    wxString m_GUID;
-    wxString m_RouteNameString;
-    wxString m_RouteDescription;
-    wxString m_RouteStartString;
-    wxString m_RouteEndString;
-    wxDateTime m_PlannedDeparture;
-    double  m_PlannedSpeed;
+  wxString m_GUID;
+  wxString m_RouteNameString;
+  wxString m_RouteDescription;
+  wxString m_RouteStartString;
+  wxString m_RouteEndString;
+  wxDateTime m_PlannedDeparture;
+  double m_PlannedSpeed;
 
-    std::vector<SimpleRoutePoint *>m_vec_points;
+  std::vector<SimpleRoutePoint*> m_vec_points;
 };
-
 
 class SimpleNavObjectXML : public pugi::xml_document {
 public:
   SimpleNavObjectXML();
   virtual ~SimpleNavObjectXML();
 
-  bool CreateNavObjGPXRoute(const SimpleRoute &Route);
+  bool CreateNavObjGPXRoute(const SimpleRoute& Route);
 
-  //bool CreateNavObjGPXPoints(void);
-  //bool CreateNavObjGPXRoutes(void);
-  //bool CreateNavObjGPXTracks(void);
+  // bool CreateNavObjGPXPoints(void);
+  // bool CreateNavObjGPXRoutes(void);
+  // bool CreateNavObjGPXTracks(void);
 
-  //void AddGPXRoutesList(RouteList *pRoutes);
-  //void AddGPXTracksList(std::vector<Track*> *pTracks);
-  //bool AddGPXPointsList(RoutePointList *pRoutePoints);
-  //bool AddGPXRoute(Route *pRoute);
-  //bool AddGPXTrack(Track *pTrk);
-  //bool AddGPXWaypoint(RoutePoint *pWP);
+  // void AddGPXRoutesList(RouteList *pRoutes);
+  // void AddGPXTracksList(std::vector<Track*> *pTracks);
+  // bool AddGPXPointsList(RoutePointList *pRoutePoints);
+  // bool AddGPXRoute(Route *pRoute);
+  // bool AddGPXTrack(Track *pTrk);
+  // bool AddGPXWaypoint(RoutePoint *pWP);
 
   bool CreateAllGPXObjects();
-  bool LoadAllGPXObjects(bool b_full_viz, int &wpt_duplicates,
+  bool LoadAllGPXObjects(bool b_full_viz, int& wpt_duplicates,
                          bool b_compute_bbox = false);
   int LoadAllGPXObjectsAsLayer(int layer_id, bool b_layerviz,
                                wxCheckBoxState b_namesviz);
@@ -306,7 +302,6 @@ public:
 
   void SetRootGPXNode(void);
   bool IsOpenCPN();
-
 };
 
 #endif  //_NAVOBJUTIL_H__
