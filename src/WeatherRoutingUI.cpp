@@ -1825,6 +1825,39 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
 
   // End Jibing time.
 
+  // Begin Sail Plan Change time.
+
+  wxFlexGridSizer* fgSizer1153;
+  fgSizer1153 = new wxFlexGridSizer(1, 0, 0, 0);
+  fgSizer1153->SetFlexibleDirection(wxBOTH);
+  fgSizer1153->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
+
+  m_staticText29 = new wxStaticText(sbOptions1->GetStaticBox(), wxID_ANY,
+                                    _("Sail Plan Change Time"),
+                                    wxDefaultPosition, wxDefaultSize, 0);
+  m_staticText29->Wrap(-1);
+  fgSizer1153->Add(m_staticText29, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+  m_sSailPlanChangeTime = new wxSpinCtrl(
+      sbOptions1->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition,
+      wxSize(140, -1), wxSP_ARROW_KEYS, 0, 1000, 1);
+  m_sSailPlanChangeTime->SetToolTip(
+      _("Set the time in seconds needed to complete a sail plan change. Higher "
+        "values create more realistic routing that accounts for the speed loss "
+        "during change of sail plan. This affects planning by making frequent "
+        "sail changes less advantageous."));
+  fgSizer1153->Add(m_sSailPlanChangeTime, 0, wxALL | wxALIGN_CENTER_VERTICAL,
+                   5);
+  m_staticText141 =
+      new wxStaticText(sbOptions1->GetStaticBox(), wxID_ANY, _("Seconds"),
+                       wxDefaultPosition, wxDefaultSize, 0);
+  m_staticText141->Wrap(-1);
+  fgSizer1153->Add(m_staticText141, 0, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+  fgSizer113->Add(fgSizer1153, 1, wxEXPAND, 5);
+
+  // End Sail Plan Change time.
+
   wxFlexGridSizer* fgSizer11511;
   fgSizer11511 = new wxFlexGridSizer(1, 0, 0, 0);
   fgSizer11511->SetFlexibleDirection(wxBOTH);
@@ -2481,9 +2514,6 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
       wxEVT_AUX2_DOWN, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
       NULL, this);
   m_sJibingTime->Connect(
-      wxEVT_AUX1_UP, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
-      NULL, this);
-  m_sJibingTime->Connect(
       wxEVT_MOTION, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
       NULL, this);
   m_sJibingTime->Connect(
@@ -2513,6 +2543,66 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   m_sJibingTime->Connect(
       wxEVT_COMMAND_SPINCTRL_UPDATED,
       wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
+
+  //
+  m_sSailPlanChangeTime->Connect(
+      wxEVT_LEFT_DOWN, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sSailPlanChangeTime->Connect(
+      wxEVT_LEFT_UP, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sSailPlanChangeTime->Connect(
+      wxEVT_MIDDLE_DOWN,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sSailPlanChangeTime->Connect(
+      wxEVT_MIDDLE_UP, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sSailPlanChangeTime->Connect(
+      wxEVT_RIGHT_DOWN,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sSailPlanChangeTime->Connect(
+      wxEVT_RIGHT_UP, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sSailPlanChangeTime->Connect(
+      wxEVT_AUX1_DOWN, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sSailPlanChangeTime->Connect(
+      wxEVT_AUX1_UP, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sSailPlanChangeTime->Connect(
+      wxEVT_AUX2_DOWN, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sSailPlanChangeTime->Connect(
+      wxEVT_MOTION, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sSailPlanChangeTime->Connect(
+      wxEVT_LEFT_DCLICK,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sSailPlanChangeTime->Connect(
+      wxEVT_MIDDLE_DCLICK,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sSailPlanChangeTime->Connect(
+      wxEVT_RIGHT_DCLICK,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sSailPlanChangeTime->Connect(
+      wxEVT_AUX1_DCLICK,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sSailPlanChangeTime->Connect(
+      wxEVT_AUX2_DCLICK,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sSailPlanChangeTime->Connect(
+      wxEVT_LEAVE_WINDOW,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sSailPlanChangeTime->Connect(
+      wxEVT_ENTER_WINDOW,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sSailPlanChangeTime->Connect(
+      wxEVT_MOUSEWHEEL,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sSailPlanChangeTime->Connect(
+      wxEVT_COMMAND_SPINCTRL_UPDATED,
+      wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
+
   m_sSafetyMarginLand->Connect(
       wxEVT_MOTION,
       wxMouseEventHandler(ConfigurationDialogBase::EnableSpinDouble), NULL,
@@ -3043,6 +3133,68 @@ ConfigurationDialogBase::~ConfigurationDialogBase() {
   m_sJibingTime->Disconnect(
       wxEVT_COMMAND_SPINCTRL_UPDATED,
       wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
+  //
+  m_sSailPlanChangeTime->Disconnect(
+      wxEVT_LEFT_DOWN, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sSailPlanChangeTime->Disconnect(
+      wxEVT_LEFT_UP, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sSailPlanChangeTime->Disconnect(
+      wxEVT_MIDDLE_DOWN,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sSailPlanChangeTime->Disconnect(
+      wxEVT_MIDDLE_UP, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sSailPlanChangeTime->Disconnect(
+      wxEVT_RIGHT_DOWN,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sSailPlanChangeTime->Disconnect(
+      wxEVT_RIGHT_UP, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sSailPlanChangeTime->Disconnect(
+      wxEVT_AUX1_DOWN, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sSailPlanChangeTime->Disconnect(
+      wxEVT_AUX1_UP, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sSailPlanChangeTime->Disconnect(
+      wxEVT_AUX2_DOWN, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sSailPlanChangeTime->Disconnect(
+      wxEVT_AUX1_UP, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sSailPlanChangeTime->Disconnect(
+      wxEVT_MOTION, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
+      NULL, this);
+  m_sSailPlanChangeTime->Disconnect(
+      wxEVT_LEFT_DCLICK,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sSailPlanChangeTime->Disconnect(
+      wxEVT_MIDDLE_DCLICK,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sSailPlanChangeTime->Disconnect(
+      wxEVT_RIGHT_DCLICK,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sSailPlanChangeTime->Disconnect(
+      wxEVT_AUX1_DCLICK,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sSailPlanChangeTime->Disconnect(
+      wxEVT_AUX2_DCLICK,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sSailPlanChangeTime->Disconnect(
+      wxEVT_LEAVE_WINDOW,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sSailPlanChangeTime->Disconnect(
+      wxEVT_ENTER_WINDOW,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sSailPlanChangeTime->Disconnect(
+      wxEVT_MOUSEWHEEL,
+      wxMouseEventHandler(ConfigurationDialogBase::EnableSpin), NULL, this);
+  m_sSailPlanChangeTime->Disconnect(
+      wxEVT_COMMAND_SPINCTRL_UPDATED,
+      wxSpinEventHandler(ConfigurationDialogBase::OnUpdateSpin), NULL, this);
+  //
   m_sSafetyMarginLand->Disconnect(
       wxEVT_MOTION, wxMouseEventHandler(ConfigurationDialogBase::EnableSpin),
       NULL, this);
@@ -4972,7 +5124,7 @@ CursorPositionDialog::CursorPositionDialog(wxWindow* parent, wxWindowID id,
   m_stTacks->Wrap(-1);
   fgSizer91->Add(m_stTacks, 0, wxALL | wxEXPAND, 5);
 
-  //
+  // Jibes
   m_staticText127 = new wxStaticText(this, wxID_ANY, _("Jibes"),
                                      wxDefaultPosition, wxDefaultSize, 0);
   m_staticText127->Wrap(-1);
@@ -4982,6 +5134,18 @@ CursorPositionDialog::CursorPositionDialog(wxWindow* parent, wxWindowID id,
                                wxDefaultSize, 0);
   m_stJibes->Wrap(-1);
   fgSizer91->Add(m_stJibes, 0, wxALL | wxEXPAND, 5);
+
+  // Sail Plan Changes
+  m_staticText129 = new wxStaticText(this, wxID_ANY, _("Sail Plan Changes"),
+                                     wxDefaultPosition, wxDefaultSize, 0);
+  m_staticText129->Wrap(-1);
+  fgSizer91->Add(m_staticText129, 0, wxALL, 5);
+
+  m_stSailPlanChanges = new wxStaticText(this, wxID_ANY, wxEmptyString,
+                                         wxDefaultPosition, wxDefaultSize, 0);
+  m_stSailPlanChanges->Wrap(-1);
+  fgSizer91->Add(m_stSailPlanChanges, 0, wxALL | wxEXPAND, 5);
+  //
 
   m_staticText122 = new wxStaticText(this, wxID_ANY, _("Weather Data"),
                                      wxDefaultPosition, wxDefaultSize, 0);
