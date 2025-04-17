@@ -181,8 +181,9 @@ WeatherRouting::WeatherRouting(wxWindow* parent, weather_routing_pi& plugin)
   wxFileName fn;
   fn.Mkdir(weather_routing_pi::StandardPath(), wxS_DIR_DEFAULT,
            wxPATH_MKDIR_FULL);
-  fn.Mkdir(boatsdir);
-  fn.Mkdir(polarsdir);
+  fn.Mkdir(boatsdir, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+  fn.Mkdir(polarsdir, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+
 
   /* if the boats or polars directories did not previously exist, populate them
    */
