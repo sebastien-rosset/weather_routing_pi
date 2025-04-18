@@ -195,7 +195,7 @@ void RouteMapOverlay::RouteAnalysis(PlugIn_Route* proute) {
   last_destination_position = new Position(
       data.lat, data.lon, nullptr /* position */, NAN /* heading */,
       NAN /* bearing*/, data.polar, 0 /* tacks */, 0 /* jibes */,
-      0 /* data_mask */, true /* data_deficient */);
+      0 /* sailplan changes */, 0 /* data_mask */, true /* data_deficient */);
 
   last_cursor_plotdata = last_destination_plotdata;
   if (ok) {
@@ -1649,6 +1649,7 @@ void RouteMapOverlay::UpdateDestination() {
     double minH;
     bool mintacked;
     bool minjibes;
+    bool minsail_plan_changed;
     int mindata_mask;
 
     for (IsoRouteList::iterator it = isochron->routes.begin();
@@ -1659,7 +1660,7 @@ void RouteMapOverlay::UpdateDestination() {
       configuration.time = isochron->time;
       configuration.UsedDeltaTime = isochron->delta;
       (*it)->PropagateToEnd(configuration, mindt, endp, minH, mintacked,
-                            minjibes, mindata_mask);
+                            minjibes, minsail_plan_changed, mindata_mask);
     }
     Unlock();
 
@@ -1672,10 +1673,10 @@ void RouteMapOverlay::UpdateDestination() {
       last_destination_position =
           ClosestPosition(configuration.EndLat, configuration.EndLon);
     } else {
-      destination_position =
-          new Position(configuration.EndLat, configuration.EndLon, endp, minH,
-                       NAN, endp->polar, endp->tacks + mintacked,
-                       endp->jibes + minjibes, mindata_mask);
+      destination_position = new Position(
+          configuration.EndLat, configuration.EndLon, endp, minH, NAN,
+          endp->polar, endp->tacks + mintacked, endp->jibes + minjibes,
+          endp->sail_plan_changes + minsail_plan_changed, mindata_mask);
 
       m_EndTime = isochron->time + wxTimeSpan::Milliseconds(1000 * mindt);
       isochron->delta = mindt;

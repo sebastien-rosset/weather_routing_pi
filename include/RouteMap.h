@@ -97,16 +97,18 @@ class WR_GribRecordSet;
  */
 class RoutePoint {
 public:
-  RoutePoint(double latitude = 0., double longitude = 0., int polar_ = -1,
-             int tacks_ = 0, int jibes_ = 0, int data_mask_ = 0,
+  RoutePoint(double latitude = 0., double longitude = 0., int polar_idx = -1,
+             int tack_count = 0, int jibe_count = 0,
+             int sail_plan_change_count = 0, int dm = 0,
              bool data_deficient = false)
       : lat(latitude),
         lon(longitude),
-        polar(polar_),
-        tacks(tacks_),
-        jibes(jibes_),
+        polar(polar_idx),
+        tacks(tack_count),
+        jibes(jibe_count),
+        sail_plan_changes(sail_plan_change_count),
         grib_is_data_deficient(data_deficient),
-        data_mask(data_mask_) {}
+        data_mask(dm) {}
 
   virtual ~RoutePoint() {};
 
@@ -118,6 +120,8 @@ public:
   int tacks;
   /** The number of jibe maneuvers to get to this position. */
   int jibes;
+  /** The number of sail plan changes to get to this position. */
+  int sail_plan_changes;
 
   bool grib_is_data_deficient;
 
@@ -389,9 +393,10 @@ enum PropagationError {
 class Position : public RoutePoint {
 public:
   Position(double latitude, double longitude, Position* p = nullptr,
-           double pheading = NAN, double pbearing = NAN, int polar_ = -1,
-           int tacks_ = 0, int jibes_ = 0, int data_mask_ = 0,
-           bool data_deficient_ = false);
+           double pheading = NAN, double pbearing = NAN, int polar_idx = -1,
+           int tack_count = 0, int jibe_count = 0,
+           int sail_plan_change_count = 0, int data_mask = 0,
+           bool data_deficient = false);
   Position(Position* p);
 
   SkipPosition* BuildSkipList();
@@ -717,11 +722,14 @@ public:
    * @param minH [out] Final heading at destination
    * @param mintacked [out] Whether tacking occurred on final approach
    * @param minjibed [out] Whether jibing occurred on final approach
+   * @param minsail_plan_changed [out] Whether sailplan changed on final
+   * approach
    * @param mindata_mask [out] Data source mask for the final approach
    */
   void PropagateToEnd(RouteMapConfiguration& configuration, double& mindt,
                       Position*& endp, double& minH, bool& mintacked,
-                      bool& minjibed, int& mindata_mask);
+                      bool& minjibed, bool& minsail_plan_changed,
+                      int& mindata_mask);
 
   /**
    * Counts the number of skip positions in this route.
@@ -1186,6 +1194,14 @@ struct RouteMapConfiguration {
    * The penalty time is added to the route calculation for each tack.
    */
   double JibingTime;
+
+  /**
+   * The penalty time to change the sail plan, in seconds.
+   *
+   * The penalty time is added to the route calculation for each sail plan
+   * change.
+   */
+  double SailPlanChangeTime;
 
   /**
    * Maximum opposing wind vs current value to avoid dangerous sea conditions.

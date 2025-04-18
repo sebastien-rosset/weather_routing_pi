@@ -440,9 +440,12 @@ protected:
   wxStaticText* m_staticText24;
   wxSpinCtrl* m_sTackingTime;
   wxStaticText* m_staticText121;
-  wxStaticText* m_staticText25;
+  wxStaticText* m_staticText25;  // Jibing time label
   wxSpinCtrl* m_sJibingTime;
-  wxStaticText* m_staticText122;
+  wxStaticText* m_staticText122;  // "seconds" label for jibing time
+  wxStaticText* m_staticText29;   // Sail plan change time label
+  wxSpinCtrl* m_sSailPlanChangeTime;
+  wxStaticText* m_staticText141;  // "seconds" label for sail plan change time
   wxStaticText* m_staticText241;
   wxSpinCtrlDouble* m_sSafetyMarginLand;
   wxStaticText* m_staticText1211;
@@ -582,6 +585,8 @@ protected:
     TACKS,
     /** Number of jibes in a sailing route. */
     JIBES,
+    /** Number of sail plan changes in a sailing route. */
+    SAIL_PLAN_CHANGES,
   };
 
   /**
@@ -626,6 +631,7 @@ protected:
         {SIG_WAVE_HEIGHT, _("Significant Wave Height")},
         {TACKS, _("Tacks")},
         {JIBES, _("Jibes")},
+        {SAIL_PLAN_CHANGES, _("Sail Plan Changes")},
     };
 
     static const int variableInfoCount =
@@ -943,6 +949,7 @@ protected:
   wxStaticText* m_staticText130;
   wxStaticText* m_staticText126;
   wxStaticText* m_staticText127;
+  wxStaticText* m_staticText129;
   wxStaticText* m_staticText122;
   wxStdDialogButtonSizer* m_sdbSizer5;
   wxButton* m_sdbSizer5OK;
@@ -954,6 +961,7 @@ public:
   wxStaticText* m_stSailChanges;
   wxStaticText* m_stTacks;
   wxStaticText* m_stJibes;
+  wxStaticText* m_stSailPlanChanges;
   wxStaticText* m_stWeatherData;
 
   CursorPositionDialog(wxWindow* parent, wxWindowID id = wxID_ANY,
@@ -1005,6 +1013,7 @@ public:
   wxStaticText* m_stSailChanges;
   wxStaticText* m_stTacks;
   wxStaticText* m_stJibes;
+  wxStaticText* m_stSailPlanChanges;
   wxStaticText* m_stWeatherData;
 
   RoutePositionDialog(wxWindow* parent, wxWindowID id = wxID_ANY,

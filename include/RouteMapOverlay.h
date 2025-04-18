@@ -124,6 +124,7 @@ public:
     PORT_STARBOARD,     //!< Percentage of time on port tack
     TACKS,              //!< Number of tacks performed
     JIBES,              //!< Number of jibes performed
+    SAIL_PLAN_CHANGES,  //!< Number of sail changes performed
     COMFORT             //!< Sailing comfort level
   };
 
