@@ -669,6 +669,7 @@ bool RoutePoint::GetPlotData(RoutePoint* next, double dt,
   data.lon = lon;
   data.tacks = tacks;
   data.jibes = jibes;
+  data.sail_plan_changes = sail_plan_changes;
   data.polar = polar;
 
   data.WVHT = Swell(configuration, lat, lon);
