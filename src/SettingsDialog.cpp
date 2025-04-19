@@ -61,6 +61,7 @@ const wxString SettingsDialog::column_names[] = {"",  // "Visible" column
                                                  "Port Starboard",
                                                  "Tacks",
                                                  "Jibes",
+                                                 "Sail Plan Changes",
                                                  "Sailing Comfort",
                                                  "State"};
 

@@ -153,6 +153,8 @@ public:
   wxString Tacks;
   /** Number of jibes performed */
   wxString Jibes;
+  /** Number of sail plan changes performed. */
+  wxString SailPlanChanges;
 
   /** Current computation state of the route. */
   wxString State;
@@ -233,6 +235,7 @@ public:
     PORT_STARBOARD,     //!< Distribution between port and starboard tacks
     TACKS,              //!< Number of tacks performed
     JIBES,              //!< Number of jibes performed
+    SAIL_PLAN_CHANGES,  //!< Number of sail plan changes performed
     COMFORT,            //!< Comfort/safety metrics for conditions
     STATE,              //!< Current computation state of route
     NUM_COLS            //!< Total number of display columns

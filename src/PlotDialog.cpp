@@ -135,6 +135,8 @@ double PlotDialog::GetValue(PlotData& data, Variable variable) {
       return data.tacks;
     case JIBES:
       return data.jibes;
+    case SAIL_PLAN_CHANGES:
+      return data.sail_plan_changes;
   }
   return NAN;
 }
@@ -196,6 +198,7 @@ int PlotDialog::GetType(int var) {
       return WAVE_HEIGHT;
     case TACKS:
     case JIBES:
+    case SAIL_PLAN_CHANGES:
       return TACKS_AND_JIBES;
   }
   return INVALID;

@@ -97,6 +97,7 @@ const wxString WeatherRouting::column_names[NUM_COLS] = {_("Visible"),
                                                          _("Port Starboard"),
                                                          _("Tacks"),
                                                          _("Jibes"),
+                                                         _("Sail Plan Changes"),
                                                          _("Comfort"),
                                                          _("State")};
 
@@ -181,8 +182,8 @@ WeatherRouting::WeatherRouting(wxWindow* parent, weather_routing_pi& plugin)
   wxFileName fn;
   fn.Mkdir(weather_routing_pi::StandardPath(), wxS_DIR_DEFAULT,
            wxPATH_MKDIR_FULL);
-  fn.Mkdir(boatsdir);
-  fn.Mkdir(polarsdir);
+  fn.Mkdir(boatsdir, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+  fn.Mkdir(polarsdir, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
 
   /* if the boats or polars directories did not previously exist, populate them
    */
@@ -803,24 +804,26 @@ static void CursorPositionDialogMessage(CursorPositionDialog& dlg,
                                         wxString msg) {
   dlg.m_stPosition->SetLabel(msg);
   dlg.m_stPosition->Fit();
-  dlg.m_stTime->SetLabel(_T(""));
-  dlg.m_stPolar->SetLabel(_T(""));
-  dlg.m_stSailChanges->SetLabel(_T(""));
-  dlg.m_stTacks->SetLabel(_T(""));
-  dlg.m_stJibes->SetLabel(_T(""));
-  dlg.m_stWeatherData->SetLabel(_T(""));
+  dlg.m_stTime->SetLabel("");
+  dlg.m_stPolar->SetLabel("");
+  dlg.m_stSailChanges->SetLabel("");
+  dlg.m_stTacks->SetLabel("");
+  dlg.m_stJibes->SetLabel("");
+  dlg.m_stSailPlanChanges->SetLabel("");
+  dlg.m_stWeatherData->SetLabel("");
   dlg.Fit();
 }
 
 static void RoutePositionDialogMessage(RoutePositionDialog& dlg, wxString msg) {
   dlg.m_stPosition->SetLabel(msg);
   dlg.m_stPosition->Fit();
-  dlg.m_stTime->SetLabel(_T(""));
-  dlg.m_stPolar->SetLabel(_T(""));
-  dlg.m_stSailChanges->SetLabel(_T(""));
-  dlg.m_stTacks->SetLabel(_T(""));
-  dlg.m_stJibes->SetLabel(_T(""));
-  dlg.m_stWeatherData->SetLabel(_T(""));
+  dlg.m_stTime->SetLabel("");
+  dlg.m_stPolar->SetLabel("");
+  dlg.m_stSailChanges->SetLabel("");
+  dlg.m_stTacks->SetLabel("");
+  dlg.m_stJibes->SetLabel("");
+  dlg.m_stSailPlanChanges->SetLabel("");
+  dlg.m_stWeatherData->SetLabel("");
   dlg.Fit();
 }
 
@@ -864,6 +867,8 @@ void WeatherRouting::UpdateCursorPositionDialog() {
 
   dlg.m_stTacks->SetLabel(wxString::Format(_T("%d"), p->tacks));
   dlg.m_stJibes->SetLabel(wxString::Format(_T("%d"), p->jibes));
+  dlg.m_stSailPlanChanges->SetLabel(
+      wxString::Format(_T("%d"), p->sail_plan_changes));
 
   wxString weatherdata;
   wxString grib = _("Grib") + _T(" ");
@@ -1974,6 +1979,8 @@ bool WeatherRouting::OpenXML(wxString filename, bool reportfailure) {
         configuration.MaxLatitude = AttributeDouble(e, "MaxLatitude", 90);
         configuration.TackingTime = AttributeDouble(e, "TackingTime", 0);
         configuration.JibingTime = AttributeDouble(e, "JibingTime", 0);
+        configuration.SailPlanChangeTime =
+            AttributeDouble(e, "SailPlanChangeTime", 0);
         configuration.WindVSCurrent = AttributeDouble(e, "WindVSCurrent", 0);
 
         configuration.AvoidCycloneTracks =
@@ -2108,6 +2115,7 @@ void WeatherRouting::SaveXML(wxString filename) {
     c->SetAttribute("MaxLatitude", configuration.MaxLatitude);
     c->SetAttribute("TackingTime", configuration.TackingTime);
     c->SetAttribute("JibingTime", configuration.JibingTime);
+    c->SetAttribute("SailPlanChangeTime", configuration.SailPlanChangeTime);
     c->SetAttribute("WindVSCurrent", configuration.WindVSCurrent);
 
     c->SetAttribute("AvoidCycloneTracks", configuration.AvoidCycloneTracks);
@@ -2347,6 +2355,9 @@ void WeatherRoute::Update(WeatherRouting* wr, bool stateonly) {
         _T("%.0f"), routemapoverlay->RouteInfo(RouteMapOverlay::TACKS));
     Jibes = wxString::Format(
         _T("%.0f"), routemapoverlay->RouteInfo(RouteMapOverlay::JIBES));
+    SailPlanChanges = wxString::Format(
+        _T("%.0f"),
+        routemapoverlay->RouteInfo(RouteMapOverlay::SAIL_PLAN_CHANGES));
 
     // CUSTOMIZATION
     // Display sailing comfort
@@ -2591,6 +2602,13 @@ void WeatherRouting::UpdateItem(long index, bool stateonly) {
                                                 wxLIST_AUTOSIZE);
     }
 
+    if (columns[SAIL_PLAN_CHANGES] >= 0) {
+      m_panel->m_lWeatherRoutes->SetItem(index, columns[SAIL_PLAN_CHANGES],
+                                         weatherroute->SailPlanChanges);
+      m_panel->m_lWeatherRoutes->SetColumnWidth(columns[SAIL_PLAN_CHANGES],
+                                                wxLIST_AUTOSIZE);
+    }
+
     if (columns[COMFORT] >= 0) {
       m_panel->m_lWeatherRoutes->SetItem(index, columns[COMFORT],
                                          weatherroute->Comfort);
@@ -2789,8 +2807,8 @@ void WeatherRouting::SaveAsRoute(RouteMapOverlay& routemapoverlay) {
   for (auto const& it : plotdata) {
     PlugIn_Waypoint_Ex* newPoint =
         new PlugIn_Waypoint_Ex(it.lat, heading_resolve(it.lon), _T("circle"),
-                            _("Weather Route Point"));
-    //newPoint->m_PlannedSpeed = it.sog;
+                               _("Weather Route Point"));
+    // newPoint->m_PlannedSpeed = it.sog;
     newPoint->m_CreateTime = it.time;
     newRoute->pWaypointList->Append(newPoint);
   }
@@ -2878,7 +2896,7 @@ void WeatherRouting::ExportRoute(RouteMapOverlay& routemapoverlay) {
   wxString route_name_suffix = new_route.m_GUID.AfterLast('-').Truncate(4);
 
   for (auto const& it : plotdata) {
-    wxString wp_name("WX-Route-Point-");
+    wxString wp_name("RP-");
     wp_name += route_name_suffix;
     wxString np;
     np.Printf("-%d", ip1);
@@ -3210,6 +3228,7 @@ RouteMapConfiguration WeatherRouting::DefaultConfiguration() {
   configuration.MaxLatitude = 90;
   configuration.TackingTime = 0;
   configuration.JibingTime = 0;
+  configuration.SailPlanChangeTime = 0;
   configuration.WindVSCurrent = 0;
 
   configuration.AvoidCycloneTracks = false;

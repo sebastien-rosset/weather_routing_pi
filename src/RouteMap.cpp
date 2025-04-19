@@ -422,10 +422,11 @@ static inline int TestIntersectionXY(double x1, double y1, double x2, double y2,
 #define EPSILON (2e-11)
 
 Position::Position(double latitude, double longitude, Position* p,
-                   double pheading, double pbearing, int polar_, int tacks_,
-                   int jibes_, int data_mask_, bool data_deficient_)
-    : RoutePoint(latitude, longitude, polar_, tacks_, jibes_, data_mask_,
-                 data_deficient_),
+                   double pheading, double pbearing, int polar_idx,
+                   int tack_count, int jibe_count, int sail_plan_change_count,
+                   int data_mask, bool data_deficient)
+    : RoutePoint(latitude, longitude, polar_idx, tack_count, jibe_count,
+                 sail_plan_change_count, data_mask, data_deficient),
       parent_heading(pheading),
       parent_bearing(pbearing),
       parent(p),
@@ -438,7 +439,7 @@ Position::Position(double latitude, double longitude, Position* p,
 
 Position::Position(Position* p)
     : RoutePoint(p->lat, p->lon, p->polar, p->tacks, p->jibes,
-                 p->grib_is_data_deficient, p->data_mask),
+                 p->sail_plan_changes, p->grib_is_data_deficient, p->data_mask),
       parent_heading(p->parent_heading),
       parent_bearing(p->parent_bearing),
       parent(p->parent),
@@ -668,6 +669,7 @@ bool RoutePoint::GetPlotData(RoutePoint* next, double dt,
   data.lon = lon;
   data.tacks = tacks;
   data.jibes = jibes;
+  data.sail_plan_changes = sail_plan_changes;
   data.polar = polar;
 
   data.WVHT = Swell(configuration, lat, lon);
@@ -1002,6 +1004,7 @@ bool Position::Propagate(IsoRouteList& routelist,
       int newpolar = configuration.boat.FindBestPolarForCondition(
           polar, twsOverWater, twa, swell, configuration.OptimizeTacking,
           &status);
+      bool sail_plan_changed = false;
       bool inside_polar_bounds = true;
       if (newpolar == -1 || status != PolarSpeedStatus::POLAR_SPEED_SUCCESS) {
         if (newpolar == -1 && polar >= 0) {
@@ -1023,6 +1026,11 @@ bool Position::Propagate(IsoRouteList& routelist,
           configuration.polar_status = status;
           continue;
         }
+      }
+      if (polar > 0 && newpolar != polar) {
+        // Apply penalty for changing sail plan.
+        timeseconds -= configuration.SailPlanChangeTime;
+        sail_plan_changed = true;
       }
 
       /* did we tack thru the wind? apply penalty */
@@ -1232,8 +1240,8 @@ bool Position::Propagate(IsoRouteList& routelist,
       }
 
       rp = new Position(dlat, dlon, this, twa, ctw, newpolar, tacks + tacked,
-                        jibes + jibed, data_mask,
-                        configuration.grib_is_data_deficient);
+                        jibes + jibed, sail_plan_changes + sail_plan_changed,
+                        data_mask, configuration.grib_is_data_deficient);
     }
   add_position:
     if (points) {
@@ -2704,9 +2712,11 @@ bool IsoRoute::Propagate(IsoRouteList& routelist,
 void IsoRoute::PropagateToEnd(RouteMapConfiguration& configuration,
                               double& mindt, Position*& endp, double& minH,
                               bool& mintacked, bool& minjibed,
-                              int& mindata_mask) {
+                              bool& minsail_plan_changed, int& mindata_mask) {
   Position* p = skippoints->point;
-
+  // TODO: it does not look like this function is used anywhere.
+  // If it is used, one problem is that it does not check for the
+  // case when there is a sailplan change.
   do {
     double H;
     int data_mask = 0;
@@ -2745,7 +2755,7 @@ void IsoRoute::PropagateToEnd(RouteMapConfiguration& configuration,
   for (IsoRouteList::iterator cit = children.begin(); cit != children.end();
        cit++)
     (*cit)->PropagateToEnd(configuration, mindt, endp, minH, mintacked,
-                           minjibed, mindata_mask);
+                           minjibed, minsail_plan_changed, mindata_mask);
 }
 
 int IsoRoute::SkipCount() {
