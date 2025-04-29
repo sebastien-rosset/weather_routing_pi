@@ -69,6 +69,24 @@ public:
   double PropagateToEnd(RouteMapConfiguration& configuration, double& H,
                         DataMask& data_mask);
 
+  /**
+   * Generates a list of positions from this position back to the origin
+   * by following parent pointers.
+   *
+   * @return List of positions from origin to this position
+   */
+  std::list<Position*> BuildRoute() {
+    std::list<Position*> route;
+    Position* current = this;
+
+    // Follow parent pointers back to origin.
+    while (current) {
+      route.push_front(current);
+      current = current->parent;
+    }
+    return route;
+  }
+
   /** Helper method to get error as string. */
   static wxString GetErrorText(PropagationError error);
 
