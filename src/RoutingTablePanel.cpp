@@ -631,7 +631,15 @@ void RoutingTablePanel::PopulateTable() {
                                      wxString::Format("%d", row + 1));
 
     // ETA column - actual date/time of arrival at this point
-    wxString timeString = toUsrDateTimeFormat_Plugin(data.time);
+    // Check for API 1.20 which has toUsrDateTimeFormat_Plugin function
+    wxString timeString;
+#if OCPN_API_VERSION_MAJOR > 1 || \
+    (OCPN_API_VERSION_MAJOR == 1 && OCPN_API_VERSION_MINOR >= 20)
+    timeString = toUsrDateTimeFormat_Plugin(data.time);
+#else
+    // Fallback for earlier API versions - format time in UTC
+    timeString = data.time.Format(_T("%Y-%m-%d %H:%M UTC"));
+#endif
     m_gridWeatherTable->SetCellValue(row, COL_ETA, timeString);
 
     // Store the first point's time to calculate total time from start
