@@ -1801,9 +1801,12 @@ void WeatherRouting::AddRoutingPanel() {
 
     pauimgr->AddPane(m_RoutingTablePanel, pane);
 
+#if OCPN_API_VERSION_MAJOR > 1 || \
+    (OCPN_API_VERSION_MAJOR == 1 && OCPN_API_VERSION_MINOR >= 20)
     // Set color scheme using GetAppColorScheme() from the OpenCPN API
     PI_ColorScheme cs = GetAppColorScheme();
     ((RoutingTablePanel*)m_RoutingTablePanel)->SetColorScheme(cs);
+#endif
 
     pauimgr->Update();
   } else {
