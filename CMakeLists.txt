@@ -19,7 +19,7 @@
 # - xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx,                                       *
 # - xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx                                       *
 # -----------------------------------------------------------------------------
-# Frontend2 Author: Jon Gough Testplugin(TP) v1.0.331.0 06/04/2025 DD/MM/YYYY
+# Frontend2 Author: Jon Gough Testplugin(TP) v1.0.340.0 29/04/2025 DD/MM/YYYY
 # format buildCI:yes useODAPI:no validateJSON:no
 # ---------------------------------------------------------------------------
 ## -- When changing this file do NOT change the order of the sections.    -- ##
@@ -49,6 +49,9 @@ if(COMMAND cmake_policy)
   if (POLICY CMP0077)
     cmake_policy(SET CMP0077 NEW)
   endif (POLICY CMP0077)
+  if (POLICY CMP0079)
+    cmake_policy(SET CMP0079 NEW)
+  endif (POLICY CMP0079)
   if (POLICY CMP0175)
     cmake_policy(SET CMP0175 NEW)
   endif (POLICY CMP0175)
@@ -71,9 +74,9 @@ set(LONG_DESCRIPTION "WR features include: optimal routing subject to various co
 
 set(VERSION_MAJOR "1")
 set(VERSION_MINOR "15")
-set(VERSION_PATCH "24")
+set(VERSION_PATCH "25")
 set(VERSION_TWEAK "0")
-set(VERSION_DATE  "26/04/2025")#DD/MM/YYYY format
+set(VERSION_DATE  "29/04/2025")#DD/MM/YYYY format
 set(OCPN_MIN_VERSION "ov58")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -116,7 +119,7 @@ set(CMAKE_CXX_STANDARD 11)
 # Use local version of GLU library requires libs/glu directory
 # set(USE_LOCAL_GLU FALSE)
 # Prefer libGL.so to libOpenGL.so, see CMP0072
-set(OpenGL_GL_PREFERENCE "LEGACY")   #not operational
+set(OpenGL_GL_PREFERENCE "LEGACY") # not operational
 # For Weatherfax this must be set ON or it fails to compile
 option(USE_GL "Enable OpenGL support" ON)
 message(STATUS "${CMLOC}USE_GL: ${USE_GL}")
