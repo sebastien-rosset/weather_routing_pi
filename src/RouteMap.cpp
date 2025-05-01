@@ -66,6 +66,8 @@
 
 #include <stdlib.h>
 #include <math.h>
+#include <functional>
+#include <list>
 #include <map>
 
 #include "Utilities.h"
