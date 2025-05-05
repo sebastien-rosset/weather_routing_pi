@@ -20,6 +20,8 @@
 #ifndef _WEATHER_ROUTING_ROUTEPOINT_H_
 #define _WEATHER_ROUTING_ROUTEPOINT_H_
 
+#include <vector>
+
 #include "ConstraintChecker.h"
 
 struct RouteMapConfiguration;
@@ -184,6 +186,43 @@ public:
   bool CrossesLand(double dlat, double dlon);
   // Return true if the route point enters a boundary.
   bool EntersBoundary(double dlat, double dlon);
+
+  /**
+   * Propagates along a rhumb line to a destination point, handling long
+   * distances by creating intermediate waypoints that check constraints at each
+   * step.
+   *
+   * Unlike PropagateToPoint which only considers the starting point, this
+   * method divides the journey into segments and evaluates weather and
+   * constraints at each intermediate point, following a rhumb line (constant
+   * bearing) path.
+   *
+   * This makes it suitable to determine if a route following a rhumb line is
+   * feasible, even if the destination is far away. If the destination is
+   * reachable, the method will return the total time to reach it and populate
+   * the intermediatePoints vector with the sequence of waypoints.
+   *
+   * @param dlat Destination latitude in decimal degrees
+   * @param dlon Destination longitude in decimal degrees
+   * @param configuration Route configuration with constraints and boat
+   * parameters
+   * @param intermediatePoints Vector to store the sequence of intermediate
+   * waypoints (if successful)
+   * @param data_mask [out] Bit flags indicating data sources used
+   * @param totalDistance [out] Store the total distance in nautical miles
+   * @param averagetSpeed [out] Store the average speed in knots
+   *                      required to reach the destination with the same ETA
+   * @param maxSegmentLength Maximum length of each segment in nautical miles
+   *
+   * @return Total time in seconds to reach the target, or NAN if unreachable
+   */
+  double RhumbLinePropagateToPoint(double dlat, double dlon,
+                                   RouteMapConfiguration& configuration,
+                                   std::vector<RoutePoint*>& intermediatePoints,
+                                   int& data_mask, double& totalDistance,
+                                   double& averageSpeed,
+                                   double maxSegmentLength = 10.0);
+
   /**
    * Attempts to reach a specific target point from the current position.
    *

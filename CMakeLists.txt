@@ -196,7 +196,7 @@ SET(SRCS
             src/WeatherRoutingUI.cpp
             src/icons.cpp
             src/zuFile.cpp
-            src/georef.c
+            src/georef.cpp
             src/GribRecord.cpp
             src/navobj_util.cpp
             src/WeatherDataProvider.cpp
