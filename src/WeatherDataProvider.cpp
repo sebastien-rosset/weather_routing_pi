@@ -270,7 +270,7 @@ void WeatherDataProvider::TransformToGroundFrame(
  * @param configuration Route map configuration containing GRIB data,
  * climatology settings, and the specific time for which to retrieve weather
  * data.
- * @param p Pointer to the route point for which to retrieve data
+ * @param position Pointer to the route point for which to retrieve data
  * @param twdOverGround [out] True Wind Direction over ground (degrees). This is
  * the forecast value from the GRIB file or climatology data.
  * @param twsOverGround [out] True Wind Speed over ground (knots). This is the
@@ -293,20 +293,20 @@ void WeatherDataProvider::TransformToGroundFrame(
  * otherwise
  */
 bool WeatherDataProvider::ReadWindAndCurrents(
-    RouteMapConfiguration& configuration, RoutePoint* p,
+    RouteMapConfiguration& configuration, RoutePoint* position,
     /* normal data */
     double& twdOverGround, double& twsOverGround, double& twdOverWater,
     double& twsOverWater, double& currentDir, double& currentSpeed,
     climatology_wind_atlas& atlas, int& data_mask) {
   /* read current data */
   if (!configuration.Currents ||
-      !GetCurrent(configuration, p->lat, p->lon, currentDir, currentSpeed,
-                  data_mask))
+      !GetCurrent(configuration, position->lat, position->lon, currentDir,
+                  currentSpeed, data_mask))
     currentDir = currentSpeed = 0;
 
   for (;;) {
     if (!configuration.grib_is_data_deficient &&
-        GetGribWind(configuration, p->lat, p->lon, twdOverGround,
+        GetGribWind(configuration, position->lat, position->lon, twdOverGround,
                     twsOverGround)) {
       data_mask |= Position::GRIB_WIND;
       break;
@@ -314,8 +314,9 @@ bool WeatherDataProvider::ReadWindAndCurrents(
 
     if (configuration.ClimatologyType == RouteMapConfiguration::AVERAGE &&
         RouteMap::ClimatologyData &&
-        RouteMap::ClimatologyData(WIND, configuration.time, p->lat, p->lon,
-                                  twdOverGround, twsOverGround)) {
+        RouteMap::ClimatologyData(WIND, configuration.time, position->lat,
+                                  position->lon, twdOverGround,
+                                  twsOverGround)) {
       twdOverGround = heading_resolve(twdOverGround);
       data_mask |= Position::CLIMATOLOGY_WIND;
       break;
@@ -324,9 +325,9 @@ bool WeatherDataProvider::ReadWindAndCurrents(
                RouteMap::ClimatologyWindAtlasData) {
       int windatlas_count = 8;
       double speeds[8];
-      if (RouteMap::ClimatologyWindAtlasData(configuration.time, p->lat, p->lon,
-                                             windatlas_count, atlas.directions,
-                                             speeds, atlas.storm, atlas.calm)) {
+      if (RouteMap::ClimatologyWindAtlasData(
+              configuration.time, position->lat, position->lon, windatlas_count,
+              atlas.directions, speeds, atlas.storm, atlas.calm)) {
         /* compute wind speeds over water with the given current */
         for (int i = 0; i < windatlas_count; i++) {
           double twd = i * 360 / windatlas_count;
@@ -373,14 +374,14 @@ bool WeatherDataProvider::ReadWindAndCurrents(
 
     /* try deficient grib if climatology failed */
     if (configuration.grib_is_data_deficient &&
-        GetGribWind(configuration, p->lat, p->lon, twdOverGround,
+        GetGribWind(configuration, position->lat, position->lon, twdOverGround,
                     twsOverGround)) {
       data_mask |= Position::GRIB_WIND | Position::DATA_DEFICIENT_WIND;
       break;
     }
-    Position* n = dynamic_cast<Position*>(p);
+    Position* n = dynamic_cast<Position*>(position);
     if (!n || !n->parent) return false;
-    p = n->parent;
+    position = n->parent;
   }
   twsOverGround *= configuration.WindStrength;
 

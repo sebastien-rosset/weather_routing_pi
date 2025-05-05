@@ -50,7 +50,14 @@ struct climatology_wind_atlas {
 
 class RoutePoint;
 
-class PositionData {
+/**
+ * Stores weather conditions at a specific geographical position.
+ *
+ * This class contains wind, current, and climatology data but no boat-specific
+ * calculations. Data is typically obtained from weather files (GRIB) or
+ * climatology database.
+ */
+class WeatherData {
 public:
   double lat;
   double lon;
@@ -61,6 +68,34 @@ public:
   double currentDir;
   double currentSpeed;
   double swell;
+  climatology_wind_atlas atlas;
+
+  WeatherData(RoutePoint* position);
+
+  bool ReadWeatherDataAndCheckConstraints(RouteMapConfiguration& configuration,
+                                          RoutePoint* position, int& data_mask,
+                                          PropagationError& error_code,
+                                          bool end);
+};
+
+/**
+ * Stores calculated boat motion data for a specific heading and weather
+ * condition.
+ *
+ * This class contains the results of polar calculations - speed values, course
+ * angles, and maneuver flags that are recalculated for each potential route
+ * segment.
+ */
+class BoatData {
+public:
+  BoatData()
+      : stw(0),
+        cog(0),
+        sog(0),
+        dist(0),
+        tacked(false),
+        jibed(false),
+        sail_plan_changed(false) {}
 
   double stw;   // Boat speed through water
   double cog;   // Boat bearing over ground
@@ -70,13 +105,6 @@ public:
   bool tacked;
   bool jibed;
   bool sail_plan_changed;
-
-  climatology_wind_atlas atlas;
-
-  bool ReadWeatherDataAndCheckConstraints(RouteMapConfiguration& configuration,
-                                          RoutePoint* position, int& data_mask,
-                                          PropagationError& error_code,
-                                          bool end);
 
   /**
    * Calculates boat speed for a given polar and wind conditions.
@@ -105,8 +133,9 @@ public:
    * @return true if computation successful, false if NaN values detected
    */
   bool GetBoatSpeedForPolar(RouteMapConfiguration& configuration,
-                            double timeseconds, int newpolar, double twa,
-                            double ctw, int& data_mask, bool bound = true,
+                            const WeatherData& weather, double timeseconds,
+                            int newpolar, double twa, double ctw,
+                            int& data_mask, bool bound = true,
                             const char* caller = "unknown");
 
   /**
@@ -126,9 +155,21 @@ public:
    * @return true if computation successful, false if NaN values detected
    */
   bool GetBestPolarAndBoatSpeed(RouteMapConfiguration& configuration,
-                                double twa, double ctw, double parent_heading,
+                                const WeatherData& weather_data, double twa,
+                                double ctw, double parent_heading,
                                 int& data_mask, int polar, int& newpolar,
                                 double& timeseconds);
+
+private:
+  void Reset() {
+    stw = 0;
+    cog = 0;
+    sog = 0;
+    dist = 0;
+    tacked = false;
+    jibed = false;
+    sail_plan_changed = false;
+  }
 };
 
 /**

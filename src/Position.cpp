@@ -173,26 +173,24 @@ bool Position::rk_step(double timeseconds, double cog, double dist, double twa,
   double k1_lat, k1_lon;
   ll_gc_ll(lat, lon, cog, dist, &k1_lat, &k1_lon);
 
-  double twdOverGround, twsOverGround, twdOverWater, twsOverWater, currentDir,
-      currentSpeed;
-  climatology_wind_atlas atlas;
+  WeatherData weather_data(this);
   Position rk(k1_lat, k1_lon,
               parent);  // parent so deficient data can find parent
-  if (!WeatherDataProvider::ReadWindAndCurrents(
-          configuration, &rk, twdOverGround, twsOverGround, twdOverWater,
-          twsOverWater, currentDir, currentSpeed, atlas, data_mask))
-    return false;
-
-  double ctw = twdOverWater + twa; /* rotated relative to true wind */
-
-  PositionData data;
-  if (!data.GetBoatSpeedForPolar(configuration, timeseconds, newpolar, twa, ctw,
-                                 data_mask, true /* check bounds */,
-                                 "rk_step")) {
+  if (!weather_data.ReadWeatherDataAndCheckConstraints(
+          configuration, &rk, data_mask, propagation_error, false /*end*/)) {
     return false;
   }
-  rk_cog = data.cog;
-  rk_dist = data.dist;
+  double ctw =
+      weather_data.twdOverWater + twa; /* rotated relative to true wind */
+
+  BoatData boat_data;
+  if (!boat_data.GetBoatSpeedForPolar(configuration, weather_data, timeseconds,
+                                      newpolar, twa, ctw, data_mask,
+                                      true /* check bounds */, "rk_step")) {
+    return false;
+  }
+  rk_cog = boat_data.cog;
+  rk_dist = boat_data.dist;
   return true;
 }
 
@@ -217,8 +215,8 @@ bool Position::Propagate(IsoRouteList& routelist,
   /* through all angles relative to wind */
   int count = 0;
   int data_mask = 0;
-  PositionData data;
-  if (!data.ReadWeatherDataAndCheckConstraints(
+  WeatherData weather_data(this);
+  if (!weather_data.ReadWeatherDataAndCheckConstraints(
           configuration, this, data_mask, propagation_error, false /*end*/)) {
     return false;
   }
@@ -236,7 +234,8 @@ bool Position::Propagate(IsoRouteList& routelist,
        it != configuration.DegreeSteps.end(); it++) {
     double timeseconds = configuration.UsedDeltaTime;
     double twa = heading_resolve(*it);
-    double ctw = data.twdOverWater + twa; /* rotated relative to true wind */
+    double ctw =
+        weather_data.twdOverWater + twa; /* rotated relative to true wind */
 
     // Do no waste time exploring directions outside the configured search
     // angle.
@@ -263,10 +262,11 @@ bool Position::Propagate(IsoRouteList& routelist,
     }
 
     {
+      BoatData boat_data;
       int newpolar = -1;
-      if (!data.GetBestPolarAndBoatSpeed(configuration, twa, ctw,
-                                         parent_heading, data_mask, this->polar,
-                                         newpolar, timeseconds)) {
+      if (!boat_data.GetBestPolarAndBoatSpeed(
+              configuration, weather_data, twa, ctw, parent_heading, data_mask,
+              this->polar, newpolar, timeseconds)) {
         continue;
       }
 
@@ -281,29 +281,32 @@ bool Position::Propagate(IsoRouteList& routelist,
             configuration.time + wxTimeSpan::Seconds(timeseconds / 2);
         wxDateTime rk_time =
             configuration.time + wxTimeSpan::Seconds(timeseconds);
-        if (!rk_step(timeseconds, data.cog, data.dist / 2, twa, configuration,
-                     configuration.grib, rk_time_2, newpolar, k2_BG, k2_dist,
-                     data_mask) ||
-            !rk_step(timeseconds, data.cog, k2_dist / 2, twa + k2_BG - data.cog,
+        if (!rk_step(timeseconds, boat_data.cog, boat_data.dist / 2, twa,
                      configuration, configuration.grib, rk_time_2, newpolar,
-                     k3_BG, k3_dist, data_mask) ||
-            !rk_step(timeseconds, data.cog, k3_dist, twa + k3_BG - data.cog,
-                     configuration, configuration.grib, rk_time, newpolar,
-                     k4_BG, k4_dist, data_mask)) {
+                     k2_BG, k2_dist, data_mask) ||
+            !rk_step(timeseconds, boat_data.cog, k2_dist / 2,
+                     twa + k2_BG - boat_data.cog, configuration,
+                     configuration.grib, rk_time_2, newpolar, k3_BG, k3_dist,
+                     data_mask) ||
+            !rk_step(timeseconds, boat_data.cog, k3_dist,
+                     twa + k3_BG - boat_data.cog, configuration,
+                     configuration.grib, rk_time, newpolar, k4_BG, k4_dist,
+                     data_mask)) {
           continue;
         }
 
-        ll_gc_ll(lat, lon, data.cog,
-                 data.dist / 6 + k2_dist / 3 + k3_dist / 3 + k4_dist / 6, &dlat,
-                 &dlon);
+        ll_gc_ll(lat, lon, boat_data.cog,
+                 boat_data.dist / 6 + k2_dist / 3 + k3_dist / 3 + k4_dist / 6,
+                 &dlat, &dlon);
       } else /* newtons method */
 #if 1
-        ll_gc_ll(lat, lon, heading_resolve(data.cog), data.dist, &dlat, &dlon);
+        ll_gc_ll(lat, lon, heading_resolve(boat_data.cog), boat_data.dist,
+                 &dlat, &dlon);
 #else
       {
-        double d = data.dist / 60;
-        dlat = lat + d * cos(deg2rad(data.cog));
-        dlon = lon + d * sin(deg2rad(data.cog));
+        double d = boat_data.dist / 60;
+        dlat = lat + d * cos(deg2rad(boat_data.cog));
+        dlon = lon + d * sin(deg2rad(boat_data.cog));
         dlon = heading_resolve(dlon);
       }
 #endif
@@ -320,7 +323,7 @@ bool Position::Propagate(IsoRouteList& routelist,
 
       /* quick test first to avoid slower calculation */
       if (!ConstraintChecker::CheckMaxApparentWindConstraint(
-              configuration, data.stw, twa, data.twsOverWater,
+              configuration, boat_data.stw, twa, weather_data.twsOverWater,
               propagation_error)) {
         continue;
       }
@@ -333,19 +336,19 @@ bool Position::Propagate(IsoRouteList& routelist,
         // it's not an error if there's boundaries after we reach destination
         ll_gc_ll_reverse(lat, lon, configuration.EndLat, configuration.EndLon,
                          &bearing, &dist2end);
-        if (dist2end < data.dist) {
+        if (dist2end < boat_data.dist) {
           dist2test = dist2end;
-          ll_gc_ll(lat, lon, heading_resolve(data.cog), dist2test, &dlat1,
+          ll_gc_ll(lat, lon, heading_resolve(boat_data.cog), dist2test, &dlat1,
                    &dlon1);
         } else {
-          dist2test = data.dist;
+          dist2test = boat_data.dist;
           dlat1 = dlat;
           dlon1 = dlon;
         }
 
         /* landfall test */
-        if (!ConstraintChecker::CheckLandConstraint(configuration, lat, lon,
-                                                    dlat1, dlon1, data.cog)) {
+        if (!ConstraintChecker::CheckLandConstraint(
+                configuration, lat, lon, dlat1, dlon1, boat_data.cog)) {
           configuration.land_crossing = true;
           continue;
         }
@@ -365,9 +368,9 @@ bool Position::Propagate(IsoRouteList& routelist,
       }
 
       rp = new Position(dlat, dlon, this, twa, ctw, newpolar,
-                        tacks + data.tacked, jibes + data.jibed,
-                        sail_plan_changes + data.sail_plan_changed, data_mask,
-                        configuration.grib_is_data_deficient);
+                        tacks + boat_data.tacked, jibes + boat_data.jibed,
+                        sail_plan_changes + boat_data.sail_plan_changed,
+                        data_mask, configuration.grib_is_data_deficient);
     }
   add_position:
     if (points) {
