@@ -17,6 +17,9 @@
  *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,  USA.         *
  ***************************************************************************/
 
+#ifndef _WEATHER_ROUTING_ROUTE_MAP_H_
+#define _WEATHER_ROUTING_ROUTE_MAP_H_
+
 #include "wx/datetime.h"
 #include <wx/object.h>
 #include <wx/weakref.h>
@@ -1917,3 +1920,5 @@ private:
 
   wxDateTime m_NewTime;
 };
+
+#endif
