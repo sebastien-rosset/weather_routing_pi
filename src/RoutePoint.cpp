@@ -308,6 +308,150 @@ bool PositionData::GetBestPolarAndBoatSpeed(
   return true;
 }
 
+double RoutePoint::RhumbLinePropagateToPoint(
+    double dlat, double dlon, RouteMapConfiguration& configuration,
+    std::vector<RoutePoint*>& intermediatePoints, int& data_mask,
+    double& totalDistance, double& averageSpeed, double maxSegmentLength) {
+  // Calculate rhumb line distance
+  double rhumbDistance = DistLoxodrome(lat, lon, dlat, dlon);
+
+  totalDistance = rhumbDistance;
+
+  // Calculate rhumb line bearing
+  // We need to calculate the constant bearing for a rhumb line
+  double y = sin(deg2rad(dlon - lon)) * cos(deg2rad(dlat));
+  double x = cos(deg2rad(lat)) * sin(deg2rad(dlat)) -
+             sin(deg2rad(lat)) * cos(deg2rad(dlat)) * cos(deg2rad(dlon - lon));
+  double rhumbBearing = rad2deg(atan2(y, x));
+  // Normalize to 0-360
+  rhumbBearing = heading_resolve(rhumbBearing);
+
+  // If distance is very short, use regular PropagateToPoint
+  if (rhumbDistance <= maxSegmentLength) {
+    double heading;
+    double time =
+        PropagateToPoint(dlat, dlon, configuration, heading, data_mask, true);
+    if (!std::isnan(time)) {
+      // If the destination is reachable, add it to intermediate points
+      RoutePoint* endpoint =
+          new RoutePoint(dlat, dlon, polar, tacks, jibes, sail_plan_changes,
+                         data_mask, configuration.grib_is_data_deficient);
+      intermediatePoints.push_back(endpoint);
+    }
+    return time;
+  }
+
+  // Calculate number of segments needed
+  int numSegments = std::ceil(rhumbDistance / maxSegmentLength);
+  double segmentDistance = rhumbDistance / numSegments;
+
+  // Propagate through each segment sequentially
+  double totalTime = 0;
+  RoutePoint* currentPoint = this;
+
+  // Store current configuration time to restore if needed
+  wxDateTime originalTime = configuration.time;
+
+  for (int i = 1; i <= numSegments; i++) {
+    double nextLat, nextLon;
+    bool isLastSegment = (i == numSegments);
+
+    if (isLastSegment) {
+      // Use exact destination for last segment
+      nextLat = dlat;
+      nextLon = dlon;
+    } else {
+      // Calculate intermediate point along the rhumb line
+      double fraction = static_cast<double>(i) / numSegments;
+
+      // For a rhumb line, we need to account for the distortion in the Mercator
+      // projection
+      double lat1 = deg2rad(lat);
+      double lat2 = deg2rad(dlat);
+      double dLon = deg2rad(dlon - lon);
+
+      // Handle crossing the anti-meridian
+      if (fabs(dLon) > M_PI) {
+        dLon = (dLon > 0) ? -(2 * M_PI - dLon) : (2 * M_PI + dLon);
+      }
+
+      // Calculate intermediate latitude using linear interpolation
+      double lat_i = lat1 + fraction * (lat2 - lat1);
+
+      // Calculate the meridional parts for the latitudes
+      auto meridionalParts = [](double lat) -> double {
+        return log(tan(M_PI / 4 + lat / 2));
+      };
+
+      double mp1 = meridionalParts(lat1);
+      double mp2 = meridionalParts(lat2);
+      double mp_i = mp1 + fraction * (mp2 - mp1);
+
+      // Calculate intermediate longitude
+      double lon_i;
+      if (fabs(lat2 - lat1) < 1e-10) {
+        // Special case for constant latitude (parallel)
+        lon_i = deg2rad(lon) + fraction * dLon;
+      } else {
+        double q = (lat_i - lat1) / (lat2 - lat1);
+        lon_i = deg2rad(lon) + q * dLon;
+      }
+
+      // Convert back to degrees
+      nextLat = rad2deg(lat_i);
+      nextLon = rad2deg(lon_i);
+      // Normalize longitude to -180 to 180
+      while (nextLon > 180) nextLon -= 360;
+      while (nextLon <= -180) nextLon += 360;
+    }
+
+    double heading;
+    // Attempt to propagate to the next point
+    double segmentTime = currentPoint->PropagateToPoint(
+        nextLat, nextLon, configuration, heading, data_mask, isLastSegment);
+
+    if (std::isnan(segmentTime)) {
+      // Could not reach this waypoint, propagation failed
+      // Clean up any intermediate points we created
+      for (RoutePoint* point : intermediatePoints) {
+        delete point;
+      }
+      intermediatePoints.clear();
+
+      // Restore original configuration time
+      configuration.time = originalTime;
+
+      return NAN;
+    }
+
+    totalTime += segmentTime;
+
+    // Create a new RoutePoint to represent this waypoint
+    RoutePoint* waypoint = new RoutePoint(
+        nextLat, nextLon, currentPoint->polar, currentPoint->tacks,
+        currentPoint->jibes, currentPoint->sail_plan_changes, data_mask,
+        configuration.grib_is_data_deficient);
+
+    intermediatePoints.push_back(waypoint);
+
+    // If not at the last waypoint, prepare for next segment
+    if (!isLastSegment) {
+      // Update current point to the new position
+      currentPoint = waypoint;
+
+      // Update configuration time for next segment to get proper weather data
+      configuration.time += wxTimeSpan::Seconds(segmentTime);
+    }
+  }
+  // Calculate equivalent constant speed if requested
+  if (totalTime > 0) {
+    // Speed = Distance / Time (converting time from seconds to hours)
+    averageSpeed = rhumbDistance / (totalTime / 3600.0);
+  }
+
+  return totalTime;
+}
+
 double RoutePoint::PropagateToPoint(double dlat, double dlon,
                                     RouteMapConfiguration& configuration,
                                     double& heading, int& data_mask, bool end) {
