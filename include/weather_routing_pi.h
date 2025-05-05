@@ -1,9 +1,4 @@
-/******************************************************************************
- *
- * Project:  OpenCPN Weather Routing plugin
- * Author:   Sean D'Epagnier
- *
- ***************************************************************************
+/***************************************************************************
  *   Copyright (C) 2015 by Sean D'Epagnier                                 *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -20,8 +15,11 @@
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
  *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,  USA.         *
- ***************************************************************************
- */
+ **************************************************************************/
+
+#ifndef _WEATHER_ROUTING_PI_H_
+#define _WEATHER_ROUTING_PI_H_
+
 #ifdef DEBUG_BUILD
 #define DEBUGSL(x)                                 \
   do {                                             \
@@ -194,5 +192,7 @@ private:
 
   wxTimer m_tCursorLatLon;
 };
+
+#endif
 
 #endif
