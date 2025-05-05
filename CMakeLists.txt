@@ -19,11 +19,7 @@
 # - xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx,                                       *
 # - xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx                                       *
 # -----------------------------------------------------------------------------
-<<<<<<< HEAD
 # Frontend2 Author: Jon Gough Testplugin(TP) v1.0.341.0 30/04/2025 DD/MM/YYYY
-=======
-# Frontend2 Author: Jon Gough Testplugin(TP) v1.0.340.0 29/04/2025 DD/MM/YYYY
->>>>>>> ce45c63 (1.15.25.0 + TP 1.0.340.0)
 # format buildCI:yes useODAPI:no validateJSON:no
 # ---------------------------------------------------------------------------
 ## -- When changing this file do NOT change the order of the sections.    -- ##
