@@ -684,7 +684,7 @@ void RoutingTablePanel::PopulateTable() {
 
     if (!std::isnan(data.cog)) {
       m_gridWeatherTable->SetCellValue(
-          row, COL_COG, wxString::Format("%.0f°", positive_degrees(data.cog)));
+          row, COL_COG, wxString::Format("%.0f\u00B0", positive_degrees(data.cog)));
     }
 
     if (!std::isnan(data.stw)) {
@@ -693,7 +693,7 @@ void RoutingTablePanel::PopulateTable() {
 
     if (!std::isnan(data.ctw)) {
       m_gridWeatherTable->SetCellValue(
-          row, COL_CTW, wxString::Format("%.0f°", positive_degrees(data.ctw)));
+          row, COL_CTW, wxString::Format("%.0f\u00B0", positive_degrees(data.ctw)));
     }
 
     // Wind data
@@ -718,7 +718,7 @@ void RoutingTablePanel::PopulateTable() {
         wxColor awaColor =
             isStarboardTack ? wxColour(0, 255, 0) : wxColour(255, 0, 0);
         setCellWithColor(row, COL_AWA,
-                         wxString::Format("%.0f°", apparentWindAngle),
+                         wxString::Format("%.0f\u00B0", apparentWindAngle),
                          awaColor);
       }
     }
@@ -726,7 +726,7 @@ void RoutingTablePanel::PopulateTable() {
     if (!std::isnan(data.twdOverWater)) {
       m_gridWeatherTable->SetCellValue(
           row, COL_TWD,
-          wxString::Format("%.0f°", positive_degrees(data.twdOverWater)));
+          wxString::Format("%.0f\u00B0", positive_degrees(data.twdOverWater)));
 
       // Calculate true wind angle relative to boat course
       if (!std::isnan(data.ctw)) {
@@ -737,7 +737,7 @@ void RoutingTablePanel::PopulateTable() {
         // Color the TWA cell: green for starboard tack, red for port tack
         wxColor twaColor =
             isStarboardTack ? wxColour(0, 255, 0) : wxColour(255, 0, 0);
-        setCellWithColor(row, COL_TWA, wxString::Format("%.0f°", twa),
+        setCellWithColor(row, COL_TWA, wxString::Format("%.0f\u00B0", twa),
                          twaColor);
       }
     }
@@ -817,7 +817,7 @@ void RoutingTablePanel::PopulateTable() {
       if (!std::isnan(data.currentDir)) {
         m_gridWeatherTable->SetCellValue(
             row, COL_CURRENT_DIR,
-            wxString::Format("%.0f°", positive_degrees(data.currentDir)));
+            wxString::Format("%.0f\u00B0", positive_degrees(data.currentDir)));
 
         // Calculate current angle relative to COG if COG is available
         if (!std::isnan(data.cog)) {
@@ -825,7 +825,7 @@ void RoutingTablePanel::PopulateTable() {
               CalculateCurrentAngle(data.currentDir, data.cog);
 
           // Display current angle with color coding
-          wxString currentAngleStr = wxString::Format("%.0f°", currentAngle);
+          wxString currentAngleStr = wxString::Format("%.0f\u00B0", currentAngle);
           wxColor effectColor =
               GetCurrentEffectColor(currentAngle, data.currentSpeed);
           setCellWithColor(row, COL_CURRENT_ANGLE, currentAngleStr,
