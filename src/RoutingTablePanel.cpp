@@ -894,7 +894,7 @@ void RoutingTablePanel::UpdateTimeHighlight(wxDateTime timelineTime) {
     // Check if we have stored colors for this row
     if (m_originalCellColors.find(m_highlightedRow) !=
         m_originalCellColors.end()) {
-      for (size_t col = 0; col < m_gridWeatherTable->GetNumberCols(); col++) {
+      for (auto col = 0; col < m_gridWeatherTable->GetNumberCols(); col++) {
         if (col < m_originalCellColors[m_highlightedRow].size()) {
           // Restore the original color
           m_gridWeatherTable->SetCellBackgroundColour(
