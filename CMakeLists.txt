@@ -197,6 +197,7 @@ SET(SRCS
             src/icons.cpp
             src/zuFile.cpp
             src/georef.cpp
+            src/cutil.cpp
             src/GribRecord.cpp
             src/navobj_util.cpp
             src/WeatherDataProvider.cpp
@@ -232,6 +233,7 @@ SET (HDRS
             include/icons.h
             include/zuFile.h
             include/georef.h
+            include/cutil.h
             include/GribRecord.h
             include/navobj_util.h
             include/WeatherDataProvider.h
