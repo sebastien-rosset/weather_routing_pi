@@ -894,7 +894,8 @@ void RoutingTablePanel::UpdateTimeHighlight(wxDateTime timelineTime) {
     // Check if we have stored colors for this row
     if (m_originalCellColors.find(m_highlightedRow) !=
         m_originalCellColors.end()) {
-      for (auto col = 0; col < m_gridWeatherTable->GetNumberCols(); col++) {
+      size_t numCols = static_cast<size_t>(m_gridWeatherTable->GetNumberCols());
+      for (size_t col = 0; col < numCols; col++) {
         if (col < m_originalCellColors[m_highlightedRow].size()) {
           // Restore the original color
           m_gridWeatherTable->SetCellBackgroundColour(
@@ -935,7 +936,9 @@ void RoutingTablePanel::UpdateTimeHighlight(wxDateTime timelineTime) {
     m_originalCellColors[closestRow].reserve(
         m_gridWeatherTable->GetNumberCols());
 
-    for (int col = 0; col < m_gridWeatherTable->GetNumberCols(); col++) {
+    // Store the cast value outside the loop to avoid repeatedly calling it
+    size_t numCols = static_cast<size_t>(m_gridWeatherTable->GetNumberCols());
+    for (size_t col = 0; col < numCols; col++) {
       // Store the original background color
       wxColour originalBg =
           m_gridWeatherTable->GetCellBackgroundColour(closestRow, col);
