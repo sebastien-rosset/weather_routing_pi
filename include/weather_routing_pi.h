@@ -158,6 +158,21 @@ public:
   void OnContextMenuItemCallback(int id);
 
   void SetColorScheme(PI_ColorScheme cs);
+  /**
+   * Gets the plugin's private data directory path.
+   *
+   * Creates and returns the path where the Weather Routing plugin should store
+   * its private configuration and data files. The path is constructed as:
+   * [OpenCPN private data location]/plugins/weather_routing/
+   *
+   * Key behaviors:
+   * - Creates the directory structure if it doesn't exist
+   * - Always returns a path ending with a path separator
+   * - Ensures the returned path is user-writable
+   *
+   * @return A wxString containing the absolute path to the plugin's data
+   * directory, always ending with a path separator
+   */
   static wxString StandardPath();
   void ShowMenuItems(bool show);
 
