@@ -2861,8 +2861,9 @@ void WeatherRouting::SaveAsTrack(RouteMapOverlay& routemapoverlay) {
   // last point, missing if config didn't succeed
   Position* p = routemapoverlay.GetDestination();
   if (p) {
-    PlugIn_Waypoint* newPoint = new PlugIn_Waypoint(
-        p->lat, p->lon, "circle", _("Weather Route Destination"));
+    PlugIn_Waypoint* newPoint =
+        new PlugIn_Waypoint(p->lat, heading_resolve(p->lon), "circle",
+                            _("Weather Route Destination"));
     newPoint->m_CreateTime = routemapoverlay.EndTime();
     newPath->pWaypointList->Append(newPoint);
   }
@@ -2917,8 +2918,9 @@ void WeatherRouting::SaveAsRoute(RouteMapOverlay& routemapoverlay) {
   // last point, missing if config didn't succeed
   Position* p = routemapoverlay.GetDestination();
   if (p) {
-    PlugIn_Waypoint_Ex* newPoint = new PlugIn_Waypoint_Ex(
-        p->lat, p->lon, "circle", _("Weather Route Destination"));
+    PlugIn_Waypoint_Ex* newPoint =
+        new PlugIn_Waypoint_Ex(p->lat, heading_resolve(p->lon), "circle",
+                               _("Weather Route Destination"));
     newPoint->m_CreateTime = routemapoverlay.EndTime();
     newRoute->pWaypointList->Append(newPoint);
   }
@@ -3018,8 +3020,9 @@ void WeatherRouting::ExportRoute(RouteMapOverlay& routemapoverlay) {
   // last point, missing if config didn't succeed
   Position* p = routemapoverlay.GetDestination();
   if (p) {
-    SimpleRoutePoint* newPoint = new SimpleRoutePoint(
-        p->lat, p->lon, "circle", _("Weather Route Destination"));
+    SimpleRoutePoint* newPoint =
+        new SimpleRoutePoint(p->lat, heading_resolve(p->lon), "circle",
+                             _("Weather Route Destination"));
     newPoint->m_CreateTime = routemapoverlay.EndTime();
     new_route.AddPoint(newPoint);
   }
