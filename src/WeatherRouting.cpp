@@ -907,15 +907,15 @@ void WeatherRouting::UpdateCursorPositionDialog() {
   wxString wind = _("Wind") + " ";
   wxString current = _("Current") + " ";
 
-  if (p->data_mask & Position::GRIB_WIND) weatherdata += grib + wind;
-  if (p->data_mask & Position::CLIMATOLOGY_WIND)
+  if (p->data_mask & DataMask::GRIB_WIND) weatherdata += grib + wind;
+  if (p->data_mask & DataMask::CLIMATOLOGY_WIND)
     weatherdata += climatology + wind;
-  if (p->data_mask & Position::DATA_DEFICIENT_WIND)
+  if (p->data_mask & DataMask::DATA_DEFICIENT_WIND)
     weatherdata += data_deficient + wind;
-  if (p->data_mask & Position::GRIB_CURRENT) weatherdata += grib + current;
-  if (p->data_mask & Position::CLIMATOLOGY_CURRENT)
+  if (p->data_mask & DataMask::GRIB_CURRENT) weatherdata += grib + current;
+  if (p->data_mask & DataMask::CLIMATOLOGY_CURRENT)
     weatherdata += climatology + current;
-  if (p->data_mask & Position::DATA_DEFICIENT_CURRENT)
+  if (p->data_mask & DataMask::DATA_DEFICIENT_CURRENT)
     weatherdata += data_deficient + current;
 
   dlg.m_stWeatherData->SetLabel(weatherdata);
@@ -1064,17 +1064,17 @@ void WeatherRouting::UpdateRoutePositionDialog() {
     dlg.m_stSailChanges->SetLabel(
         wxString::Format("%d", closestPosition->SailChanges()));
 
-    if (closestPosition->data_mask & Position::GRIB_WIND)
+    if (closestPosition->data_mask & DataMask::GRIB_WIND)
       weatherdata += grib + wind;
-    if (closestPosition->data_mask & Position::CLIMATOLOGY_WIND)
+    if (closestPosition->data_mask & DataMask::CLIMATOLOGY_WIND)
       weatherdata += climatology + wind;
-    if (closestPosition->data_mask & Position::DATA_DEFICIENT_WIND)
+    if (closestPosition->data_mask & DataMask::DATA_DEFICIENT_WIND)
       weatherdata += data_deficient + wind;
-    if (closestPosition->data_mask & Position::GRIB_CURRENT)
+    if (closestPosition->data_mask & DataMask::GRIB_CURRENT)
       weatherdata += grib + current;
-    if (closestPosition->data_mask & Position::CLIMATOLOGY_CURRENT)
+    if (closestPosition->data_mask & DataMask::CLIMATOLOGY_CURRENT)
       weatherdata += climatology + current;
-    if (closestPosition->data_mask & Position::DATA_DEFICIENT_CURRENT)
+    if (closestPosition->data_mask & DataMask::DATA_DEFICIENT_CURRENT)
       weatherdata += data_deficient + current;
 
     dlg.m_stWeatherData->SetLabel(weatherdata);

@@ -27,6 +27,7 @@
 #include "GribRecord.h"
 #include "GribRecordSet.h"
 #include "Boat.h"
+#include "RoutePoint.h"
 
 struct RouteMapConfiguration;
 class RoutePoint;
@@ -78,7 +79,7 @@ public:
                           double& twsOverGround);
   static bool GetCurrent(RouteMapConfiguration& configuration, double lat,
                          double lon, double& currentDir, double& currentSpeed,
-                         int& data_mask);
+                         DataMask& data_mask);
 
   static void TransformToGroundFrame(double directionWater,
                                      double magnitudeWater, double currentDir,
@@ -93,7 +94,7 @@ public:
                                   double& twdOverWater, double& twsOverWater,
                                   double& currentDir, double& currentSpeed,
                                   climatology_wind_atlas& atlas,
-                                  int& data_mask);
+                                  DataMask& data_mask);
 };
 
 class WR_GribRecordSet {
