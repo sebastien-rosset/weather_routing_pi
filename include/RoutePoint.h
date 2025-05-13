@@ -28,6 +28,77 @@ struct RouteMapConfiguration;
 class PlotData;
 
 /**
+ * Bit flags indicating what data sources were used for wind and current
+ * calculations and other routing conditions.
+ *
+ * These flags track various aspects of each position in the routing
+ * calculation:
+ * 1. The origin of wind and current data (GRIB or climatology)
+ * 2. Whether the data was "deficient" (outside optimal time/location range)
+ * 3. Environmental conditions like day/night status
+ *
+ * The flags can be combined using bitwise OR operations to represent multiple
+ * conditions simultaneously. For example, a position at night using GRIB
+ * current data and climatology wind data would have a data_mask containing:
+ * (GRIB_CURRENT | CLIMATOLOGY_WIND | NIGHT_TIME)
+ *
+ * These flags serve multiple purposes:
+ * - Visual differentiation in the route display (different colors for data
+ * sources)
+ * - Performance adjustments (efficiency factors for different conditions)
+ * - Analytical reporting of route segments and their data quality
+ *
+ * When examining a route, these flags provide important context about the
+ * reliability and characteristics of each segment.
+ */
+enum class DataMask : uint32_t {
+  NONE = 0,
+  /** Wind data originated from GRIB files. */
+  GRIB_WIND = 1,
+
+  /** Wind data originated from climatology data. */
+  CLIMATOLOGY_WIND = 2,
+
+  /**
+   * Wind data is from GRIB but is considered "data deficient".
+   * This typically means the data is from outside the requested time
+   * or location range but was used because better data was not available.
+   */
+  DATA_DEFICIENT_WIND = 4,
+
+  /** Current data originated from GRIB files. */
+  GRIB_CURRENT = 8,
+
+  /** Current data originated from climatology data. */
+  CLIMATOLOGY_CURRENT = 16,
+
+  /**
+   * Current data is from GRIB but is considered "data deficient".
+   * This typically means the data is from outside the requested time
+   * or location range but was used because better data was not available.
+   */
+  DATA_DEFICIENT_CURRENT = 32,
+
+  /**
+   * Indicates that this position occurs during nighttime.
+   * Used to apply nighttime efficiency factor and darker display colors.
+   */
+  NIGHT_TIME = 64
+};
+
+inline DataMask operator|(DataMask a, DataMask b) {
+  return static_cast<DataMask>(static_cast<uint32_t>(a) |
+                               static_cast<uint32_t>(b));
+}
+inline DataMask& operator|=(DataMask& a, DataMask b) {
+  a = a | b;
+  return a;
+}
+inline bool operator&(DataMask a, DataMask b) {
+  return (static_cast<uint32_t>(a) & static_cast<uint32_t>(b)) != 0;
+}
+
+/**
  * Represents a wind rose summary of climatological wind data for a location.
  *
  * This data structure holds statistical wind data typically derived from
@@ -73,7 +144,8 @@ public:
   WeatherData(RoutePoint* position);
 
   bool ReadWeatherDataAndCheckConstraints(RouteMapConfiguration& configuration,
-                                          RoutePoint* position, int& data_mask,
+                                          RoutePoint* position,
+                                          DataMask& data_mask,
                                           PropagationError& error_code,
                                           bool end);
 };
@@ -135,7 +207,7 @@ public:
   bool GetBoatSpeedForPolar(RouteMapConfiguration& configuration,
                             const WeatherData& weather, double timeseconds,
                             int newpolar, double twa, double ctw,
-                            int& data_mask, bool bound = true,
+                            DataMask& data_mask, bool bound = true,
                             const char* caller = "unknown");
 
   /**
@@ -157,7 +229,7 @@ public:
   bool GetBestPolarAndBoatSpeed(RouteMapConfiguration& configuration,
                                 const WeatherData& weather_data, double twa,
                                 double ctw, double parent_heading,
-                                int& data_mask, int polar, int& newpolar,
+                                DataMask& data_mask, int polar, int& newpolar,
                                 double& timeseconds);
 
 private:
@@ -188,7 +260,7 @@ class RoutePoint {
 public:
   RoutePoint(double latitude = 0., double longitude = 0., int polar_idx = -1,
              int tack_count = 0, int jibe_count = 0,
-             int sail_plan_change_count = 0, int dm = 0,
+             int sail_plan_change_count = 0, DataMask dm = DataMask::NONE,
              bool data_deficient = false)
       : lat(latitude),
         lon(longitude),
@@ -218,10 +290,10 @@ public:
                    RouteMapConfiguration& configuration, PlotData& data);
   // Return the wind data at the route point.
   bool GetWindData(RouteMapConfiguration& configuration, double& W, double& VW,
-                   int& data_mask);
+                   DataMask& data_mask);
   // Return the current data at the route point.
   bool GetCurrentData(RouteMapConfiguration& configuration, double& C,
-                      double& VC, int& data_mask);
+                      double& VC, DataMask& data_mask);
 
   // Return true if the route point crosses land.
   bool CrossesLand(double dlat, double dlon);
@@ -260,7 +332,7 @@ public:
   double RhumbLinePropagateToPoint(double dlat, double dlon,
                                    RouteMapConfiguration& configuration,
                                    std::vector<RoutePoint*>& intermediatePoints,
-                                   int& data_mask, double& totalDistance,
+                                   DataMask& data_mask, double& totalDistance,
                                    double& averageSpeed,
                                    double maxSegmentLength = 10.0);
 
@@ -293,66 +365,10 @@ public:
    * @return Time in seconds to reach target, or NAN if unreachable.
    */
   double PropagateToPoint(double dlat, double dlon, RouteMapConfiguration& cf,
-                          double& heading, int& data_mask, bool end = true);
+                          double& heading, DataMask& data_mask,
+                          bool end = true);
 
-  /**
-   * Bit flags indicating what data sources were used for wind and current
-   * calculations and other routing conditions.
-   *
-   * These flags track various aspects of each position in the routing
-   * calculation:
-   * 1. The origin of wind and current data (GRIB or climatology)
-   * 2. Whether the data was "deficient" (outside optimal time/location range)
-   * 3. Environmental conditions like day/night status
-   *
-   * The flags can be combined using bitwise OR operations to represent multiple
-   * conditions simultaneously. For example, a position at night using GRIB
-   * current data and climatology wind data would have a data_mask containing:
-   * (GRIB_CURRENT | CLIMATOLOGY_WIND | NIGHT_TIME)
-   *
-   * These flags serve multiple purposes:
-   * - Visual differentiation in the route display (different colors for data
-   * sources)
-   * - Performance adjustments (efficiency factors for different conditions)
-   * - Analytical reporting of route segments and their data quality
-   *
-   * When examining a route, these flags provide important context about the
-   * reliability and characteristics of each segment.
-   */
-  enum DataMask {
-    /** Wind data originated from GRIB files. */
-    GRIB_WIND = 1,
-
-    /** Wind data originated from climatology data. */
-    CLIMATOLOGY_WIND = 2,
-
-    /**
-     * Wind data is from GRIB but is considered "data deficient".
-     * This typically means the data is from outside the requested time
-     * or location range but was used because better data was not available.
-     */
-    DATA_DEFICIENT_WIND = 4,
-
-    /** Current data originated from GRIB files. */
-    GRIB_CURRENT = 8,
-
-    /** Current data originated from climatology data. */
-    CLIMATOLOGY_CURRENT = 16,
-
-    /**
-     * Current data is from GRIB but is considered "data deficient".
-     * This typically means the data is from outside the requested time
-     * or location range but was used because better data was not available.
-     */
-    DATA_DEFICIENT_CURRENT = 32,
-
-    /**
-     * Indicates that this position occurs during nighttime.
-     * Used to apply nighttime efficiency factor and darker display colors.
-     */
-    NIGHT_TIME = 64
-  };
-  int data_mask;
+  DataMask data_mask;
 };
 
 #endif

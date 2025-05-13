@@ -70,7 +70,7 @@ bool RoutePoint::GetPlotData(RoutePoint* next, double dt,
       WeatherDataProvider::GetAirPressure(configuration, lat, lon);
 
   climatology_wind_atlas atlas;
-  int data_mask = 0;  // not used for plotting yet
+  DataMask data_mask = DataMask::NONE;  // not used for plotting yet
   bool old = configuration.grib_is_data_deficient;
   configuration.grib_is_data_deficient = grib_is_data_deficient;
   if (!WeatherDataProvider::ReadWindAndCurrents(
@@ -83,7 +83,7 @@ bool RoutePoint::GetPlotData(RoutePoint* next, double dt,
     configuration.grib_is_data_deficient = old;
     return false;
   }
-
+  data.data_mask = data_mask;
   // Calculate the great circle distance and initial bearing between this route
   // point and the next one.
   ll_gc_ll_reverse(lat, lon, next->lat, next->lon, &data.cog, &data.sog);
@@ -101,7 +101,7 @@ bool RoutePoint::GetPlotData(RoutePoint* next, double dt,
 
 bool RoutePoint::GetWindData(RouteMapConfiguration& configuration,
                              double& twdOverWater, double& twsOverWater,
-                             int& data_mask) {
+                             DataMask& data_mask) {
   double twdOverGround, twsOverGround, currentDir, currentSpeed;
   climatology_wind_atlas atlas;
   return WeatherDataProvider::ReadWindAndCurrents(
@@ -111,7 +111,7 @@ bool RoutePoint::GetWindData(RouteMapConfiguration& configuration,
 
 bool RoutePoint::GetCurrentData(RouteMapConfiguration& configuration,
                                 double& currentDir, double& currentSpeed,
-                                int& data_mask) {
+                                DataMask& data_mask) {
   double twdOverGround, twsOverGround, twdOverWater, twsOverWater;
   climatology_wind_atlas atlas;
   return WeatherDataProvider::ReadWindAndCurrents(
@@ -122,7 +122,7 @@ bool RoutePoint::GetCurrentData(RouteMapConfiguration& configuration,
 bool BoatData::GetBoatSpeedForPolar(RouteMapConfiguration& configuration,
                                     const WeatherData& weather_data,
                                     double timeseconds, int newpolar,
-                                    double twa, double ctw, int& data_mask,
+                                    double twa, double ctw, DataMask& data_mask,
                                     bool bound, const char* caller) {
   if (newpolar < 0 ||
       newpolar >= static_cast<int>(configuration.boat.Polars.size())) {
@@ -132,7 +132,7 @@ bool BoatData::GetBoatSpeedForPolar(RouteMapConfiguration& configuration,
   Polar& polar = configuration.boat.Polars[newpolar];
   PolarSpeedStatus polar_status;
   bool used_grib = false;  // true if grib data was used, false if climatology.
-  if ((data_mask & Position::CLIMATOLOGY_WIND) &&
+  if ((data_mask & DataMask::CLIMATOLOGY_WIND) &&
       (configuration.ClimatologyType == RouteMapConfiguration::CUMULATIVE_MAP ||
        configuration.ClimatologyType ==
            RouteMapConfiguration::CUMULATIVE_MINUS_CALMS)) {
@@ -203,7 +203,7 @@ bool BoatData::GetBoatSpeedForPolar(RouteMapConfiguration& configuration,
     // Apply day/night efficiency factor
     stw *= configuration.NightCumulativeEfficiency;
     // Set the NIGHT_TIME flag in data_mask for visual differentiation
-    data_mask |= Position::NIGHT_TIME;
+    data_mask |= DataMask::NIGHT_TIME;
   }
 
   // Calculate boat movement over ground by combining boat speed with current.
@@ -216,8 +216,8 @@ bool BoatData::GetBoatSpeedForPolar(RouteMapConfiguration& configuration,
 }
 
 bool WeatherData::ReadWeatherDataAndCheckConstraints(
-    RouteMapConfiguration& configuration, RoutePoint* position, int& data_mask,
-    PropagationError& error_code, bool end) {
+    RouteMapConfiguration& configuration, RoutePoint* position,
+    DataMask& data_mask, PropagationError& error_code, bool end) {
   if (!ConstraintChecker::CheckSwellConstraint(configuration, lat, lon, swell,
                                                error_code)) {
     return false;
@@ -262,9 +262,9 @@ bool WeatherData::ReadWeatherDataAndCheckConstraints(
 bool BoatData::GetBestPolarAndBoatSpeed(RouteMapConfiguration& configuration,
                                         const WeatherData& weather_data,
                                         double twa, double ctw,
-                                        double parent_heading, int& data_mask,
-                                        int polar, int& newpolar,
-                                        double& timeseconds) {
+                                        double parent_heading,
+                                        DataMask& data_mask, int polar,
+                                        int& newpolar, double& timeseconds) {
   Reset();
   PolarSpeedStatus status;
   newpolar = configuration.boat.FindBestPolarForCondition(
@@ -326,7 +326,7 @@ bool BoatData::GetBestPolarAndBoatSpeed(RouteMapConfiguration& configuration,
 
 double RoutePoint::RhumbLinePropagateToPoint(
     double dlat, double dlon, RouteMapConfiguration& configuration,
-    std::vector<RoutePoint*>& intermediatePoints, int& data_mask,
+    std::vector<RoutePoint*>& intermediatePoints, DataMask& data_mask,
     double& totalDistance, double& averageSpeed, double maxSegmentLength) {
   // Calculate rhumb line distance
   double rhumbDistance = DistLoxodrome(lat, lon, dlat, dlon);
@@ -470,7 +470,8 @@ double RoutePoint::RhumbLinePropagateToPoint(
 
 double RoutePoint::PropagateToPoint(double dlat, double dlon,
                                     RouteMapConfiguration& configuration,
-                                    double& heading, int& data_mask, bool end) {
+                                    double& heading, DataMask& data_mask,
+                                    bool end) {
   PropagationError error_code;
   WeatherData weather_data(this);
   if (!weather_data.ReadWeatherDataAndCheckConstraints(
