@@ -188,6 +188,12 @@ WeatherRouting::WeatherRouting(wxWindow* parent, weather_routing_pi& plugin)
 
   m_default_configuration_path =
       weather_routing_pi::StandardPath() + "WeatherRoutingConfiguration.xml";
+  wxString cfg = GetPluginDataDir("weather_routing_pi") + "/data/" +
+                 "WeatherRoutingConfiguration.xml";
+  if (!wxFileName::FileExists(m_default_configuration_path) &&
+      wxFileName::FileExists(cfg)) {
+    wxCopyFile(cfg, m_default_configuration_path);
+  }
 
   bool forceCopyBoats = false;
   bool forceCopyPolars = false;
@@ -255,8 +261,6 @@ WeatherRouting::WeatherRouting(wxWindow* parent, weather_routing_pi& plugin)
           CopyDataFiles(GetPluginDataDir("weather_routing_pi") + "/data/polars",
                         polarsdir);
         } else if (result[i] == 1) {
-          wxString cfg = GetPluginDataDir("weather_routing_pi") + "/data/" +
-                         "WeatherRoutingConfiguration.xml";
           if (wxFileName::FileExists(cfg))
             wxCopyFile(cfg, m_default_configuration_path);
         }
