@@ -706,6 +706,7 @@ void RoutingTablePanel::PopulateTable() {
       m_gridWeatherTable->SetCellValue(row, COL_LEG_DISTANCE,
                                        FormatDistance(cumulativeDistance));
     }
+
     if (data.data_mask != DataMask::NONE) {
       // Wind
       wxString windSource;
@@ -794,6 +795,7 @@ void RoutingTablePanel::PopulateTable() {
         // Color the TWA cell: green for starboard tack, red for port tack
         wxColor twaColor =
             isStarboardTack ? wxColour(0, 255, 0) : wxColour(255, 0, 0);
+
         setCellWithColor(row, COL_TWA, wxString::Format("%.0f\u00B0", twa),
                          twaColor);
       }

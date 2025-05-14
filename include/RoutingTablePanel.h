@@ -31,6 +31,7 @@ class RouteMapOverlay;
 struct RouteMapConfiguration;
 class PlotData;
 
+
 /**
  * Dialog implementation to display a detailed weather table for a specific
  * route. The table shows various weather and navigation data at different
@@ -124,6 +125,7 @@ private:
     COL_CURRENT_SOURCE,  //!< Current data source (GRIB, climatology, deficient)
     COL_CURRENT_SPEED,   //!< Sea Current Speed
     COL_CURRENT_DIR,     //!< Sea Current Direction
+
     /**
      * True Current Angle relative to COG.
      *   - 0 degrees: Current flowing in exactly the same direction as the
@@ -154,3 +156,4 @@ private:
 };
 
 #endif
+
