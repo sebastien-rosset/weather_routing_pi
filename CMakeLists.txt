@@ -75,8 +75,8 @@ set(LONG_DESCRIPTION "WR features include: optimal routing subject to various co
 set(VERSION_MAJOR "1")
 set(VERSION_MINOR "15")
 set(VERSION_PATCH "26")
-set(VERSION_TWEAK "0")
-set(VERSION_DATE  "01/05/2025")#DD/MM/YYYY format
+set(VERSION_TWEAK "2")
+set(VERSION_DATE  "14/05/2025")#DD/MM/YYYY format
 set(OCPN_MIN_VERSION "ov58")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -184,6 +184,7 @@ SET(SRCS
             src/ConfigurationBatchDialog.cpp
             src/EditPolarDialog.cpp
             src/AboutDialog.cpp
+            src/ConstraintChecker.cpp
             src/Polar.cpp
             src/Boat.cpp
             src/RouteMap.cpp
@@ -195,9 +196,14 @@ SET(SRCS
             src/WeatherRoutingUI.cpp
             src/icons.cpp
             src/zuFile.cpp
-            src/georef.c
+            src/georef.cpp
+            src/cutil.cpp
             src/GribRecord.cpp
             src/navobj_util.cpp
+            src/WeatherDataProvider.cpp
+            src/RoutePoint.cpp
+            src/Position.cpp
+            src/IsoRoute.cpp
 )
 
 SET (HDRS
@@ -212,6 +218,7 @@ SET (HDRS
             include/ReportDialog.h
             include/FilterRoutesDialog.h
             include/ConfigurationBatchDialog.h
+            include/ConstraintChecker.h
             include/EditPolarDialog.h
             include/AboutDialog.h
             include/Polar.h
@@ -226,8 +233,13 @@ SET (HDRS
             include/icons.h
             include/zuFile.h
             include/georef.h
+            include/cutil.h
             include/GribRecord.h
             include/navobj_util.h
+            include/WeatherDataProvider.h
+            include/RoutePoint.h
+            include/Position.h
+            include/IsoRoute.h
 )
 
 add_definitions(-DPLUGIN_USE_SVG)
@@ -269,7 +281,7 @@ if (NOT OCPN_FLATPAK_CONFIG)
     target_link_libraries(${PACKAGE_NAME} windows::headers)
   endif (WIN32)
 
-  add_subdirectory(opencpn-libs/api-18)
+  add_subdirectory(opencpn-libs/api-${OCPN_API_VERSION_MINOR})
   target_link_libraries(${PACKAGE_NAME} ocpn::api)
 
   add_subdirectory(opencpn-libs/tinyxml)

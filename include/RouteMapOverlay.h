@@ -17,6 +17,9 @@
  *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,  USA.         *
  ***************************************************************************/
 
+#ifndef _WEATHER_ROUTING_ROUTE_MAP_OVERLAY_H_
+#define _WEATHER_ROUTING_ROUTE_MAP_OVERLAY_H_
+
 #include "RouteMap.h"
 #include "LineBufferOverlay.h"
 
@@ -561,3 +564,5 @@ private:
   /** Projection type for the current cache. */
   int current_cache_projection;
 };
+
+#endif
