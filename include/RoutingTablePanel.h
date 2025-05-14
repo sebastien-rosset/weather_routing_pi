@@ -31,6 +31,8 @@ class RouteMapOverlay;
 struct RouteMapConfiguration;
 class PlotData;
 
+
+
 /**
  * Dialog implementation to display a detailed weather table for a specific
  * route. The table shows various weather and navigation data at different
@@ -155,4 +157,6 @@ private:
   DECLARE_EVENT_TABLE()
 };
 
+
 #endif
+

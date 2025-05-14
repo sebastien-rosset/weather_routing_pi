@@ -983,7 +983,6 @@ void WeatherRouting::UpdateRoutePositionDialog() {
   // POSITION
   auto latStr = toSDMM_PlugIn(NEflag::LAT, data.lat, Precision::HI);
   auto lonStr = toSDMM_PlugIn(NEflag::LON, data.lon, Precision::HI);
-
   dlg.m_stPosition->SetLabel(latStr + " " + lonStr);
 
   // POLAR
