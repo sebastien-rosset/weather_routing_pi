@@ -22,6 +22,8 @@
 #include <functional>
 
 #include "json/json.h"
+
+#include "RoutePoint.h"
 #include "WeatherDataProvider.h"
 #include "RouteMap.h"
 #include "Utilities.h"
@@ -140,10 +142,11 @@ static bool GribCurrent(RouteMapConfiguration& configuration, double lat,
 
 bool WeatherDataProvider::GetCurrent(RouteMapConfiguration& configuration,
                                      double lat, double lon, double& currentDir,
-                                     double& currentSpeed, int& data_mask) {
+                                     double& currentSpeed,
+                                     DataMask& data_mask) {
   if (!configuration.grib_is_data_deficient &&
       GribCurrent(configuration, lat, lon, currentDir, currentSpeed)) {
-    data_mask |= Position::GRIB_CURRENT;
+    data_mask |= DataMask::GRIB_CURRENT;
     return true;
   }
 
@@ -151,7 +154,8 @@ bool WeatherDataProvider::GetCurrent(RouteMapConfiguration& configuration,
       RouteMap::ClimatologyData &&
       RouteMap::ClimatologyData(CURRENT, configuration.time, lat, lon,
                                 currentDir, currentSpeed)) {
-    data_mask |= Position::CLIMATOLOGY_CURRENT;
+
+    data_mask |= DataMask::CLIMATOLOGY_CURRENT;
     return true;
   }
 
@@ -161,7 +165,7 @@ bool WeatherDataProvider::GetCurrent(RouteMapConfiguration& configuration,
 // so only current data from a different time is allowed
 if(configuration.AllowDataDeficient &&
 configuration.grib_is_data_deficient && GribCurrent(configuration, lat, lon, currentDir, currentSpeed)) {
-data_mask |= Position::GRIB_CURRENT | Position::DATA_DEFICIENT_CURRENT;
+data_mask |= DataMask::GRIB_CURRENT | DataMask::DATA_DEFICIENT_CURRENT;
 return true;
 }
 #endif
@@ -297,7 +301,11 @@ bool WeatherDataProvider::ReadWindAndCurrents(
     /* normal data */
     double& twdOverGround, double& twsOverGround, double& twdOverWater,
     double& twsOverWater, double& currentDir, double& currentSpeed,
+<<<<<<< HEAD
     climatology_wind_atlas& atlas, int& data_mask) {
+=======
+    climatology_wind_atlas& atlas, DataMask& data_mask) {
+>>>>>>> d3bc18ba1059d0e91f82604a151776bce6c47460
   /* read current data */
   if (!configuration.Currents ||
       !GetCurrent(configuration, position->lat, position->lon, currentDir,
@@ -308,7 +316,8 @@ bool WeatherDataProvider::ReadWindAndCurrents(
     if (!configuration.grib_is_data_deficient &&
         GetGribWind(configuration, position->lat, position->lon, twdOverGround,
                     twsOverGround)) {
-      data_mask |= Position::GRIB_WIND;
+
+      data_mask |= DataMask::GRIB_WIND;
       break;
     }
 
@@ -318,7 +327,9 @@ bool WeatherDataProvider::ReadWindAndCurrents(
                                   position->lon, twdOverGround,
                                   twsOverGround)) {
       twdOverGround = heading_resolve(twdOverGround);
-      data_mask |= Position::CLIMATOLOGY_WIND;
+
+      data_mask |= DataMask::CLIMATOLOGY_WIND;
+
       break;
     } else if (configuration.ClimatologyType >
                    RouteMapConfiguration::CURRENTS_ONLY &&
@@ -365,7 +376,8 @@ bool WeatherDataProvider::ReadWindAndCurrents(
 
         TransformToGroundFrame(twdOverWater, twsOverWater, currentDir,
                                currentSpeed, twdOverGround, twsOverGround);
-        data_mask |= Position::CLIMATOLOGY_WIND;
+
+        data_mask |= DataMask::CLIMATOLOGY_WIND;
         return true;
       }
     }
@@ -376,7 +388,9 @@ bool WeatherDataProvider::ReadWindAndCurrents(
     if (configuration.grib_is_data_deficient &&
         GetGribWind(configuration, position->lat, position->lon, twdOverGround,
                     twsOverGround)) {
-      data_mask |= Position::GRIB_WIND | Position::DATA_DEFICIENT_WIND;
+
+      data_mask |= DataMask::GRIB_WIND | DataMask::DATA_DEFICIENT_WIND;
+
       break;
     }
     Position* n = dynamic_cast<Position*>(position);

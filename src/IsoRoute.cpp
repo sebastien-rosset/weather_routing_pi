@@ -150,14 +150,15 @@ bool IsoRoute::Propagate(IsoRouteList& routelist,
 void IsoRoute::PropagateToEnd(RouteMapConfiguration& configuration,
                               double& mindt, Position*& endp, double& minH,
                               bool& mintacked, bool& minjibed,
-                              bool& minsail_plan_changed, int& mindata_mask) {
+                              bool& minsail_plan_changed,
+                              DataMask& mindata_mask) {
   Position* p = skippoints->point;
   // TODO: it does not look like this function is used anywhere.
   // If it is used, one problem is that it does not check for the
   // case when there is a sailplan change.
   do {
     double H;
-    int data_mask = 0;
+    DataMask data_mask = DataMask::NONE;
     double dt = p->PropagateToEnd(configuration, H, data_mask);
 
     /* did we tack thru the wind? apply penalty */

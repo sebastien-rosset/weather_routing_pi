@@ -97,6 +97,7 @@ private:
   enum WeatherDataColumn {
     COL_LEG_NUMBER,  //!< Leg number
     COL_ETA,  //!< Estimated Time of Arrival - actual date/time of this point
+<<<<<<< HEAD
     COL_ENROUTE,        //!< Duration from start (cumulative time)
     COL_LEG_DISTANCE,   //!< Distance from start (cumulative distance)
     COL_SOG,            //!< Speed Over Ground
@@ -122,6 +123,35 @@ private:
     COL_REFLECTIVITY,   //!< Reflectivity
     COL_CURRENT_SPEED,  //!< Sea Current Speed
     COL_CURRENT_DIR,    //!< Sea Current Direction
+=======
+    COL_ENROUTE,         //!< Duration from start (cumulative time)
+    COL_LEG_DISTANCE,    //!< Distance from start (cumulative distance)
+    COL_SOG,             //!< Speed Over Ground
+    COL_COG,             //!< Course Over Ground
+    COL_STW,             //!< Speed Through Water
+    COL_CTW,             //!< Course Through Water
+    COL_WIND_SOURCE,     //!< Wind data source (GRIB, climatology, deficient)
+    COL_AWS,             //!< Apparent Wind Speed
+    COL_TWS,             //!< True Wind Speed
+    COL_WIND_GUST,       //!< Wind Gust
+    COL_TWD,             //!< True Wind Direction
+    COL_TWA,             //!< True Wind Angle
+    COL_AWA,             //!< Apparent Wind Angle
+    COL_SAIL_PLAN,       //!< Sail Plan
+    COL_COMFORT,         //!< Sailing Comfort Level
+    COL_WAVE_HEIGHT,     //!< Wave Height
+    COL_RAIN,            //!< Rain
+    COL_CLOUD,           //!< Cloud Cover
+    COL_AIR_TEMP,        //!< Air Temperature
+    COL_SEA_TEMP,        //!< Sea Temperature
+    COL_REL_HUMIDITY,    //!< Relative Humidity
+    COL_AIR_PRESSURE,    //!< Air Pressure
+    COL_CAPE,            //!< CAPE
+    COL_REFLECTIVITY,    //!< Reflectivity
+    COL_CURRENT_SOURCE,  //!< Current data source (GRIB, climatology, deficient)
+    COL_CURRENT_SPEED,   //!< Sea Current Speed
+    COL_CURRENT_DIR,     //!< Sea Current Direction
+>>>>>>> d3bc18ba1059d0e91f82604a151776bce6c47460
     /**
      * True Current Angle relative to COG.
      *   - 0 degrees: Current flowing in exactly the same direction as the

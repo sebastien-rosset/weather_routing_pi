@@ -66,7 +66,7 @@ int ComputeQuadrantFast(Position* p, Position* q) {
 Position::Position(double latitude, double longitude, Position* p,
                    double pheading, double pbearing, int polar_idx,
                    int tack_count, int jibe_count, int sail_plan_change_count,
-                   int data_mask, bool data_deficient)
+                   DataMask data_mask, bool data_deficient)
     : RoutePoint(latitude, longitude, polar_idx, tack_count, jibe_count,
                  sail_plan_change_count, data_mask, data_deficient),
       parent_heading(pheading),
@@ -81,7 +81,7 @@ Position::Position(double latitude, double longitude, Position* p,
 
 Position::Position(Position* p)
     : RoutePoint(p->lat, p->lon, p->polar, p->tacks, p->jibes,
-                 p->sail_plan_changes, p->grib_is_data_deficient, p->data_mask),
+                 p->sail_plan_changes, p->data_mask, p->grib_is_data_deficient),
       parent_heading(p->parent_heading),
       parent_bearing(p->parent_bearing),
       parent(p->parent),
@@ -169,7 +169,7 @@ bool Position::rk_step(double timeseconds, double cog, double dist, double twa,
                        RouteMapConfiguration& configuration,
                        WR_GribRecordSet* grib, const wxDateTime& time,
                        int newpolar, double& rk_cog, double& rk_dist,
-                       int& data_mask) {
+                       DataMask& data_mask) {
   double k1_lat, k1_lon;
   ll_gc_ll(lat, lon, cog, dist, &k1_lat, &k1_lon);
 
@@ -197,7 +197,7 @@ bool Position::rk_step(double timeseconds, double cog, double dist, double twa,
 /* propagate to the end position in the configuration, and return the number of
  * seconds it takes */
 double Position::PropagateToEnd(RouteMapConfiguration& cf, double& H,
-                                int& data_mask) {
+                                DataMask& data_mask) {
   return PropagateToPoint(cf.EndLat, cf.EndLon, cf, H, data_mask, true);
 }
 
@@ -214,7 +214,7 @@ bool Position::Propagate(IsoRouteList& routelist,
   Position* points = nullptr;
   /* through all angles relative to wind */
   int count = 0;
-  int data_mask = 0;
+  DataMask data_mask = DataMask::NONE;
   WeatherData weather_data(this);
   if (!weather_data.ReadWeatherDataAndCheckConstraints(
           configuration, this, data_mask, propagation_error, false /*end*/)) {

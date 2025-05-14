@@ -69,10 +69,39 @@ char* strtok_r(char* str, const char* delim, char** save);
 #endif
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
+/**
+ * Convert degrees to radians
+ * @param degrees Angle in degrees
+ * @return Equivalent angle in radians
+ */
 double deg2rad(double degrees);
+
+/**
+ * Convert radians to degrees
+ * @param radians Angle in radians
+ * @return Equivalent angle in degrees
+ */
 double rad2deg(double radians);
+
+/**
+ * Normalize heading angle to range [-180, 180]
+ * @param degrees Angle in degrees (any range)
+ * @return Normalized angle in range [-180, 180]
+ */
 double heading_resolve(double degrees);
+
+/**
+ * Convert angle to positive degrees in range [0, 360)
+ * @param degrees Angle in degrees (any range)
+ * @return Positive angle in range [0, 360)
+ */
 double positive_degrees(double degrees);
+
+/**
+ * Convert radians to positive degrees in range [0, 360)
+ * @param radians Angle in radians
+ * @return Positive angle in degrees in range [0, 360)
+ */
 double rad2posdeg(double radians);
 
 #define ft2m(X) (X * .3048)

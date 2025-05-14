@@ -165,7 +165,7 @@ void RouteMapOverlay::RouteAnalysis(PlugIn_Route* proute) {
     pwpnode = pwpnode->GetNext();  // PlugInWaypoint
     if (pwpnode == nullptr) break;
 
-    int data_mask = 0;
+    DataMask data_mask = DataMask::NONE;
     double H;
     pwp = pwpnode->GetData();
     rte.lat = pwp->m_lat, rte.lon = pwp->m_lon;
@@ -189,10 +189,11 @@ void RouteMapOverlay::RouteAnalysis(PlugIn_Route* proute) {
   Lock();
   m_bUpdated = true;
   m_UpdateOverlay = true;
-  last_destination_position = new Position(
-      data.lat, data.lon, nullptr /* position */, NAN /* heading */,
-      NAN /* bearing*/, data.polar, 0 /* tacks */, 0 /* jibes */,
-      0 /* sailplan changes */, 0 /* data_mask */, true /* data_deficient */);
+  last_destination_position =
+      new Position(data.lat, data.lon, nullptr /* position */,
+                   NAN /* heading */, NAN /* bearing*/, data.polar,
+                   0 /* tacks */, 0 /* jibes */, 0 /* sailplan changes */,
+                   DataMask::NONE /* data_mask */, true /* data_deficient */);
 
   last_cursor_plotdata = last_destination_plotdata;
   if (ok) {
@@ -288,15 +289,15 @@ static inline wxColour& PositionColor(Position* p, wxColour& grib_color,
                                       wxColour& climatology_color,
                                       wxColour& grib_deficient_color,
                                       wxColour& climatology_deficient_color) {
-  if (p->data_mask & Position::GRIB_WIND) {
-    if (p->data_mask & Position::DATA_DEFICIENT_WIND)
+  if (p->data_mask & DataMask::GRIB_WIND) {
+    if (p->data_mask & DataMask::DATA_DEFICIENT_WIND)
       return grib_deficient_color;
     else
       return grib_color;
   }
 
-  if (p->data_mask & Position::CLIMATOLOGY_WIND) {
-    if (p->data_mask & Position::DATA_DEFICIENT_WIND)
+  if (p->data_mask & DataMask::CLIMATOLOGY_WIND) {
+    if (p->data_mask & DataMask::DATA_DEFICIENT_WIND)
       return climatology_deficient_color;
     else
       return climatology_color;
@@ -353,12 +354,12 @@ void RouteMapOverlay::RenderAlternateRoute(IsoRoute* r, bool each_parent,
   wxColor black = wxColour(0, 0, 0, 192), tblack = TransparentColor(black);
   do {
     wxColour* color =
-        pos->data_mask & Position::DATA_DEFICIENT_WIND ? &tblack : &black;
+        pos->data_mask & DataMask::DATA_DEFICIENT_WIND ? &tblack : &black;
     for (Position* p = pos; p && !p->drawn && p->parent; p = p->parent) {
       //            wxColour &color = p->data_mask &
-      //            Position::DATA_DEFICIENT_WIND ? tblack : black;
+      //            DataMask::DATA_DEFICIENT_WIND ? tblack : black;
       wxColour& pcolor =
-          p->parent->data_mask & Position::DATA_DEFICIENT_WIND ? tblack : black;
+          p->parent->data_mask & DataMask::DATA_DEFICIENT_WIND ? tblack : black;
       if (!p->copied || each_parent)
         DrawLine(p, *color, p->parent, pcolor, dc, vp);
       p->drawn = true;
@@ -1068,7 +1069,7 @@ void RouteMapOverlay::RenderWindBarbs(piDC& dc, PlugIn_ViewPort& vp) {
 
         {
           double W1, VW1, W2, VW2;
-          int data_mask1,
+          DataMask data_mask1,
               data_mask2;  // can be used to colorize barbs based on data type
           bool v1, v2;
           // now it is the isochron before p, so we find the two closest
@@ -1260,7 +1261,7 @@ void RouteMapOverlay::RenderCurrent(piDC& dc, PlugIn_ViewPort& vp) {
 
         {
           double W1, VW1, W2, VW2;
-          int data_mask1,
+          DataMask data_mask1,
               data_mask2;  // can be used to colorize barbs based on data type
 
           // now it is the isochron before p, so we find the two closest
@@ -1647,7 +1648,7 @@ void RouteMapOverlay::UpdateDestination() {
     bool mintacked;
     bool minjibes;
     bool minsail_plan_changed;
-    int mindata_mask;
+    DataMask mindata_mask;
 
     for (IsoRouteList::iterator it = isochron->routes.begin();
          it != isochron->routes.end(); ++it) {

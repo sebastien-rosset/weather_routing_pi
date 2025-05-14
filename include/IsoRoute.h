@@ -215,7 +215,11 @@ public:
   void PropagateToEnd(RouteMapConfiguration& configuration, double& mindt,
                       Position*& endp, double& minH, bool& mintacked,
                       bool& minjibed, bool& minsail_plan_changed,
+<<<<<<< HEAD
                       int& mindata_mask);
+=======
+                      DataMask& mindata_mask);
+>>>>>>> d3bc18ba1059d0e91f82604a151776bce6c47460
 
   /**
    * Counts the number of skip positions in this route.

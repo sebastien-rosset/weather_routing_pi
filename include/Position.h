@@ -37,7 +37,11 @@ public:
   Position(double latitude, double longitude, Position* p = nullptr,
            double pheading = NAN, double pbearing = NAN, int polar_idx = -1,
            int tack_count = 0, int jibe_count = 0,
+<<<<<<< HEAD
            int sail_plan_change_count = 0, int data_mask = 0,
+=======
+           int sail_plan_change_count = 0, DataMask data_mask = DataMask::NONE,
+>>>>>>> d3bc18ba1059d0e91f82604a151776bce6c47460
            bool data_deficient = false);
   Position(Position* p);
 
@@ -67,7 +71,11 @@ public:
   // Return the number of times the sail configuration has changed.
   int SailChanges();
   double PropagateToEnd(RouteMapConfiguration& configuration, double& H,
+<<<<<<< HEAD
                         int& data_mask);
+=======
+                        DataMask& data_mask);
+>>>>>>> d3bc18ba1059d0e91f82604a151776bce6c47460
 
   /** Helper method to get error as string. */
   static wxString GetErrorText(PropagationError error);
@@ -131,7 +139,11 @@ private:
   bool rk_step(double timeseconds, double cog, double dist, double twa,
                RouteMapConfiguration& configuration, WR_GribRecordSet* grib,
                const wxDateTime& time, int newpolar, double& rk_BG,
+<<<<<<< HEAD
                double& rk_dist, int& data_mask);
+=======
+               double& rk_dist, DataMask& data_mask);
+>>>>>>> d3bc18ba1059d0e91f82604a151776bce6c47460
 };
 
 /**

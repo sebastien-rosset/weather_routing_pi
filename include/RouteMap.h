@@ -155,6 +155,10 @@ public:
   double relative_humidity;  //!< Relative humidity in percent (0-100%).
   double air_pressure;       //!< Surface air pressure in hPa.
   double reflectivity;       //!< Reflectivity in dBZ.
+<<<<<<< HEAD
+=======
+  DataMask data_mask;        //!< Bitmask indicating data sources used.
+>>>>>>> d3bc18ba1059d0e91f82604a151776bce6c47460
 };
 
 class weather_routing_pi;
