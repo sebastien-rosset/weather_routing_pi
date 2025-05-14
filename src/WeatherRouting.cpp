@@ -1792,13 +1792,8 @@ void WeatherRouting::AddRoutingPanel() {
     // Add the panel to the AUI manager
     wxAuiManager* pauimgr = ::GetFrameAuiManager();
     wxAuiPaneInfo pane = wxAuiPaneInfo()
-<<<<<<< HEAD
-                             .Name(_T("Weather Routing Table"))
-                             .Caption(_T("Weather Routing Table"))
-=======
                              .Name("Weather Routing Table")
                              .Caption("Weather Routing Table")
->>>>>>> d3bc18ba1059d0e91f82604a151776bce6c47460
                              .CaptionVisible(true)
                              .Float()
                              .FloatingPosition(100, 100)

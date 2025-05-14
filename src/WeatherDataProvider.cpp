@@ -301,11 +301,8 @@ bool WeatherDataProvider::ReadWindAndCurrents(
     /* normal data */
     double& twdOverGround, double& twsOverGround, double& twdOverWater,
     double& twsOverWater, double& currentDir, double& currentSpeed,
-<<<<<<< HEAD
-    climatology_wind_atlas& atlas, int& data_mask) {
-=======
+
     climatology_wind_atlas& atlas, DataMask& data_mask) {
->>>>>>> d3bc18ba1059d0e91f82604a151776bce6c47460
   /* read current data */
   if (!configuration.Currents ||
       !GetCurrent(configuration, position->lat, position->lon, currentDir,
