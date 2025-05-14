@@ -28,8 +28,6 @@ struct RouteMapConfiguration;
 class PlotData;
 
 /**
-<<<<<<< HEAD
-=======
  * Bit flags indicating what data sources were used for wind and current
  * calculations and other routing conditions.
  *
@@ -101,7 +99,6 @@ inline bool operator&(DataMask a, DataMask b) {
 }
 
 /**
->>>>>>> d3bc18ba1059d0e91f82604a151776bce6c47460
  * Represents a wind rose summary of climatological wind data for a location.
  *
  * This data structure holds statistical wind data typically derived from
@@ -147,10 +144,8 @@ public:
   WeatherData(RoutePoint* position);
 
   bool ReadWeatherDataAndCheckConstraints(RouteMapConfiguration& configuration,
-
                                           RoutePoint* position,
                                           DataMask& data_mask,
-
                                           PropagationError& error_code,
                                           bool end);
 };
@@ -212,7 +207,6 @@ public:
   bool GetBoatSpeedForPolar(RouteMapConfiguration& configuration,
                             const WeatherData& weather, double timeseconds,
                             int newpolar, double twa, double ctw,
-
                             DataMask& data_mask, bool bound = true,
                             const char* caller = "unknown");
 
@@ -235,7 +229,6 @@ public:
   bool GetBestPolarAndBoatSpeed(RouteMapConfiguration& configuration,
                                 const WeatherData& weather_data, double twa,
                                 double ctw, double parent_heading,
-
                                 DataMask& data_mask, int polar, int& newpolar,
                                 double& timeseconds);
 
@@ -341,7 +334,6 @@ public:
   double RhumbLinePropagateToPoint(double dlat, double dlon,
                                    RouteMapConfiguration& configuration,
                                    std::vector<RoutePoint*>& intermediatePoints,
-
                                    DataMask& data_mask, double& totalDistance,
                                    double& averageSpeed,
                                    double maxSegmentLength = 10.0);
@@ -375,12 +367,10 @@ public:
    * @return Time in seconds to reach target, or NAN if unreachable.
    */
   double PropagateToPoint(double dlat, double dlon, RouteMapConfiguration& cf,
-
                           double& heading, DataMask& data_mask,
                           bool end = true);
 
   DataMask data_mask;
-
 };
 
 #endif

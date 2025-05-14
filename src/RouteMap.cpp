@@ -82,10 +82,7 @@
 
 #include "georef.h"
 
-
 long RouteMapPosition::s_ID = 0;
-
-
 
 Shared_GribRecordSetData::~Shared_GribRecordSetData() {
   delete m_GribRecordSet;

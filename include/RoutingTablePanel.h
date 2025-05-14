@@ -31,8 +31,6 @@ class RouteMapOverlay;
 struct RouteMapConfiguration;
 class PlotData;
 
-
-
 /**
  * Dialog implementation to display a detailed weather table for a specific
  * route. The table shows various weather and navigation data at different
@@ -99,7 +97,6 @@ private:
   enum WeatherDataColumn {
     COL_LEG_NUMBER,  //!< Leg number
     COL_ETA,  //!< Estimated Time of Arrival - actual date/time of this point
-
     COL_ENROUTE,         //!< Duration from start (cumulative time)
     COL_LEG_DISTANCE,    //!< Distance from start (cumulative distance)
     COL_SOG,             //!< Speed Over Ground
@@ -127,7 +124,6 @@ private:
     COL_CURRENT_SOURCE,  //!< Current data source (GRIB, climatology, deficient)
     COL_CURRENT_SPEED,   //!< Sea Current Speed
     COL_CURRENT_DIR,     //!< Sea Current Direction
-
     /**
      * True Current Angle relative to COG.
      *   - 0 degrees: Current flowing in exactly the same direction as the
@@ -157,6 +153,4 @@ private:
   DECLARE_EVENT_TABLE()
 };
 
-
 #endif
-
