@@ -37,7 +37,6 @@ public:
   Position(double latitude, double longitude, Position* p = nullptr,
            double pheading = NAN, double pbearing = NAN, int polar_idx = -1,
            int tack_count = 0, int jibe_count = 0,
-
            int sail_plan_change_count = 0, DataMask data_mask = DataMask::NONE,
            bool data_deficient = false);
   Position(Position* p);

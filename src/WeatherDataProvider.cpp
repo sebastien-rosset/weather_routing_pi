@@ -154,7 +154,6 @@ bool WeatherDataProvider::GetCurrent(RouteMapConfiguration& configuration,
       RouteMap::ClimatologyData &&
       RouteMap::ClimatologyData(CURRENT, configuration.time, lat, lon,
                                 currentDir, currentSpeed)) {
-
     data_mask |= DataMask::CLIMATOLOGY_CURRENT;
     return true;
   }
@@ -313,7 +312,6 @@ bool WeatherDataProvider::ReadWindAndCurrents(
     if (!configuration.grib_is_data_deficient &&
         GetGribWind(configuration, position->lat, position->lon, twdOverGround,
                     twsOverGround)) {
-
       data_mask |= DataMask::GRIB_WIND;
       break;
     }
@@ -385,7 +383,6 @@ bool WeatherDataProvider::ReadWindAndCurrents(
     if (configuration.grib_is_data_deficient &&
         GetGribWind(configuration, position->lat, position->lon, twdOverGround,
                     twsOverGround)) {
-
       data_mask |= DataMask::GRIB_WIND | DataMask::DATA_DEFICIENT_WIND;
 
       break;

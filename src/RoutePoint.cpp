@@ -107,7 +107,6 @@ bool RoutePoint::GetWindData(RouteMapConfiguration& configuration,
                              double& twdOverWater, double& twsOverWater,
 
                              DataMask& data_mask) {
-
   double twdOverGround, twsOverGround, currentDir, currentSpeed;
   climatology_wind_atlas atlas;
   return WeatherDataProvider::ReadWindAndCurrents(
@@ -119,7 +118,6 @@ bool RoutePoint::GetCurrentData(RouteMapConfiguration& configuration,
                                 double& currentDir, double& currentSpeed,
 
                                 DataMask& data_mask) {
-
   double twdOverGround, twsOverGround, twdOverWater, twsOverWater;
   climatology_wind_atlas atlas;
   return WeatherDataProvider::ReadWindAndCurrents(
@@ -130,9 +128,7 @@ bool RoutePoint::GetCurrentData(RouteMapConfiguration& configuration,
 bool BoatData::GetBoatSpeedForPolar(RouteMapConfiguration& configuration,
                                     const WeatherData& weather_data,
                                     double timeseconds, int newpolar,
-
                                     double twa, double ctw, DataMask& data_mask,
-
                                     bool bound, const char* caller) {
   if (newpolar < 0 ||
       newpolar >= static_cast<int>(configuration.boat.Polars.size())) {
@@ -142,7 +138,6 @@ bool BoatData::GetBoatSpeedForPolar(RouteMapConfiguration& configuration,
   Polar& polar = configuration.boat.Polars[newpolar];
   PolarSpeedStatus polar_status;
   bool used_grib = false;  // true if grib data was used, false if climatology.
-
   if ((data_mask & DataMask::CLIMATOLOGY_WIND) &&
       (configuration.ClimatologyType == RouteMapConfiguration::CUMULATIVE_MAP ||
        configuration.ClimatologyType ==

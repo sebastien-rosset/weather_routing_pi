@@ -326,7 +326,6 @@ static wxColor GetCurrentSourceColor(DataMask mask) {
   return wxColor(255, 255, 255);  // Default to white for other cases
 }
 
-
 // Function to get wind speed color
 static wxColor GetWindSpeedColor(double knots) {
   if (!colorsInitialized) {
@@ -709,7 +708,6 @@ void RoutingTablePanel::PopulateTable() {
                                        FormatDistance(cumulativeDistance));
     }
 
-
     if (data.data_mask != DataMask::NONE) {
       // Wind
       wxString windSource;
@@ -798,7 +796,6 @@ void RoutingTablePanel::PopulateTable() {
         // Color the TWA cell: green for starboard tack, red for port tack
         wxColor twaColor =
             isStarboardTack ? wxColour(0, 255, 0) : wxColour(255, 0, 0);
-
 
         setCellWithColor(row, COL_TWA, wxString::Format("%.0f\u00B0", twa),
                          twaColor);

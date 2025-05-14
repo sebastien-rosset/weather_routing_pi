@@ -155,7 +155,6 @@ public:
   double relative_humidity;  //!< Relative humidity in percent (0-100%).
   double air_pressure;       //!< Surface air pressure in hPa.
   double reflectivity;       //!< Reflectivity in dBZ.
-
   DataMask data_mask;        //!< Bitmask indicating data sources used.
 };
 
