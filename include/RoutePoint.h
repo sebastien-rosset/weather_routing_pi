@@ -20,6 +20,7 @@
 #ifndef _WEATHER_ROUTING_ROUTEPOINT_H_
 #define _WEATHER_ROUTING_ROUTEPOINT_H_
 
+#include <cstdint>
 #include <vector>
 
 #include "ConstraintChecker.h"
