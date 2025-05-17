@@ -68,6 +68,30 @@ This is a typical *<boat_polar>.csv* or *<boat_polar>.pol*, the first polar file
  150;0.01;0.4;0.7;1.8;2.8;3.2;3.6;4;4.8;5.7
  180;0.01;0.3;0.6;1.6;2.5;2.8;3.2;3.8;4.4;5.1
 
+Polar Interpretation in High Winds
+When the intention is to reduce sail, head off 10-20 degrees, and slow down in greater wind speeds. 
+Do we have to just add each of the values because the interpolation does not work in these cases?
+
+So actually TWS=28 column should be something like this?
+  TWA | ...28
+  52 0 | 0 <---don't go here
+  60 | 0.1 <---hold your position by fore-reaching or heaving to
+  75 | 5.5 <---sailing
+  90 | 5.6 <---sailing
+  110 | 5.5 <---sailing
+  120 | 5.4 <---sailing
+  135 | 0.1 <---hold position by bare poles & sea anchor
+  150 | 0 <----don't go here.
+
+There is a difference in the way polar data is handled when there are different values in a polar cell:
+
+    blank - ignored.
+    0 - no progress
+    0.1 - hove to or forereaching
+    0.01 ???
+    Also, I've forgotten how you ensure that there is interpolation occurring.
+
+
 === qtVLM Polar Format
 
 https://www.starpath.com/qtVlm/#polar
