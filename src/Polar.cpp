@@ -419,17 +419,16 @@ void Polar::OptimizeTackingSpeed()
 }
 #endif
 
-// return index of wind speed in table which less than our wind speed
-void Polar::ClosestVWi(double VW, int& VW1i, int& VW2i) {
+void Polar::ClosestVWi(double tws, int& lower_bracket_idx, int& upper_bracket_idx) {
   for (unsigned int VWi = 1; VWi < wind_speeds.size() - 1; VWi++)
-    if (wind_speeds[VWi].tws > VW) {
-      VW1i = VWi - 1;
-      VW2i = VWi;
+    if (wind_speeds[VWi].tws > tws) {
+      lower_bracket_idx = VWi - 1;
+      upper_bracket_idx = VWi;
       return;
     }
 
-  VW2i = wind_speeds.size() - 1;
-  VW1i = VW2i > 0 ? VW2i - 1 : 0;
+  upper_bracket_idx = wind_speeds.size() - 1;
+  lower_bracket_idx = upper_bracket_idx > 0 ? upper_bracket_idx - 1 : 0;
 }
 
 bool Polar::VMGAngle(SailingWindSpeed& ws1, SailingWindSpeed& ws2, float VW,
@@ -525,6 +524,10 @@ double Polar::Speed(double twa, double tws, PolarSpeedStatus* status,
   }
 
   double VW1 = ws1.tws, VW2 = ws2.tws;
+
+  // Find four closest points (VB11, VB21, VB12, VB22) in the polar that
+  // surrounds the given TWA and TWS. These four points create a grid in the
+  // TWA/TWS space. We interpolate the boat speed from these four points.
 
   double VB11 = ws1.speeds[W1i], VB12 = ws1.speeds[W2i];
   double VB21 = ws2.speeds[W1i], VB22 = ws2.speeds[W2i];
