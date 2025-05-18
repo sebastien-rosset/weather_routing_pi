@@ -181,11 +181,13 @@ bool BoatData::GetBoatSpeedForPolar(RouteMapConfiguration& configuration,
     // For example, if the wind speed is too high or too low, or if the wind
     // angle is too close to the polar's minimum angle.
     wxLogMessage(
-        "[%s] Failed to get polar speed. windDirOverWater=%f "
+        "[%s] Failed to get polar speed. "
+        "polar idx=%d polar_status=%d windDirOverWater=%f "
         "windSpeedOverWater=%f "
         "twa=%f tws=%f ctw=%f stw=%f bound=%d grib=%d",
-        caller, weather_data.twdOverWater, weather_data.twsOverWater, twa,
-        weather_data.twsOverGround, ctw, stw, bound, used_grib);
+        caller, newpolar, polar_status, weather_data.twdOverWater,
+        weather_data.twsOverWater, twa, weather_data.twsOverGround, ctw, stw,
+        bound, used_grib);
     configuration.polar_status = polar_status;
     return false;  // ctw = stw = 0;
   }
