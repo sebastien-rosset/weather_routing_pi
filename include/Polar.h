@@ -529,6 +529,24 @@ private:
    * - Ranges from the minimum pointing angle (close-hauled) to running downwind
    */
   std::vector<double> degree_steps;
+  /**
+   * Lookup table for quickly finding the index of the closest wind angle
+   * in the `degree_steps` array for a given True Wind Angle (TWA).
+   *
+   * Structure:
+   * - Array of size `DEGREES` (360), where each entry corresponds to a degree
+   * (0-359).
+   * - Each entry stores the index in `degree_steps` that is closest to the
+   * corresponding degree.
+   * - Used to optimize interpolation by avoiding repeated searches in
+   * `degree_steps`.
+   *
+   * Purpose:
+   * - Improves performance by reducing the need for linear searches in
+   * `degree_steps`.
+   * - Allows quick access to the relevant indices for interpolation in polar
+   * calculations.
+   */
   unsigned int degree_step_index[DEGREES];
 };
 
