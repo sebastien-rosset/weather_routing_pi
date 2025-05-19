@@ -24,6 +24,8 @@
 
 #include <vector>
 #include <algorithm>
+#include <unordered_map>
+#include <tuple>
 
 enum class DayLightStatus { Day, Night };
 
@@ -81,7 +83,12 @@ public:
                                    const wxDateTime& time);
 
 private:
-  SunCalculator() = default;
+  SunCalculator() {
+    // Make sure the cache is empty initially
+    m_cache.clear();
+    m_cacheMap.clear();
+    m_accessCounter = 0;
+  }
 
   struct SunTimeCache {
     int day_of_year;
@@ -93,12 +100,28 @@ private:
     wxDateTime sunrise;
     /** Sunset time in UTC. */
     wxDateTime sunset;
-    wxDateTime last_accessed;
+    uint64_t access_counter;
   };
 
   static const int MAX_SUN_CACHE_SIZE = 100;
   std::vector<SunTimeCache> m_cache;
   wxCriticalSection m_cacheLock;
+  uint64_t m_accessCounter = 0;  // Counter for LRU cache access tracking
+
+  // Define a key for the cache map
+  typedef std::tuple<int, int, int>
+      CacheKey;  // day_of_year, lat_index, lon_index
+
+  // Hash function for the tuple key
+  struct CacheKeyHash {
+    std::size_t operator()(const CacheKey& k) const {
+      return std::get<0>(k) * 1000000 + std::get<1>(k) * 1000 + std::get<2>(k);
+    }
+  };
+
+  // Map for O(1) lookups
+  std::unordered_map<CacheKey, size_t, CacheKeyHash>
+      m_cacheMap;  // Maps key to index in m_cache
 };
 
 #endif
