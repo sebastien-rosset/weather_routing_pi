@@ -873,7 +873,7 @@ void WeatherRouting::UpdateCursorPositionDialog() {
   }
 
   RouteMapOverlay* rmo = currentroutemaps.front();
-  Position* p = rmo->GetLastCursorPosition();
+  const Position* p = rmo->GetLastCursorPosition();
   if (!p) {
     CursorPositionDialogMessage(dlg, _("Cursor outside computed route map"));
     return;

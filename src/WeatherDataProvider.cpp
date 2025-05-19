@@ -296,7 +296,7 @@ void WeatherDataProvider::TransformToGroundFrame(
  * otherwise
  */
 bool WeatherDataProvider::ReadWindAndCurrents(
-    RouteMapConfiguration& configuration, RoutePoint* position,
+    RouteMapConfiguration& configuration, const RoutePoint* position,
     /* normal data */
     double& twdOverGround, double& twsOverGround, double& twdOverWater,
     double& twsOverWater, double& currentDir, double& currentSpeed,
@@ -387,7 +387,7 @@ bool WeatherDataProvider::ReadWindAndCurrents(
 
       break;
     }
-    Position* n = dynamic_cast<Position*>(position);
+    const Position* n = dynamic_cast<const Position*>(position);
     if (!n || !n->parent) return false;
     position = n->parent;
   }

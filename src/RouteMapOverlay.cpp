@@ -234,8 +234,8 @@ static void SetWidth(piDC& dc, int w, bool penifgl = false) {
   dc.SetPen(pen);
 }
 
-void RouteMapOverlay::DrawLine(RoutePoint* p1, RoutePoint* p2, piDC& dc,
-                               PlugIn_ViewPort& vp) {
+void RouteMapOverlay::DrawLine(const RoutePoint* p1, const RoutePoint* p2,
+                               piDC& dc, PlugIn_ViewPort& vp) {
   wxPoint p1p, p2p;
   WR_GetCanvasPixLL(&vp, &p1p, p1->lat, p1->lon);
   WR_GetCanvasPixLL(&vp, &p2p, p2->lat, p2->lon);
@@ -251,8 +251,8 @@ void RouteMapOverlay::DrawLine(RoutePoint* p1, RoutePoint* p2, piDC& dc,
   }
 }
 
-void RouteMapOverlay::DrawLine(RoutePoint* p1, wxColour& color1, RoutePoint* p2,
-                               wxColour& color2, piDC& dc,
+void RouteMapOverlay::DrawLine(const RoutePoint* p1, wxColour& color1,
+                               const RoutePoint* p2, wxColour& color2, piDC& dc,
                                PlugIn_ViewPort& vp) {
 #if 0
     double p1plon, p2plon;
@@ -392,7 +392,7 @@ static double GetPlatformScaleFactor() {
 
 void RouteMapOverlay::Render(wxDateTime time, SettingsDialog& settingsdialog,
                              piDC& dc, PlugIn_ViewPort& vp, bool justendroute,
-                             RoutePoint* positionOnRoute) {
+                             const RoutePoint* positionOnRoute) {
   dc.SetPen(*wxBLACK);                // reset pen
   dc.SetBrush(*wxTRANSPARENT_BRUSH);  // reset brush
   if (!justendroute) {

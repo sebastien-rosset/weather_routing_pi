@@ -53,7 +53,7 @@ Position* IsoRoute::ClosestPosition(double lat, double lon, double* dist) {
       mindist = dist;
     }
 
-    Position* q = s->next->point;
+    const Position* q = s->next->point;
     switch (s->quadrant) {
       case 0:
         if ((lon > p->lon && lat > p->lat) || (lon < q->lon && lat < q->lat))
@@ -74,7 +74,7 @@ Position* IsoRoute::ClosestPosition(double lat, double lon, double* dist) {
     }
 
     {
-      Position* e = s->next->point;
+      const Position* e = s->next->point;
       for (p = p->next; p != e; p = p->next) {
         double dlat = lat - p->lat, dlon = lon - p->lon;
         double dist = dlat * dlat + dlon * dlon;

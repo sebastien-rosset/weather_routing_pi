@@ -289,19 +289,18 @@ public:
   bool grib_is_data_deficient;
 
   bool GetPlotData(RoutePoint* next, double dt,
-                   RouteMapConfiguration& configuration, PlotData& data);
+                   RouteMapConfiguration& configuration, PlotData& data) const;
   // Return the wind data at the route point.
   bool GetWindData(RouteMapConfiguration& configuration, double& W, double& VW,
-
                    DataMask& data_mask);
   // Return the current data at the route point.
   bool GetCurrentData(RouteMapConfiguration& configuration, double& C,
                       double& VC, DataMask& data_mask);
 
   // Return true if the route point crosses land.
-  bool CrossesLand(double dlat, double dlon);
+  bool CrossesLand(double dlat, double dlon) const;
   // Return true if the route point enters a boundary.
-  bool EntersBoundary(double dlat, double dlon);
+  bool EntersBoundary(double dlat, double dlon) const;
 
   /**
    * Propagates along a rhumb line to a destination point, handling long

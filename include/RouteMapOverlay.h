@@ -162,7 +162,7 @@ public:
    */
   void Render(wxDateTime time, SettingsDialog& settingsdialog, piDC& dc,
               PlugIn_ViewPort& vp, bool justendroute,
-              RoutePoint* positionOnRoute = nullptr);
+              const RoutePoint* positionOnRoute = nullptr);
 
   /**
    * Gets a color representing a sailing comfort level.
@@ -301,7 +301,7 @@ public:
    * Gets the last cursor position.
    * @return Pointer to the last cursor position.
    */
-  Position* GetLastCursorPosition() { return last_cursor_position; }
+  const Position* GetLastCursorPosition() const { return last_cursor_position; }
 
   /**
    * Gets the time at the last cursor position.
@@ -430,7 +430,8 @@ private:
    * @param dc Device context for drawing.
    * @param vp ViewPort for coordinate transformations.
    */
-  void DrawLine(RoutePoint* p1, RoutePoint* p2, piDC& dc, PlugIn_ViewPort& vp);
+  void DrawLine(const RoutePoint* p1, const RoutePoint* p2, piDC& dc,
+                PlugIn_ViewPort& vp);
 
   /**
    * Draws a line between two route points with color gradation.
@@ -441,7 +442,7 @@ private:
    * @param dc Device context for drawing.
    * @param vp ViewPort for coordinate transformations.
    */
-  void DrawLine(RoutePoint* p1, wxColour& color1, RoutePoint* p2,
+  void DrawLine(const RoutePoint* p1, wxColour& color1, const RoutePoint* p2,
                 wxColour& color2, piDC& dc, PlugIn_ViewPort& vp);
 
   /** Last cursor latitude. */
