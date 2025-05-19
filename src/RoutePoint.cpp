@@ -41,7 +41,7 @@ WeatherData::WeatherData(RoutePoint* position)
 /* get data from a position for plotting */
 bool RoutePoint::GetPlotData(RoutePoint* next, double dt,
                              RouteMapConfiguration& configuration,
-                             PlotData& data) {
+                             PlotData& data) const {
   data.lat = lat;
   data.lon = lon;
   data.tacks = tacks;
@@ -569,11 +569,11 @@ double RoutePoint::PropagateToPoint(double dlat, double dlon,
   return 3600.0 * dist / boat_data.sog;
 }
 
-bool RoutePoint::CrossesLand(double dlat, double dlon) {
+bool RoutePoint::CrossesLand(double dlat, double dlon) const {
   return PlugIn_GSHHS_CrossesLand(lat, lon, dlat, dlon);
 }
 
-bool RoutePoint::EntersBoundary(double dlat, double dlon) {
+bool RoutePoint::EntersBoundary(double dlat, double dlon) const {
   struct FindClosestBoundaryLineCrossing_t t;
   t.dStartLat = lat, t.dStartLon = heading_resolve(lon);
   t.dEndLat = dlat, t.dEndLon = heading_resolve(dlon);

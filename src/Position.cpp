@@ -79,7 +79,7 @@ Position::Position(double latitude, double longitude, Position* p,
   lon -= fmod(lon, EPSILON);
 }
 
-Position::Position(Position* p)
+Position::Position(const Position* p)
     : RoutePoint(p->lat, p->lon, p->polar, p->tacks, p->jibes,
                  p->sail_plan_changes, p->data_mask, p->grib_is_data_deficient),
       parent_heading(p->parent_heading),
@@ -396,11 +396,11 @@ bool Position::Propagate(IsoRouteList& routelist,
   return true;
 }
 
-double Position::Distance(Position* p) {
+double Position::Distance(const Position* p) const {
   return DistGreatCircle(lat, lon, p->lat, p->lon);
 }
 
-int Position::SailChanges() {
+int Position::SailChanges() const {
   if (!parent) return 0;
 
   return (polar != parent->polar) + parent->SailChanges();

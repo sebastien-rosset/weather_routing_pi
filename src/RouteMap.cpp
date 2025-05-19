@@ -416,7 +416,7 @@ double RouteMap::DetermineDeltaTime() {
 
     for (IsoRouteList::iterator it = lastIsochron->routes.begin();
          it != lastIsochron->routes.end(); ++it) {
-      Position* pos = (*it)->skippoints->point;
+      const Position* pos = (*it)->skippoints->point;
       do {
         totalPositions++;
 
