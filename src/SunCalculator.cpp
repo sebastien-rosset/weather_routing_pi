@@ -258,7 +258,7 @@ DayLightStatus SunCalculator::GetDayLightStatus(double lat, double lon,
   m_accessCounter++;
 
   // Create a cache key for O(1) lookup
-  CacheKey key = std::make_tuple(day_of_year, lat_index, lon_index);
+  SunCacheKey key(day_of_year, lat_index, lon_index);
 
   // Check if key exists in the map (O(1) lookup instead of linear search)
   auto mapIt = m_cacheMap.find(key);
@@ -329,6 +329,7 @@ DayLightStatus SunCalculator::GetDayLightStatus(double lat, double lon,
     oldest->access_counter = m_accessCounter;
 
     // Update the map with the new key -> same index
+    SunCacheKey key(day_of_year, lat_index, lon_index);
     m_cacheMap[key] = oldestIndex;
   } else {
     // Add new entry to the end of the vector
@@ -336,6 +337,7 @@ DayLightStatus SunCalculator::GetDayLightStatus(double lat, double lon,
         {day_of_year, lat_index, lon_index, sunrise, sunset, m_accessCounter});
 
     // Add to the map with the index of the newly added entry
+    SunCacheKey key(day_of_year, lat_index, lon_index);
     m_cacheMap[key] = m_cache.size() - 1;
   }
 

@@ -27,6 +27,28 @@
 #include <unordered_map>
 #include <tuple>
 
+// Improved cache key: pack day_of_year, lat_index, lon_index into a uint64_t
+struct SunCacheKey {
+  uint64_t packed;
+  SunCacheKey(int day_of_year, int lat_index, int lon_index) {
+    // 17 bits for day (0-366), 23 bits for lat, 24 bits for lon (all fit in 64
+    // bits)
+    packed = (static_cast<uint64_t>(day_of_year & 0x1FFFF) << 47) |
+             (static_cast<uint64_t>(lat_index & 0x7FFFFF) << 24) |
+             (static_cast<uint64_t>(lon_index & 0xFFFFFF));
+  }
+  bool operator==(const SunCacheKey& o) const { return packed == o.packed; }
+};
+
+namespace std {
+template <>
+struct hash<SunCacheKey> {
+  std::size_t operator()(const SunCacheKey& k) const {
+    return std::hash<uint64_t>()(k.packed);
+  }
+};
+}  // namespace std
+
 enum class DayLightStatus { Day, Night };
 
 class SunCalculator {
@@ -108,19 +130,7 @@ private:
   wxCriticalSection m_cacheLock;
   uint64_t m_accessCounter = 0;  // Counter for LRU cache access tracking
 
-  // Define a key for the cache map
-  typedef std::tuple<int, int, int>
-      CacheKey;  // day_of_year, lat_index, lon_index
-
-  // Hash function for the tuple key
-  struct CacheKeyHash {
-    std::size_t operator()(const CacheKey& k) const {
-      return std::get<0>(k) * 1000000 + std::get<1>(k) * 1000 + std::get<2>(k);
-    }
-  };
-
-  // Map for O(1) lookups
-  std::unordered_map<CacheKey, size_t, CacheKeyHash>
+  std::unordered_map<SunCacheKey, size_t>
       m_cacheMap;  // Maps key to index in m_cache
 };
 
