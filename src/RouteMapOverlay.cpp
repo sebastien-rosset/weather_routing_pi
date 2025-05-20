@@ -470,7 +470,7 @@ void RouteMapOverlay::Render(wxDateTime time, SettingsDialog& settingsdialog,
           settingsdialog.m_sAlternateRouteThickness->GetValue();
       if (AlternateRouteThickness) {
         Lock();
-        IsoChronList::iterator it;
+        IsoChronList::const_iterator it;
 
         /* reset drawn flag for all positions
            this is used to avoid duplicating alternate route segments */
@@ -527,8 +527,8 @@ void RouteMapOverlay::Render(wxDateTime time, SettingsDialog& settingsdialog,
         wxTimeSpan closestDiff =
             wxTimeSpan::Days(999);  // A large initial value
         if (time.IsValid()) {
-          for (IsoChronList::iterator i = origin.begin(); i != origin.end();
-               ++i) {
+          for (IsoChronList::const_iterator i = origin.begin();
+               i != origin.end(); ++i) {
             wxTimeSpan diff = (*i)->time - time;
             if (diff.GetValue() < 0) {
               diff = -diff;
@@ -539,7 +539,7 @@ void RouteMapOverlay::Render(wxDateTime time, SettingsDialog& settingsdialog,
             }
           }
         }
-        for (IsoChronList::iterator i = origin.begin(); i != origin.end();
+        for (IsoChronList::const_iterator i = origin.begin(); i != origin.end();
              ++i) {
           Unlock();
           wxColor grib_color(routecolors[c][0], routecolors[c][1],
@@ -1041,7 +1041,7 @@ void RouteMapOverlay::RenderWindBarbs(piDC& dc, PlugIn_ViewPort& vp) {
     WR_GetCanvasPixLL(&nvp, &p, configuration.StartLat, configuration.StartLon);
     int xoff = p.x % (int)step, yoff = p.y % (int)step;
 
-    IsoChronList::iterator it = origin.end();
+    IsoChronList::const_iterator it = origin.end();
     it--;
     for (double x = r.x + xoff; x < r.x + r.width; x += step) {
       for (double y = r.y + yoff; y < r.y + r.height; y += step) {
@@ -1233,7 +1233,7 @@ void RouteMapOverlay::RenderCurrent(piDC& dc, PlugIn_ViewPort& vp) {
     WR_GetCanvasPixLL(&nvp, &p, configuration.StartLat, configuration.StartLon);
     int xoff = p.x % (int)step, yoff = p.y % (int)step;
 
-    IsoChronList::iterator it = origin.end();
+    IsoChronList::const_iterator it = origin.end();
     it--;
     for (double x = r.x + xoff; x < r.x + r.width; x += step) {
       for (double y = r.y + yoff; y < r.y + r.height; y += step) {
@@ -1433,7 +1433,7 @@ std::list<PlotData>& RouteMapOverlay::GetPlotData(bool cursor_route) {
 
     RouteMapConfiguration configuration = GetConfiguration();
     Lock();
-    IsoChronList::iterator it = origin.begin(), itp;
+    IsoChronList::const_iterator it = origin.begin(), itp;
 
     for (Position* p = pos; p; p = p->parent)
       if (++it == origin.end()) {
@@ -1576,7 +1576,7 @@ int RouteMapOverlay::Cyclones(int* months) {
 
   Lock();
   wxDateTime ptime = m_EndTime;
-  IsoChronList::iterator it = origin.end();
+  IsoChronList::const_iterator it = origin.end();
 
   for (Position* p = destination_position; p && p->parent; p = p->parent) {
     if (RouteMap::ClimatologyCycloneTrackCrossings(
@@ -1638,7 +1638,7 @@ void RouteMapOverlay::UpdateDestination() {
     destination_position = 0;
     /* this doesn't happen often, so can be slow.. for each position in the last
        isochrone, we try to propagate to the destination */
-    IsoChronList::iterator iit = origin.end();
+    IsoChronList::const_iterator iit = origin.end();
     iit--;
     iit--; /* second from last isochrone */
     IsoChron* isochrone = *iit;

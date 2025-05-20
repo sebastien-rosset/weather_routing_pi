@@ -448,8 +448,6 @@ which direction the intersection occurs */
   return denom < 0 ? -1 : 1;
 }
 
-/* how many times do we cross this route going from this point to infinity,
-return -1 if inconclusive */
 int IsoRoute::IntersectionCount(Position& pos) {
   int numintsct = 0;
   double lat = pos.lat, lon = pos.lon;
@@ -527,9 +525,6 @@ int IsoRoute::IntersectionCount(Position& pos) {
   return numintsct;
 }
 
-/* determine if a route contains a position
-0 for outside, 1 for inside, -1 for inconclusive (on border or really close)
-*/
 int IsoRoute::Contains(Position& pos, bool test_children) {
   int numintsct = IntersectionCount(pos);
   if (numintsct == -1) return -1;

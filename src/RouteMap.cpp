@@ -483,7 +483,7 @@ Position* RouteMap::ClosestPosition(double lat, double lon, wxDateTime* t,
   wxDateTime min_t;
   Lock();
 
-  IsoChronList::iterator it = origin.end();
+  IsoChronList::const_iterator it = origin.end();
 
   Position p(lat,
              m_Configuration.positive_longitudes ? positive_degrees(lon) : lon);
@@ -644,7 +644,8 @@ void RouteMap::GetStatistics(int& isochrones, int& routes, int& invroutes,
   Lock();
   isochrones = origin.size();
   routes = invroutes = skippositions = positions = 0;
-  for (IsoChronList::iterator it = origin.begin(); it != origin.end(); ++it)
+  for (IsoChronList::const_iterator it = origin.begin(); it != origin.end();
+       ++it)
     for (IsoRouteList::iterator rit = (*it)->routes.begin();
          rit != (*it)->routes.end(); ++rit)
       (*rit)->UpdateStatistics(routes, invroutes, skippositions, positions);
@@ -652,7 +653,8 @@ void RouteMap::GetStatistics(int& isochrones, int& routes, int& invroutes,
 }
 
 void RouteMap::Clear() {
-  for (IsoChronList::iterator it = origin.begin(); it != origin.end(); ++it)
+  for (IsoChronList::const_iterator it = origin.begin(); it != origin.end();
+       ++it)
     delete *it;
 
   origin.clear();

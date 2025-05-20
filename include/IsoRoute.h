@@ -100,11 +100,18 @@ public:
    */
   void MinimizeLat();
   /**
-   * Counts intersections between a position and this route.
+   * Counts the number of times a ray from the given position crosses the route
+   * boundary.
    *
-   * Determines how many times a ray from the given position to infinity
-   * crosses the route boundary. Used to determine if a position is inside
-   * or outside the route.
+   * This method implements the point-in-polygon test. It casts a ray eastward
+   * (in the direction of increasing longitude) from the specified position and
+   * counts how many times this ray intersects the edges of the closed route
+   * polygon.
+   *
+   * - If the intersection count is odd, the position is inside the polygon.
+   * - If the intersection count is even, the position is outside.
+   * - If the result is -1, the test is inconclusive (e.g., the point lies
+   * exactly on an edge or vertex, or due to floating-point precision issues).
    *
    * @param pos Position to test
    * @return Number of intersections, or -1 if the test is inconclusive

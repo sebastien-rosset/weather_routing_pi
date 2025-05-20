@@ -164,7 +164,7 @@ wxTimeSpan RouteSimplifier::CalculateSegmentDuration(
     return wxTimeSpan(-1);
   }
 
-  // Find the first and last position in the segment to determine time span.
+  // Determine the duration of the segment from first position to last position.
   Position* firstPos = segment.front();
   Position* lastPos = segment.back();
   wxDateTime firstTime, lastTime;
@@ -174,7 +174,7 @@ wxTimeSpan RouteSimplifier::CalculateSegmentDuration(
       firstTime = (*it)->time;
     }
 
-    // Only check for lastPos if we've already firstPos.
+    // Only check for lastPos if we already have firstPos.
     // Since isochrones are in time order, lastPos must be in a later isochrone
     // than firstPos.
     if (firstTime.IsValid() && (*it)->Contains(*lastPos)) {
@@ -183,8 +183,10 @@ wxTimeSpan RouteSimplifier::CalculateSegmentDuration(
       return wxTimeSpan(lastTime - firstTime);
     }
   }
-  wxLogMessage("Failed to find segment duration. firstTime %d. lastTime: %d",
-               firstTime.IsValid(), lastTime.IsValid());
+  wxLogMessage(
+      "CalculateSegmentDuration has %zu positions. firstTimeValid %d. "
+      "lastTimeValid: %d",
+      segment.size(), firstTime.IsValid(), lastTime.IsValid());
   return wxTimeSpan(-1);
 }
 
