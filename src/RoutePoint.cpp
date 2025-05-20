@@ -41,7 +41,7 @@ WeatherData::WeatherData(RoutePoint* position)
 /* get data from a position for plotting */
 bool RoutePoint::GetPlotData(RoutePoint* next, double dt,
                              RouteMapConfiguration& configuration,
-                             PlotData& data) {
+                             PlotData& data) const {
   data.lat = lat;
   data.lon = lon;
   data.tacks = tacks;
@@ -71,8 +71,7 @@ bool RoutePoint::GetPlotData(RoutePoint* next, double dt,
 
   climatology_wind_atlas atlas;
 
-  DataMask data_mask = DataMask::NONE;  // not used for plotting yet
-
+  DataMask data_mask = DataMask::NONE;
   bool old = configuration.grib_is_data_deficient;
   configuration.grib_is_data_deficient = grib_is_data_deficient;
   if (!WeatherDataProvider::ReadWindAndCurrents(
@@ -180,7 +179,7 @@ bool BoatData::GetBoatSpeedForPolar(RouteMapConfiguration& configuration,
     // This can happen if the wind speed is outside the range of the polar data.
     // For example, if the wind speed is too high or too low, or if the wind
     // angle is too close to the polar's minimum angle.
-    wxLogMessage(
+    wxLogDebug(
         "[%s] Failed to get polar speed. windDirOverWater=%f "
         "windSpeedOverWater=%f "
         "twa=%f tws=%f ctw=%f stw=%f bound=%d grib=%d",
@@ -200,16 +199,18 @@ bool BoatData::GetBoatSpeedForPolar(RouteMapConfiguration& configuration,
     stw *= configuration.DownwindEfficiency;
   }
 
-  // Determine if it's day or night at the current position and time
-  DayLightStatus dayLightStatus =
-      SunCalculator::GetInstance().GetDayLightStatus(
-          weather_data.lat, weather_data.lon, configuration.time);
+  if (configuration.NightCumulativeEfficiency != 1.0) {
+    // Determine if it's day or night at the current position and time
+    DayLightStatus dayLightStatus =
+        SunCalculator::GetInstance().GetDayLightStatus(
+            weather_data.lat, weather_data.lon, configuration.time);
 
-  if (dayLightStatus == DayLightStatus::Night) {
-    // Apply day/night efficiency factor
-    stw *= configuration.NightCumulativeEfficiency;
-    // Set the NIGHT_TIME flag in data_mask for visual differentiation
-    data_mask |= DataMask::NIGHT_TIME;
+    if (dayLightStatus == DayLightStatus::Night) {
+      // Apply day/night efficiency factor
+      stw *= configuration.NightCumulativeEfficiency;
+      // Set the NIGHT_TIME flag in data_mask for visual differentiation
+      data_mask |= DataMask::NIGHT_TIME;
+    }
   }
 
   // Calculate boat movement over ground by combining boat speed with current.
@@ -532,7 +533,7 @@ double RoutePoint::PropagateToPoint(double dlat, double dlon,
   } while ((bearing - cog) > 1e-3);
   configuration.OptimizeTacking = old;
 
-  /* only allow if we fit in the isochron time.  We could optimize this by
+  /* only allow if we fit in the isochrone time.  We could optimize this by
   finding the maximum boat speed once, and using that before computing boat
   speed for this angle, but for now, we don't worry because propagating to
   the end is a small amount of total computation */
@@ -569,11 +570,11 @@ double RoutePoint::PropagateToPoint(double dlat, double dlon,
   return 3600.0 * dist / boat_data.sog;
 }
 
-bool RoutePoint::CrossesLand(double dlat, double dlon) {
+bool RoutePoint::CrossesLand(double dlat, double dlon) const {
   return PlugIn_GSHHS_CrossesLand(lat, lon, dlat, dlon);
 }
 
-bool RoutePoint::EntersBoundary(double dlat, double dlon) {
+bool RoutePoint::EntersBoundary(double dlat, double dlon) const {
   struct FindClosestBoundaryLineCrossing_t t;
   t.dStartLat = lat, t.dStartLon = heading_resolve(lon);
   t.dEndLat = dlat, t.dEndLon = heading_resolve(dlon);

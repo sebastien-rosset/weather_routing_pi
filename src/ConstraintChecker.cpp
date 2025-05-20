@@ -18,6 +18,12 @@
  ***************************************************************************/
 
 #include <wx/wx.h>
+#include <wx/log.h>
+
+#include <unordered_map>
+#include <cmath>
+#include <sstream>
+#include <cstdint>
 
 #include "ConstraintChecker.h"
 #include "WeatherDataProvider.h"
@@ -26,6 +32,72 @@
 
 #include "georef.h"
 #include "ocpn_plugin.h"
+
+// Quantize to 1e-5 deg (about 1m)
+constexpr double QUANT = 1e5;
+struct SegmentKey {
+  uint64_t packed;
+  SegmentKey(double lat1, double lon1, double lat2, double lon2) {
+    int la1 = static_cast<int>(std::round(lat1 * QUANT));
+    int lo1 = static_cast<int>(std::round(lon1 * QUANT));
+    int la2 = static_cast<int>(std::round(lat2 * QUANT));
+    int lo2 = static_cast<int>(std::round(lon2 * QUANT));
+    // Always store with smaller endpoint first for symmetry
+    if (la1 > la2 || (la1 == la2 && lo1 > lo2)) {
+      std::swap(la1, la2);
+      std::swap(lo1, lo2);
+    }
+    // Pack four 16-bit signed ints into a 64-bit value
+    packed =
+        (static_cast<uint64_t>(static_cast<uint32_t>(la1) & 0xFFFF) << 48) |
+        (static_cast<uint64_t>(static_cast<uint32_t>(lo1) & 0xFFFF) << 32) |
+        (static_cast<uint64_t>(static_cast<uint32_t>(la2) & 0xFFFF) << 16) |
+        (static_cast<uint64_t>(static_cast<uint32_t>(lo2) & 0xFFFF));
+  }
+  bool operator==(const SegmentKey& o) const { return packed == o.packed; }
+};
+
+template <>
+struct std::hash<SegmentKey> {
+  std::size_t operator()(const SegmentKey& k) const {
+    // Use std::hash for uint64_t
+    return std::hash<uint64_t>()(k.packed);
+  }
+};
+
+static std::unordered_map<SegmentKey, bool> land_cache;
+static size_t cache_hits = 0, cache_misses = 0, cache_queries = 0;
+constexpr size_t LOG_INTERVAL = 1000;
+
+void log_cache_stats() {
+  double hitrate = cache_queries ? (double)cache_hits / cache_queries : 0.0;
+  std::ostringstream oss;
+  wxLogMessage(
+      "[WeatherRouting] land cache: "
+      "queries=%d, hits=%d, misses=%d, size=%zu, hitrate=%.2f%%",
+      cache_queries, cache_hits, cache_misses, land_cache.size(),
+      100.0 * hitrate);
+}
+
+void clear_land_cache() {
+  land_cache.clear();
+  cache_hits = cache_misses = cache_queries = 0;
+}
+
+// Wrapper for PlugIn_GSHHS_CrossesLand with caching
+bool Cached_CrossesLand(double lat1, double lon1, double lat2, double lon2) {
+  SegmentKey key(lat1, lon1, lat2, lon2);
+  ++cache_queries;
+  auto it = land_cache.find(key);
+  if (it != land_cache.end()) {
+    ++cache_hits;
+    return it->second;
+  }
+  ++cache_misses;
+  bool result = PlugIn_GSHHS_CrossesLand(lat1, lon1, lat2, lon2);
+  land_cache[key] = result;
+  return result;
+}
 
 bool ConstraintChecker::CheckSwellConstraint(
     RouteMapConfiguration& configuration, double lat, double lon, double& swell,
@@ -113,38 +185,15 @@ bool ConstraintChecker::CheckLandConstraint(
     double dlon1, double cog) {
   if (configuration.DetectLand) {
     double ndlon1 = dlon1;
-
-    // Check first if crossing land.
     if (ndlon1 > 360) {
       ndlon1 -= 360;
     }
-    if (PlugIn_GSHHS_CrossesLand(lat, lon, dlat1, ndlon1)) {
+    if (Cached_CrossesLand(lat, lon, dlat1, ndlon1)) {
       return false;
     }
-
-    // CUSTOMIZATION - Safety distance from land
-    // -----------------------------------------
-    // Modify the routing according to a safety
-    // margin defined by the user from the land.
-    // CONFIG: 2 NM as a security distance by default.
     double distSecure = configuration.SafetyMarginLand;
     double latBorderUp1, lonBorderUp1, latBorderUp2, lonBorderUp2;
     double latBorderDown1, lonBorderDown1, latBorderDown2, lonBorderDown2;
-
-    // Test if land is found within a rectangle with
-    // dimensions (dist, distSecure). Tests borders, plus diag,
-    // and middle of each side...
-    //            <- dist ->
-    // |-------------------------------|
-    // |                               |    ^
-    // |                               |    distSafety
-    // |-------------------------------|    ^
-    // |                               |
-    // |                               |
-    // |-------------------------------|
-
-    // Fist, find the (lat,long) of each
-    // points of the rectangle
     ll_gc_ll(lat, lon, heading_resolve(cog) - 90, distSecure, &latBorderUp1,
              &lonBorderUp1);
     ll_gc_ll(dlat1, dlon1, heading_resolve(cog) - 90, distSecure, &latBorderUp2,
@@ -153,16 +202,14 @@ bool ConstraintChecker::CheckLandConstraint(
              &lonBorderDown1);
     ll_gc_ll(dlat1, dlon1, heading_resolve(cog) + 90, distSecure,
              &latBorderDown2, &lonBorderDown2);
-
-    // Then, test if there is land
-    if (PlugIn_GSHHS_CrossesLand(latBorderUp1, lonBorderUp1, latBorderUp2,
-                                 lonBorderUp2) ||
-        PlugIn_GSHHS_CrossesLand(latBorderDown1, lonBorderDown1, latBorderDown2,
-                                 lonBorderDown2) ||
-        PlugIn_GSHHS_CrossesLand(latBorderUp1, lonBorderUp1, latBorderDown2,
-                                 lonBorderDown2) ||
-        PlugIn_GSHHS_CrossesLand(latBorderDown1, lonBorderDown1, latBorderUp2,
-                                 lonBorderUp2)) {
+    if (Cached_CrossesLand(latBorderUp1, lonBorderUp1, latBorderUp2,
+                           lonBorderUp2) ||
+        Cached_CrossesLand(latBorderDown1, lonBorderDown1, latBorderDown2,
+                           lonBorderDown2) ||
+        Cached_CrossesLand(latBorderUp1, lonBorderUp1, latBorderDown2,
+                           lonBorderDown2) ||
+        Cached_CrossesLand(latBorderDown1, lonBorderDown1, latBorderUp2,
+                           lonBorderUp2)) {
       return false;
     }
   }

@@ -88,7 +88,7 @@ public:
                                      double& magnitudeGround);
 
   static bool ReadWindAndCurrents(RouteMapConfiguration& configuration,
-                                  RoutePoint* p,
+                                  const RoutePoint* p,
                                   /* normal data */
                                   double& twdOverGround, double& twsOverGround,
                                   double& twdOverWater, double& twsOverWater,

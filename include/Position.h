@@ -39,7 +39,7 @@ public:
            int tack_count = 0, int jibe_count = 0,
            int sail_plan_change_count = 0, DataMask data_mask = DataMask::NONE,
            bool data_deficient = false);
-  Position(Position* p);
+  Position(const Position* p);
 
   SkipPosition* BuildSkipList();
 
@@ -63,11 +63,29 @@ public:
    */
   bool Propagate(IsoRouteList& routelist, RouteMapConfiguration& configuration);
 
-  double Distance(Position* p);
+  double Distance(const Position* p) const;
   // Return the number of times the sail configuration has changed.
-  int SailChanges();
+  int SailChanges() const;
   double PropagateToEnd(RouteMapConfiguration& configuration, double& H,
                         DataMask& data_mask);
+
+  /**
+   * Generates a list of positions from this position back to the origin
+   * by following parent pointers.
+   *
+   * @return List of positions from origin to this position
+   */
+  std::list<Position*> BuildRoute() {
+    std::list<Position*> route;
+    Position* current = this;
+
+    // Follow parent pointers back to origin.
+    while (current) {
+      route.push_front(current);
+      current = current->parent;
+    }
+    return route;
+  }
 
   /** Helper method to get error as string. */
   static wxString GetErrorText(PropagationError error);

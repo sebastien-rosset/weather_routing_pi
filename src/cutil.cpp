@@ -61,7 +61,6 @@ long __stdcall MyUnhandledExceptionFilter(
 
 /*          Replacement for __MSVC__ in absence of snprintf or _snprintf  */
 #ifdef __MSVC__
-
 int mysnprintf(char* buffer, int count, const char* format, ...) {
   int ret;
 
@@ -85,7 +84,6 @@ int NextPow2(int size) {
   return n + 1;
 }
 #ifdef __WXMSW__
-
 extern "C" int clock_gettime_monotonic(struct timespec* tv) {
   static LARGE_INTEGER ticksPerSec;
   LARGE_INTEGER ticks;
