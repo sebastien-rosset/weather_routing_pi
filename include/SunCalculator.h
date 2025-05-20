@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <unordered_map>
 #include <tuple>
+#include <cstdint>
 
 enum class DayLightStatus { Day, Night };
 
