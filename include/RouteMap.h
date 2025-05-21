@@ -533,6 +533,16 @@ struct RouteMapConfiguration {
    */
   double ByDegrees;
 
+  /**
+   * Overshoot factor for propagation beyond the optimal ETA.
+   *
+   * 1.0 means stop at the first route to reach the destination (no overshoot).
+   * >1.0 means continue propagation until a route reaches the destination with
+   * ETA >= optimal_eta * OvershootFactor. This allows finding alternate routes
+   * with fewer maneuvers at the cost of a slightly higher ETA.
+   */
+  double OvershootFactor = 1.0;
+
   /* computed values */
   /**
    * Collection of angular steps used for vessel propagation calculations.
@@ -1010,6 +1020,9 @@ protected:
   WR_GribRecordSet* m_NewGrib;
 
 private:
+  /** Track the optimal ETA for overshoot logic. */
+  wxDateTime m_optimalETA;
+
   /** Helper method to collect errors from a position and its parents. */
   void CollectPositionErrors(Position* position,
                              std::vector<Position*>& failed_positions);
