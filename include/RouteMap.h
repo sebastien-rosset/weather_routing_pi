@@ -606,6 +606,13 @@ struct RouteMapConfiguration {
    * other components may require conversion to local time.
    */
   wxDateTime time;
+  
+  /**
+   * Flag indicating if we're in the overshoot phase (past optimal ETA).
+   * This is set by RouteMap during propagation to inform Position objects
+   * about overshoot state for destination handling.
+   */
+  bool overshoot_phase;
 
   /**
    * Indicates if the current GRIB data is being used outside its valid time

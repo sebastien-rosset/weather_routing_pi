@@ -99,6 +99,7 @@ RouteMapConfiguration::RouteMapConfiguration()
       StartLon(0),
       EndLon(0),
       grib(nullptr),
+      overshoot_phase(false),
       grib_is_data_deficient(false) {}
 
 double RouteMapConfiguration::GetBoatLat() {
@@ -311,6 +312,7 @@ bool RouteMap::Propagate() {
     np->prev = np->next = np;
     routelist.push_back(new IsoRoute(np->BuildSkipList()));
     configuration.grib = nullptr;
+    configuration.overshoot_phase = false;  // Always false at start
   } else {
     // At least one isochrone has been calculated.
     configuration.grib = origin.back()->m_Grib;
@@ -318,6 +320,9 @@ bool RouteMap::Propagate() {
     configuration.UsedDeltaTime = origin.back()->delta;
     configuration.grib_is_data_deficient =
         origin.back()->m_Grib_is_data_deficient;
+    
+    // Set overshoot phase flag for Position propagation
+    configuration.overshoot_phase = m_inOvershootPhase;
     // will the grib data work for us?
     if (m_Configuration.UseGrib &&
         (!configuration.grib ||
