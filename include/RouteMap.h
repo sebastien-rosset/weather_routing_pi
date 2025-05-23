@@ -606,7 +606,7 @@ struct RouteMapConfiguration {
    * other components may require conversion to local time.
    */
   wxDateTime time;
-  
+
   /**
    * Flag indicating if we're in the overshoot phase (past optimal ETA).
    * This is set by RouteMap during propagation to inform Position objects
@@ -957,9 +957,7 @@ public:
     return inOvershoot;
   }
 
-  wxDateTime GetOptimalETA() const {
-    return m_optimalETA;
-  }
+  wxDateTime GetOptimalETA() const { return m_optimalETA; }
 
   int GetAlternateDestinationCount() {
     Lock();
@@ -1049,17 +1047,17 @@ protected:
 private:
   /** Track the optimal ETA for overshoot logic. */
   wxDateTime m_optimalETA;
-  
+
   /** Flag indicating if we're in the overshoot phase (past optimal ETA). */
   bool m_inOvershootPhase;
-  
+
   /** Store positions that have reached the destination during overshoot. */
   std::vector<Position*> m_alternateDestinations;
 
   /** Helper method to collect errors from a position and its parents. */
   void CollectPositionErrors(Position* position,
                              std::vector<Position*>& failed_positions);
-  
+
   void StoreDestinationArrivals(IsoChron* isochron);
 
   RouteMapConfiguration m_Configuration;

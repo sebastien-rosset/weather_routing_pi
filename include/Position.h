@@ -86,10 +86,10 @@ public:
     }
     return route;
   }
-  
+
   /** Check if this position is holding at destination during overshoot. */
   bool IsDestinationHold() const { return destination_hold; }
-  
+
   /** Set whether this position is holding at destination during overshoot. */
   void SetDestinationHold(bool hold) { destination_hold = hold; }
 
@@ -142,7 +142,7 @@ public:
 
   bool propagated;
   bool drawn, copied;
-  
+
   /** True if this position is holding at destination during overshoot phase. */
   bool destination_hold;
 

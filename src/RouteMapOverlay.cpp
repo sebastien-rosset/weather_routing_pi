@@ -98,12 +98,11 @@ bool RouteMapOverlay::IsOvershootIsochrone(IsoChron* isochrone) const {
   return optimalETA.IsValid() && isochrone->time > optimalETA;
 }
 
-wxColour RouteMapOverlay::GetOvershootColor(const wxColour& originalColor) const {
+wxColour RouteMapOverlay::GetOvershootColor(
+    const wxColour& originalColor) const {
   // Make overshoot isochrones more transparent (50% opacity)
-  return wxColour(originalColor.Red(), 
-                  originalColor.Green(), 
-                  originalColor.Blue(), 
-                  originalColor.Alpha() / 2);
+  return wxColour(originalColor.Red(), originalColor.Green(),
+                  originalColor.Blue(), originalColor.Alpha() / 2);
 }
 
 wxColour RouteMapOverlay::GetOptimalColor(const wxColour& originalColor) const {
@@ -561,17 +560,19 @@ void RouteMapOverlay::Render(wxDateTime time, SettingsDialog& settingsdialog,
              ++i) {
           Unlock();
           wxColor base_grib_color(routecolors[c][0], routecolors[c][1],
-                             routecolors[c][2], 224);
-          wxColor base_climatology_color(255 - routecolors[c][0], routecolors[c][2],
-                                    routecolors[c][1], 224);
-          
+                                  routecolors[c][2], 224);
+          wxColor base_climatology_color(255 - routecolors[c][0],
+                                         routecolors[c][2], routecolors[c][1],
+                                         224);
+
           // Apply overshoot coloring if needed
           wxColor grib_color, climatology_color;
           if (IsOvershootIsochrone(*i)) {
             grib_color = GetOvershootColor(base_grib_color);
             climatology_color = GetOvershootColor(base_climatology_color);
             // Optional debug output
-            // wxLogMessage("Weather Routing: Rendering overshoot isochrone at %s", 
+            // wxLogMessage("Weather Routing: Rendering overshoot isochrone at
+            // %s",
             //              (*i)->time.Format().c_str());
           } else {
             grib_color = GetOptimalColor(base_grib_color);
