@@ -383,7 +383,16 @@ bool RouteMap::Propagate() {
   Lock();
   if (update) {
     origin.push_back(update);
-    if (update->Contains(m_Configuration.EndLat, m_Configuration.EndLon)) {
+    bool containsDestination = update->Contains(m_Configuration.EndLat, m_Configuration.EndLon);
+    wxLogMessage("Weather Routing DEBUG: Isochrone at %s contains destination: %s (End: %.6f, %.6f)", 
+                update->time.Format().c_str(),
+                containsDestination ? "YES" : "NO",
+                m_Configuration.EndLat, m_Configuration.EndLon);
+    
+    if (containsDestination) {
+      wxLogMessage("Weather Routing DEBUG: DESTINATION REACHED! Overshoot phase: %s, Factor: %.2f",
+                 m_inOvershootPhase ? "YES" : "NO",
+                 m_Configuration.OvershootFactor);
       if (!m_inOvershootPhase) {
         // First time reaching destination - record optimal ETA
         m_optimalETA = update->time;
@@ -717,20 +726,12 @@ void RouteMap::StoreDestinationArrivals(IsoChron* isochron) {
     Position* pos = s->point;
     do {
       // Check if this position is at/near the destination
-      if (IsAtDestination(pos)) {
+      if (pos->IsAtDestination(this->m_Configuration)) {
         m_alternateDestinations.push_back(pos);
       }
       pos = pos->next;
     } while (pos != s->point);
   }
-}
-
-bool RouteMap::IsAtDestination(Position* pos) {
-  // Use small tolerance to account for floating point precision
-  const double DESTINATION_TOLERANCE_NM = 0.1;
-  double distance = DistGreatCircle(pos->lat, pos->lon, 
-                                   m_Configuration.EndLat, m_Configuration.EndLon);
-  return distance <= DESTINATION_TOLERANCE_NM;
 }
 
 /**

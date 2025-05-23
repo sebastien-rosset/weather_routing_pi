@@ -1061,7 +1061,6 @@ private:
                              std::vector<Position*>& failed_positions);
   
   void StoreDestinationArrivals(IsoChron* isochron);
-  bool IsAtDestination(Position* pos);
 
   RouteMapConfiguration m_Configuration;
   bool m_bFinished, m_bValid;

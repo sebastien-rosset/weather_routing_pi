@@ -92,7 +92,7 @@ public:
   
   /** Set whether this position is holding at destination during overshoot. */
   void SetDestinationHold(bool hold) { destination_hold = hold; }
-  
+
   /** Check if this position is at the destination (within tolerance). */
   bool IsAtDestination(const RouteMapConfiguration& config) const;
 

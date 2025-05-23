@@ -196,6 +196,13 @@ bool Position::rk_step(double timeseconds, double cog, double dist, double twa,
   return true;
 }
 
+bool Position::IsAtDestination(const RouteMapConfiguration& config) const {
+  // Use small tolerance to account for floating point precision
+  const double DESTINATION_TOLERANCE_NM = 0.1;
+  double distance = DistGreatCircle(lat, lon, config.EndLat, config.EndLon);
+  return distance <= DESTINATION_TOLERANCE_NM;
+}
+
 /* propagate to the end position in the configuration, and return the number of
  * seconds it takes */
 double Position::PropagateToEnd(RouteMapConfiguration& cf, double& H,
@@ -213,6 +220,8 @@ bool Position::Propagate(IsoRouteList& routelist,
 
   /* Check if we're in overshoot phase and at destination */
   if (configuration.overshoot_phase && IsAtDestination(configuration)) {
+    wxLogMessage("Weather Routing DEBUG: Position (%.6f, %.6f) in overshoot phase, creating destination hold",
+               lat, lon);
     // Create a position that stays at destination
     Position* destPos = new Position(configuration.EndLat, configuration.EndLon, 
                                    this, /* parent */
@@ -424,13 +433,6 @@ bool Position::Propagate(IsoRouteList& routelist,
 
 double Position::Distance(const Position* p) const {
   return DistGreatCircle(lat, lon, p->lat, p->lon);
-}
-
-bool Position::IsAtDestination(const RouteMapConfiguration& config) const {
-  // Use small tolerance to account for floating point precision
-  const double DESTINATION_TOLERANCE_NM = 0.1;
-  double distance = DistGreatCircle(lat, lon, config.EndLat, config.EndLon);
-  return distance <= DESTINATION_TOLERANCE_NM;
 }
 
 int Position::SailChanges() const {
