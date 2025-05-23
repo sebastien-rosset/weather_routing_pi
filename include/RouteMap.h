@@ -542,7 +542,7 @@ struct RouteMapConfiguration {
    * ETA >= optimal_eta * OvershootFactor. This allows finding alternate routes
    * with fewer maneuvers at the cost of a slightly higher ETA.
    */
-  double OvershootFactor = 1.0;
+  double OvershootFactor = 1.2;
 
   /* computed values */
   /**
@@ -957,11 +957,8 @@ public:
     return inOvershoot;
   }
 
-  wxDateTime GetOptimalETA() {
-    Lock();
-    wxDateTime eta = m_optimalETA;
-    Unlock();
-    return eta;
+  wxDateTime GetOptimalETA() const {
+    return m_optimalETA;
   }
 
   int GetAlternateDestinationCount() {
