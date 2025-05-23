@@ -25,6 +25,7 @@
 #include <wx/weakref.h>
 
 #include <list>
+#include <vector>
 
 #include "ODAPI.h"
 #include "GribRecordSet.h"
@@ -941,6 +942,28 @@ public:
    */
   wxString GetRoutingErrorInfo();
 
+  // Overshoot phase queries
+  bool IsInOvershootPhase() {
+    Lock();
+    bool inOvershoot = m_inOvershootPhase;
+    Unlock();
+    return inOvershoot;
+  }
+
+  wxDateTime GetOptimalETA() {
+    Lock();
+    wxDateTime eta = m_optimalETA;
+    Unlock();
+    return eta;
+  }
+
+  int GetAlternateDestinationCount() {
+    Lock();
+    int count = m_alternateDestinations.size();
+    Unlock();
+    return count;
+  }
+
 protected:
   void SetFinished(bool destination) {
     m_bReachedDestination = destination;
@@ -1022,10 +1045,19 @@ protected:
 private:
   /** Track the optimal ETA for overshoot logic. */
   wxDateTime m_optimalETA;
+  
+  /** Flag indicating if we're in the overshoot phase (past optimal ETA). */
+  bool m_inOvershootPhase;
+  
+  /** Store positions that have reached the destination during overshoot. */
+  std::vector<Position*> m_alternateDestinations;
 
   /** Helper method to collect errors from a position and its parents. */
   void CollectPositionErrors(Position* position,
                              std::vector<Position*>& failed_positions);
+  
+  void StoreDestinationArrivals(IsoChron* isochron);
+  bool IsAtDestination(Position* pos);
 
   RouteMapConfiguration m_Configuration;
   bool m_bFinished, m_bValid;
