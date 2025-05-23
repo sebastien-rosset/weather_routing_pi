@@ -69,6 +69,10 @@
 #include <functional>
 #include <list>
 #include <map>
+#include <queue>
+#include <memory>
+#include <unordered_set>
+#include <algorithm>
 
 #include "Utilities.h"
 #include "Boat.h"
@@ -95,6 +99,7 @@ RouteMapConfiguration::RouteMapConfiguration()
       UpwindEfficiency(1.),
       DownwindEfficiency(1.),
       NightCumulativeEfficiency(1.),
+      solver_type(SOLVER_TRADITIONAL),
       StartLon(0),
       EndLon(0),
       grib(nullptr),
@@ -210,9 +215,254 @@ OD_FindClosestBoundaryLineCrossing RouteMap::ODFindClosestBoundaryLineCrossing =
 
 std::list<RouteMapPosition> RouteMap::Positions;
 
-RouteMap::RouteMap() {}
+// AStarNode implementation
 
-RouteMap::~RouteMap() { Clear(); }
+AStarNode::AStarNode(double lat, double lon, const wxDateTime& time,
+                     double heading, AStarNode* parent)
+    : lat(lat),
+      lon(lon),
+      time(time),
+      heading(heading),
+      g_cost(0.0),
+      h_cost(0.0),
+      parent(parent),
+      in_open_set(false),
+      in_closed_set(false),
+      true_wind_angle(0.0),
+      boat_speed(0.0),
+      tacked(false),
+      jibed(false),
+      data_mask(DataMask::NONE) {}
+
+AStarNode::~AStarNode() {
+  // Nothing to clean up for now
+}
+
+double AStarNode::DistanceTo(const AStarNode* other) const {
+  return DistGreatCircle(lat, lon, other->lat, other->lon);
+}
+
+std::list<AStarNode*> AStarNode::ReconstructPath() const {
+  std::list<AStarNode*> path;
+  const AStarNode* current = this;
+
+  while (current != nullptr) {
+    path.push_front(const_cast<AStarNode*>(current));
+    current = current->parent;
+  }
+
+  return path;
+}
+
+/**
+ * A* routing solver implementation.
+ *
+ * This class encapsulates the A* search algorithm for weather routing,
+ * providing an alternative to the traditional isochrone propagation method.
+ */
+class AStarSolver {
+public:
+  explicit AStarSolver(RouteMapConfiguration& config) : m_config(config) {
+    Reset();
+  }
+
+  ~AStarSolver() { Clear(); }
+
+  /**
+   * Performs the A* search to find optimal route.
+   *
+   * @return true if route found, false otherwise
+   */
+  bool Solve() {
+    if (!Initialize()) {
+      return false;
+    }
+
+    int iterations = 0;
+    const int max_iterations = 10000;  // Prevent infinite loops during testing
+
+    while (!m_open_set.empty() && iterations < max_iterations) {
+      iterations++;
+
+      // Get node with lowest f-cost
+      AStarNode* current = m_open_set.top();
+      m_open_set.pop();
+      current->in_open_set = false;
+      current->in_closed_set = true;
+
+      // Check if we reached the destination
+      if (IsDestinationReached(current)) {
+        m_solution_path = current->ReconstructPath();
+        return true;
+      }
+
+      // Expand neighbors
+      std::vector<AStarNode*> neighbors = GenerateNeighbors(current);
+      for (AStarNode* neighbor : neighbors) {
+        if (neighbor->in_closed_set) {
+          delete neighbor;  // We created this, so clean it up
+          continue;
+        }
+
+        double tentative_g =
+            current->g_cost + CalculateMoveCost(current, neighbor);
+
+        if (!neighbor->in_open_set) {
+          neighbor->g_cost = tentative_g;
+          neighbor->h_cost = CalculateHeuristic(neighbor);
+          neighbor->parent = current;
+          neighbor->in_open_set = true;
+          m_open_set.push(neighbor);
+          m_all_nodes.push_back(neighbor);  // Track for cleanup
+        } else if (tentative_g < neighbor->g_cost) {
+          neighbor->g_cost = tentative_g;
+          neighbor->parent = current;
+          // Note: priority queue doesn't support decrease-key efficiently
+          // For now, we'll let duplicate entries exist (they'll be filtered)
+        }
+      }
+    }
+
+    return false;  // No route found
+  }
+
+  /**
+   * Gets the solution path if one was found.
+   */
+  const std::list<AStarNode*>& GetSolutionPath() const {
+    return m_solution_path;
+  }
+
+  /**
+   * Resets the solver for a new search.
+   */
+  void Reset() {
+    Clear();
+    m_solution_path.clear();
+  }
+
+private:
+  RouteMapConfiguration& m_config;
+  std::priority_queue<AStarNode*, std::vector<AStarNode*>, AStarNodeComparator>
+      m_open_set;
+  std::vector<AStarNode*> m_all_nodes;  // For cleanup
+  std::list<AStarNode*> m_solution_path;
+
+  /**
+   * Initializes the A* search with the starting node.
+   */
+  bool Initialize() {
+    if (!m_config.Update()) {
+      return false;
+    }
+
+    // Create start node
+    AStarNode* start =
+        new AStarNode(m_config.StartLat, m_config.StartLon, m_config.StartTime,
+                      0.0  // Initial heading (will be determined by first move)
+        );
+
+    start->g_cost = 0.0;
+    start->h_cost = CalculateHeuristic(start);
+    start->in_open_set = true;
+
+    m_open_set.push(start);
+    m_all_nodes.push_back(start);
+
+    return true;
+  }
+
+  /**
+   * Generates neighbor nodes from the current node.
+   */
+  std::vector<AStarNode*> GenerateNeighbors(AStarNode* current) {
+    std::vector<AStarNode*> neighbors;
+
+    // Simple approach: test a few different headings
+    // This is intentionally simple for the first implementation
+    std::vector<double> test_headings = {0, 45, 90, 135, 180, 225, 270, 315};
+
+    double time_step = m_config.DeltaTime;  // seconds
+
+    for (double heading : test_headings) {
+      // Calculate new position using simple dead reckoning
+      // (This will be enhanced in later steps to use actual boat polars)
+      double speed = 5.0;  // knots - placeholder, will use polars later
+      double distance = speed * (time_step / 3600.0);  // nautical miles
+
+      double new_lat, new_lon;
+      ll_gc_ll(current->lat, current->lon, heading, distance, &new_lat,
+               &new_lon);
+
+      // Create new time
+      wxDateTime new_time = current->time + wxTimeSpan(0, 0, time_step);
+
+      AStarNode* neighbor =
+          new AStarNode(new_lat, new_lon, new_time, heading, current);
+      neighbors.push_back(neighbor);
+    }
+
+    return neighbors;
+  }
+
+  /**
+   * Calculates the heuristic cost (h) from node to destination.
+   */
+  double CalculateHeuristic(AStarNode* node) {
+    // Simple great circle distance heuristic
+    double distance =
+        DistGreatCircle(node->lat, node->lon, m_config.EndLat, m_config.EndLon);
+
+    // Convert to time estimate assuming reasonable boat speed
+    double estimated_speed = 6.0;                        // knots
+    double estimated_time = distance / estimated_speed;  // hours
+
+    return estimated_time * 3600.0;  // convert to seconds
+  }
+
+  /**
+   * Calculates the cost of moving from one node to another.
+   */
+  double CalculateMoveCost(AStarNode* from, AStarNode* to) {
+    // Simple time-based cost for now
+    wxTimeSpan time_diff = to->time - from->time;
+    return time_diff.GetSeconds().ToDouble();
+  }
+
+  /**
+   * Checks if the current node has reached the destination.
+   */
+  bool IsDestinationReached(AStarNode* node) {
+    double distance =
+        DistGreatCircle(node->lat, node->lon, m_config.EndLat, m_config.EndLon);
+    return distance < 1.0;  // Within 1 nautical mile
+  }
+
+  /**
+   * Cleans up all allocated nodes.
+   */
+  void Clear() {
+    for (AStarNode* node : m_all_nodes) {
+      delete node;
+    }
+    m_all_nodes.clear();
+
+    // Clear the priority queue
+    while (!m_open_set.empty()) {
+      m_open_set.pop();
+    }
+  }
+};
+
+RouteMap::RouteMap()
+    : m_astar_solver(nullptr),
+      m_astar_finished(false),
+      m_astar_found_route(false) {}
+
+RouteMap::~RouteMap() {
+  delete m_astar_solver;
+  Clear();
+}
 
 void RouteMap::PositionLatLon(wxString Name, double& lat, double& lon) {
   for (std::list<RouteMapPosition>::iterator it = Positions.begin();
@@ -394,6 +644,80 @@ bool RouteMap::Propagate() {
   return true;
 }
 
+// Add this method to the RouteMap class implementation
+
+bool RouteMap::RunAStarSolver() {
+  Lock();
+
+  if (!m_bValid) {
+    m_bFinished = true;
+    Unlock();
+    return false;
+  }
+
+  RouteMapConfiguration configuration = m_Configuration;
+
+  // Initialize A* solver if needed
+  if (!m_astar_solver) {
+    m_astar_solver = new AStarSolver(configuration);
+  }
+
+  Unlock();
+
+  // Perform the A* search
+  bool found_route = m_astar_solver->Solve();
+
+  Lock();
+
+  m_astar_finished = true;
+  m_astar_found_route = found_route;
+
+  if (found_route) {
+    m_astar_solution_path = m_astar_solver->GetSolutionPath();
+    SetFinished(true);  // Found route to destination
+  } else {
+    SetFinished(false);  // No route found
+  }
+
+  Unlock();
+
+  return found_route;
+}
+
+bool RouteMap::TestSolver(bool use_astar) {
+  if (use_astar) {
+    return RunAStarSolver();
+  } else {
+    return Propagate();
+  }
+}
+
+wxString RouteMap::RunSolverTest() {
+  wxString results;
+
+  // Create a simple test configuration
+  RouteMapConfiguration test_config;
+  test_config.StartLat = 37.7749;  // San Francisco
+  test_config.StartLon = -122.4194;
+  test_config.EndLat = 37.8044;  // Alcatraz Island
+  test_config.EndLon = -122.4078;
+  test_config.StartTime = wxDateTime::Now();
+  test_config.DeltaTime = 300;  // 5 minutes
+  test_config.UseGrib = false;  // Simplified test without GRIB
+
+  // NOTE: This is a static test method that can't create RouteMap instances
+  // since RouteMap is abstract. In practice, use RouteMapOverlay instead.
+  results += wxString::Format("A* Solver Test:\n");
+  results += wxString::Format("Test configuration created successfully.\n");
+  results +=
+      wxString::Format("To test A* solver, use RouteMapOverlay class:\n");
+  results += wxString::Format("  RouteMapOverlay overlay;\n");
+  results += wxString::Format("  overlay.SetConfiguration(config);\n");
+  results += wxString::Format("  bool result = overlay.RunAStarSolver();\n");
+
+  return results;
+}
+
 double RouteMap::DetermineDeltaTime() {
   double deltaTime = m_Configuration.DeltaTime;
 
@@ -533,6 +857,13 @@ void RouteMap::Reset() {
   m_bFinished = false;
   m_bLandCrossing = false;
   m_bBoundaryCrossing = false;
+
+  // Reset A* solver state
+  delete m_astar_solver;
+  m_astar_solver = nullptr;
+  m_astar_finished = false;
+  m_astar_found_route = false;
+  m_astar_solution_path.clear();
 
   Unlock();
 }

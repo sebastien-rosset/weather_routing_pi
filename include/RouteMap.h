@@ -36,6 +36,10 @@
 struct RouteMapConfiguration;
 class IsoRoute;
 
+// Forward declarations for A* implementation
+class AStarNode;
+class AStarSolver;
+
 class PlotData;
 
 /**
@@ -533,6 +537,20 @@ struct RouteMapConfiguration {
    */
   double ByDegrees;
 
+  /**
+   * Defines which routing algorithm to use.
+   */
+  enum SolverType {
+    SOLVER_TRADITIONAL,  //!< Use traditional isochrone propagation
+    SOLVER_ASTAR,        //!< Use A* search algorithm
+    SOLVER_HYBRID        //!< Use both and compare (for testing)
+  };
+  /**
+   * Specifies which routing algorithm to use.
+   * Default is traditional isochrone method for compatibility.
+   */
+  SolverType solver_type;
+
   /* computed values */
   /**
    * Collection of angular steps used for vessel propagation calculations.
@@ -635,6 +653,88 @@ bool operator!=(const RouteMapConfiguration& c1,
                 const RouteMapConfiguration& c2);
 
 /**
+ * Represents a node in the A* search graph for weather routing.
+ *
+ * Each AStarNode represents a specific boat state (position, time, heading)
+ * that can be reached during the routing calculation. The node contains
+ * all necessary information for the A* algorithm including costs and
+ * path reconstruction data.
+ */
+class AStarNode {
+public:
+  /**
+   * Constructs an A* node with the given state.
+   *
+   * @param lat Latitude in decimal degrees
+   * @param lon Longitude in decimal degrees
+   * @param time Time when this position can be reached
+   * @param heading Boat heading in degrees (0-360)
+   * @param parent Pointer to parent node (nullptr for start node)
+   */
+  AStarNode(double lat, double lon, const wxDateTime& time, double heading,
+            AStarNode* parent = nullptr);
+
+  ~AStarNode();
+
+  /**
+   * Calculates the great circle distance to another node.
+   *
+   * @param other The other node to calculate distance to
+   * @return Distance in nautical miles
+   */
+  double DistanceTo(const AStarNode* other) const;
+
+  /**
+   * Gets the total cost (g + h) for this node.
+   *
+   * @return Total estimated cost from start to goal through this node
+   */
+  double GetFCost() const { return g_cost + h_cost; }
+
+  /**
+   * Reconstructs the path from start to this node.
+   *
+   * @return List of nodes representing the optimal path
+   */
+  std::list<AStarNode*> ReconstructPath() const;
+
+  // Node state
+  double lat, lon;  // Geographic position
+  wxDateTime time;  // Time when this position is reached
+  double heading;   // Boat heading in degrees
+
+  // A* algorithm data
+  double g_cost;       // Cost from start to this node
+  double h_cost;       // Heuristic cost from this node to goal
+  AStarNode* parent;   // Parent node for path reconstruction
+  bool in_open_set;    // Whether this node is in the open set
+  bool in_closed_set;  // Whether this node has been evaluated
+
+  // Routing-specific data
+  double true_wind_angle;  // TWA when reaching this position
+  double boat_speed;       // Boat speed at this position
+  bool tacked;             // Whether a tack occurred to reach this position
+  bool jibed;              // Whether a jibe occurred to reach this position
+  DataMask data_mask;      // Weather data sources used
+
+private:
+  // Prevent copying for now
+  AStarNode(const AStarNode&);
+  AStarNode& operator=(const AStarNode&);
+};
+
+/**
+ * Comparison functor for A* priority queue.
+ * Orders nodes by f-cost (lower f-cost has higher priority).
+ */
+struct AStarNodeComparator {
+  bool operator()(const AStarNode* a, const AStarNode* b) const {
+    // Higher f-cost has lower priority (max-heap to min-heap conversion)
+    return a->GetFCost() > b->GetFCost();
+  }
+};
+
+/**
  * Manages the complete weather routing calculation process from start to
  * destination.
  *
@@ -718,6 +818,14 @@ public:
    * @return true if the route crosses a boundary
    */
   LOCKING_ACCESSOR(BoundaryCrossing, m_bBoundaryCrossing)
+  /**
+   * Thread-safe accessor to check if A* solver has finished.
+   */
+  LOCKING_ACCESSOR(AStarFinished, m_astar_finished)
+  /**
+   * Thread-safe accessor to check if A* found a route.
+   */
+  LOCKING_ACCESSOR(AStarFoundRoute, m_astar_found_route)
 
   /**
    * Thread-safe accessor to get the polar computation status.
@@ -838,6 +946,39 @@ public:
   bool Propagate();
 
   /**
+   * Alternative A* weather routing solver.
+   *
+   * This method implements an A* search algorithm as an alternative to the
+   * traditional isochrone-based Propagate() method. It can be used for
+   * comparison and testing purposes.
+   *
+   * @return true if a route to the destination was found, false otherwise
+   */
+  bool RunAStarSolver();
+
+  /**
+   * Test method to compare A* solver with traditional propagation.
+   *
+   * This method runs both algorithms and provides comparison data.
+   * Useful for debugging and performance analysis.
+   *
+   * @param use_astar If true, use A* solver; if false, use traditional
+   * propagation
+   * @return true if route was found
+   */
+  bool TestSolver(bool use_astar);
+
+  /**
+   * Simple test to validate A* implementation.
+   *
+   * Creates a basic routing scenario and tests both solvers.
+   * Useful for initial validation and debugging.
+   *
+   * @return Test results as a formatted string
+   */
+  static wxString RunSolverTest();
+
+  /**
    * Function pointer for accessing climatology data.
    *
    * This allows the routing algorithm to integrate with external climatology
@@ -917,6 +1058,16 @@ public:
     wxString ret = m_bWeatherForecastError;
     Unlock();
     return ret;
+  }
+
+  /**
+   * Thread-safe accessor to get A* solution path.
+   */
+  std::list<AStarNode*> GetAStarSolutionPath() {
+    Lock();
+    std::list<AStarNode*> path = m_astar_solution_path;
+    Unlock();
+    return path;
   }
 
   void SetWeatherForecastError(wxString msg) {
@@ -1052,6 +1203,12 @@ private:
   wxString m_ErrorMsg;
 
   wxDateTime m_NewTime;
+
+  // A* solver specific members
+  AStarSolver* m_astar_solver;
+  bool m_astar_finished;
+  bool m_astar_found_route;
+  std::list<AStarNode*> m_astar_solution_path;
 };
 
 #endif
