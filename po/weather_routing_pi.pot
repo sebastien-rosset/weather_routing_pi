@@ -2001,7 +2001,6 @@ msgid "Wind strength is"
 msgstr ""
 
 #: src/WeatherRoutingUI.cpp:1760
-#, c-format
 msgid ""
 "Adjust the wind strength used in calculations as a percentage of the forecast "
 "value. Values below 100% are more conservative, while values above "
