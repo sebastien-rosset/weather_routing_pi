@@ -1006,7 +1006,7 @@ msgid "Note: All thicknesses can be set to 0 to disable their display\n"
 "Squares At Sail Changes -- render squares along Routes whenever a sail change is made\n"
 msgstr "Beachte: Alle Dicken können auf 0 gesetzt werden um sie nicht anzuzeigen\n"
 "Alternativen für alle Isochrone -- alle alternativen Routen darstellen, nicht nur die den letzten Isochron erreichen\n"
-"Quadrat für Segelwechsel -- zeichnet auf der Route Quadrate, wo Segel gewechselt werden."
+"Quadrat für Segelwechsel -- zeichnet auf der Route Quadrate, wo Segel gewechselt werden.\n"
 
 #: src/SettingsDialog.cpp:246
 msgid "Filter Routes by Climatology -- This currently does nothing, but I intended to make weather route maps which derive data from grib and climatology clearly render which data was used where \n"
@@ -1968,7 +1968,6 @@ msgid "Wind strength is"
 msgstr "Windstärke ist"
 
 #: src/WeatherRoutingUI.cpp:1760
-#, c-format
 msgid "Adjust the wind strength used in calculations as a percentage of the forecast value. Values below 100% are more conservative, while values above 100% assume stronger winds than predicted."
 msgstr "Passen Sie die Windstärke für die Berechnungen als Prozentsatz des Vorhersagewertes an. Werte unter 100% sind konservativer, während Werte über 100% von stärkerem Wind ausgehen als vorhergesagt."
 
