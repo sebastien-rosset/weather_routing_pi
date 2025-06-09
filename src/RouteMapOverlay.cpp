@@ -153,6 +153,9 @@ void RouteMapOverlay::RouteAnalysis(PlugIn_Route* proute) {
   // sog, cog, stw, ctw, VW, W, tws, twd, currentSpeed, currentDir, WVHT;
   // double VW_GUST;
   data.WVHT = 0;
+  data.WVDIR = 0;
+  data.WVREL = 0;
+  data.WVPER = 0;
   data.VW_GUST = 0;
   data.delta = dt;
   bool ok = true;

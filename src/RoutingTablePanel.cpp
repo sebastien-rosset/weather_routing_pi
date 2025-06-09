@@ -418,6 +418,30 @@ static wxColor GetPressureColor(double hPa) {
   return GetColorFromMap(PressureColorMap, maplen, hPa);
 }
 
+// Function to get wave relative direction color based on tactical significance
+static wxColor GetWaveRelativeColor(double waveRelAngle) {
+  // Normalize angle to 0-360 range for consistent coloring
+  while (waveRelAngle < 0) waveRelAngle += 360;
+  while (waveRelAngle >= 360) waveRelAngle -= 360;
+
+  // Color coding based on wave direction relative to boat heading:
+  // Green: Following seas (135-225°) - favorable
+  // Yellow: Beam seas (45-135° & 225-315°) - moderate comfort
+  // Red: Head seas (315-45°) - challenging
+
+  if ((waveRelAngle >= 135 && waveRelAngle <= 225)) {
+    // Following seas - green (favorable)
+    return wxColour(0, 200, 0);
+  } else if ((waveRelAngle >= 45 && waveRelAngle < 135) ||
+             (waveRelAngle > 225 && waveRelAngle <= 315)) {
+    // Beam seas - yellow (moderate)
+    return wxColour(255, 200, 0);
+  } else {
+    // Head seas - red (challenging)
+    return wxColour(255, 100, 100);
+  }
+}
+
 // Helper function to format distance values according to user preferences
 static wxString FormatDistance(double nm_distance) {
   double value = toUsrDistance_Plugin(nm_distance);
@@ -552,6 +576,7 @@ RoutingTablePanel::RoutingTablePanel(wxWindow* parent,
   m_gridWeatherTable->SetColLabelValue(COL_COG, _("COG"));
   m_gridWeatherTable->SetColLabelValue(COL_STW, _("STW"));
   m_gridWeatherTable->SetColLabelValue(COL_CTW, _("CTW"));
+  m_gridWeatherTable->SetColLabelValue(COL_HDG, _("HDG"));
 
   m_gridWeatherTable->SetColLabelValue(COL_WIND_SOURCE, _("Wind Source"));
   m_gridWeatherTable->SetColLabelValue(COL_AWS, _("AWS"));
@@ -561,6 +586,9 @@ RoutingTablePanel::RoutingTablePanel(wxWindow* parent,
   m_gridWeatherTable->SetColLabelValue(COL_TWA, _("TWA"));
   m_gridWeatherTable->SetColLabelValue(COL_AWA, _("AWA"));
   m_gridWeatherTable->SetColLabelValue(COL_WAVE_HEIGHT, _("Wave Height"));
+  m_gridWeatherTable->SetColLabelValue(COL_WAVE_DIRECTION, _("Wave Dir"));
+  m_gridWeatherTable->SetColLabelValue(COL_WAVE_REL, _("Wave Rel"));
+  m_gridWeatherTable->SetColLabelValue(COL_WAVE_PERIOD, _("Wave Period"));
   m_gridWeatherTable->SetColLabelValue(COL_SAIL_PLAN, _("Sail Plan"));
   m_gridWeatherTable->SetColLabelValue(COL_COMFORT, _("Comfort"));
   m_gridWeatherTable->SetColLabelValue(COL_RAIN, _("Rain"));
@@ -826,6 +854,12 @@ void RoutingTablePanel::PopulateTable() {
           wxString::Format("%.0f\u00B0", positive_degrees(data.ctw)));
     }
 
+    if (!std::isnan(data.hdg)) {
+      m_gridWeatherTable->SetCellValue(
+          row, COL_HDG,
+          wxString::Format("%.0f\u00B0", positive_degrees(data.hdg)));
+    }
+
     // Wind data
     if (!std::isnan(data.stw) && !std::isnan(data.twdOverWater) &&
         !std::isnan(data.twsOverWater)) {
@@ -971,6 +1005,22 @@ void RoutingTablePanel::PopulateTable() {
       setCellWithColor(row, COL_WAVE_HEIGHT,
                        wxString::Format("%.1f m", data.WVHT),
                        GetWaveHeightColor(data.WVHT));
+    }
+    if (!std::isnan(data.WVDIR) && data.WVDIR >= 0) {
+      m_gridWeatherTable->SetCellValue(
+          row, COL_WAVE_DIRECTION,
+          wxString::Format("%.0f\u00B0", positive_degrees(data.WVDIR)));
+    }
+    if (!std::isnan(data.WVREL)) {
+      // Display wave direction relative to boat heading with color coding
+      double displayAngle = positive_degrees(data.WVREL);
+      setCellWithColor(row, COL_WAVE_REL,
+                       wxString::Format("%.0f\u00B0", displayAngle),
+                       GetWaveRelativeColor(displayAngle));
+    }
+    if (!std::isnan(data.WVPER) && data.WVPER > 0) {
+      m_gridWeatherTable->SetCellValue(row, COL_WAVE_PERIOD,
+                                       wxString::Format("%.1f s", data.WVPER));
     }
 
     // Sailing comfort level
