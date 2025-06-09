@@ -46,8 +46,68 @@ wxDateTime convHrmn(double dhr) {
   return wxDateTime(hr, mn);
 };
 
+// Helper function for steps 3-6 of the US Naval Observatory algorithm
+// Calculates sun position (mean anomaly, true longitude, right ascension,
+// declination)
+static void CalculateSunPosition(double t, double& sinDec, double& cosDec,
+                                 double& RA) {
+  /*
+  3. calculate the Sun's mean anomaly
+
+  M = (0.9856 * t) - 3.289
+  */
+  double M = (0.9856 * t) - 3.289;
+  /*
+  4. calculate the Sun's true longitude
+
+  L = M + (1.916 * sin(M)) + (0.020 * sin(2 * M)) + 282.634
+  NOTE: L potentially needs to be adjusted into the range [0,360) by
+  adding/subtracting 360
+  */
+  double L =
+      M + (1.916 * sin(DEGREE * M)) + (0.020 * sin(2 * DEGREE * M)) + 282.634;
+  if (L > 360) L -= 360;
+  if (L < 0) L += 360;
+  /*
+  5a. calculate the Sun's right ascension
+
+  RA = atan(0.91764 * tan(L))
+  NOTE: RA potentially needs to be adjusted into the range [0,360) by
+  adding/subtracting 360
+  */
+  RA = RADIAN * atan(0.91764 * tan(DEGREE * L));
+  if (RA > 360) RA -= 360;
+  if (RA < 0) RA += 360;
+  /*
+  5b. right ascension value needs to be in the same quadrant as L
+
+  Lquadrant  = (floor( L/90)) * 90
+  RAquadrant = (floor(RA/90)) * 90
+  RA = RA + (Lquadrant - RAquadrant)
+  */
+  double Lquadrant = (floor(L / 90)) * 90;
+  double RAquadrant = (floor(RA / 90)) * 90;
+  RA = RA + (Lquadrant - RAquadrant);
+  /*
+  5c. right ascension value needs to be converted into hours
+
+  RA = RA / 15
+  */
+  RA = RA / 15;
+  /*
+  6. calculate the Sun's declination
+
+  sinDec = 0.39782 * sin(L)
+  cosDec = cos(asin(sinDec))
+  */
+  sinDec = 0.39782 * sin(DEGREE * L);
+  cosDec = cos(asin(sinDec));
+}
+
 void SunCalculator::CalculateSun(double latit, double longit, int dayOfYear,
-                                 wxDateTime& sunrise, wxDateTime& sunset) {
+                                 wxDateTime& sunrise, wxDateTime& sunset,
+                                 const wxDateTime* dateTime,
+                                 double* sunElevation) {
   /*
   Source:
   Almanac for Computers, 1990
@@ -95,70 +155,13 @@ void SunCalculator::CalculateSun(double latit, double longit, int dayOfYear,
   double tset = dayOfYear + ((18 - lngHour) / 24);
   /*
 
-  3. calculate the Sun's mean anomaly
-
-  M = (0.9856 * t) - 3.289
+  3-6. calculate sun position for sunrise and sunset times
   */
-  double mris = (0.9856 * tris) - 3.289;
-  double mset = (0.9856 * tset) - 3.289;
-  /*
-  4. calculate the Sun's true longitude
+  double sinDecris, cosDecris, raris;
+  CalculateSunPosition(tris, sinDecris, cosDecris, raris);
 
-  L = M + (1.916 * sin(M)) + (0.020 * sin(2 * M)) + 282.634
-  NOTE: L potentially needs to be adjusted into the range [0,360) by
-  adding/subtracting 360
-  */
-  double lris = mris + (1.916 * sin(DEGREE * mris)) +
-                (0.020 * sin(2 * DEGREE * mris)) + 282.634;
-  if (lris > 360) lris -= 360;
-  if (lris < 0) lris += 360;
-  double lset = mset + (1.916 * sin(DEGREE * mset)) +
-                (0.020 * sin(2 * DEGREE * mset)) + 282.634;
-  if (lset > 360) lset -= 360;
-  if (lset < 0) lset += 360;
-  /*
-  5a. calculate the Sun's right ascension
-
-  RA = atan(0.91764 * tan(L))
-  NOTE: RA potentially needs to be adjusted into the range [0,360) by
-  adding/subtracting 360
-  */
-  double raris = RADIAN * atan(0.91764 * tan(DEGREE * lris));
-  if (raris > 360) raris -= 360;
-  if (raris < 0) raris += 360;
-  double raset = RADIAN * atan(0.91764 * tan(DEGREE * lset));
-  if (raset > 360) raset -= 360;
-  if (raset < 0) raset += 360;
-  /*
-  5b. right ascension value needs to be in the same quadrant as L
-
-  Lquadrant  = (floor( L/90)) * 90
-  RAquadrant = (floor(RA/90)) * 90
-  RA = RA + (Lquadrant - RAquadrant)
-  */
-  double lqris = (floor(lris / 90)) * 90;
-  double raqris = (floor(raris / 90)) * 90;
-  raris = raris + (lqris - raqris);
-  double lqset = (floor(lset / 90)) * 90;
-  double raqset = (floor(raset / 90)) * 90;
-  raset = raset + (lqset - raqset);
-  /*
-  5c. right ascension value needs to be converted into hours
-
-  RA = RA / 15
-  */
-  raris = raris / 15;
-  raset = raset / 15;
-  /*
-  6. calculate the Sun's declination
-
-  sinDec = 0.39782 * sin(L)
-  cosDec = cos(asin(sinDec))
-  */
-  double sinDecris = 0.39782 * sin(DEGREE * lris);
-  double cosDecris = cos(asin(sinDecris));
-  double sinDecset = 0.39782 * sin(DEGREE * lset);
-  double cosDecset = cos(asin(sinDecset));
+  double sinDecset, cosDecset, raset;
+  CalculateSunPosition(tset, sinDecset, cosDecset, raset);
   /*
   7a. calculate the Sun's local hour angle
 
@@ -178,12 +181,12 @@ void SunCalculator::CalculateSun(double latit, double longit, int dayOfYear,
   if (coshris > 1) neverrises = true;
   if (coshris < -1)
     neverrises = true;  // nohal - it's cosine - even value lower than -1 is
-  // ilegal... correct me if i'm wrong
+  // illegal... correct me if i'm wrong
   bool neversets = false;
   if (coshset < -1) neversets = true;
   if (coshset > 1)
     neversets = true;  // nohal - it's cosine - even value greater than 1 is
-  // ilegal... correct me if i'm wrong
+  // illegal... correct me if i'm wrong
   /*
   7b. finish calculating H and convert into hours
 
@@ -223,6 +226,55 @@ void SunCalculator::CalculateSun(double latit, double longit, int dayOfYear,
   if (neverrises) sunrise.SetYear(999);
   sunset = convHrmn(utset);
   if (neversets) sunset.SetYear(999);
+
+  /*
+  Optional: Calculate sun elevation for a specific time using the same
+  algorithm.
+  */
+  if (dateTime != nullptr && sunElevation != nullptr) {
+    // Handle polar cases
+    if (neverrises) {
+      *sunElevation = -30.0;  // Polar night
+      return;
+    }
+    if (neversets) {
+      *sunElevation = 30.0;  // Midnight sun
+      return;
+    }
+
+    // Extract time and calculate t for the current time (reusing lngHour)
+    double currentTimeHours = dateTime->GetHour() +
+                              dateTime->GetMinute() / 60.0 +
+                              dateTime->GetSecond() / 3600.0;
+    double t = dayOfYear + ((currentTimeHours - lngHour) / 24);
+
+    // Use helper function for steps 3-6
+    double sinDec, cosDec, RA;
+    CalculateSunPosition(t, sinDec, cosDec, RA);
+
+    // Convert UTC time to Local Solar Time using longitude offset
+    double localSolarHours = currentTimeHours + (longit / 15.0);
+
+    // Apply equation of time correction (simplified)
+    double dayAngle = 2.0 * PI * (dayOfYear - 1) / 365.0;
+    double equationOfTime = 0.258 * cos(dayAngle) - 7.416 * sin(dayAngle) -
+                            3.648 * cos(2 * dayAngle) -
+                            9.228 * sin(2 * dayAngle);
+    localSolarHours += equationOfTime / 60.0;  // Convert minutes to hours
+
+    // Normalize to 24-hour cycle
+    while (localSolarHours >= 24) localSolarHours -= 24;
+    while (localSolarHours < 0) localSolarHours += 24;
+
+    // Hour angle in degrees (15 degrees per hour from solar noon at 12:00)
+    double hourAngle = 15.0 * (localSolarHours - 12.0);
+    while (hourAngle > 180) hourAngle -= 360;
+    while (hourAngle <= -180) hourAngle += 360;
+
+    *sunElevation =
+        RADIAN * asin(sinDec * sin(DEGREE * latit) +
+                      cosDec * cos(DEGREE * latit) * cos(DEGREE * hourAngle));
+  }
   /*
   Optional:
   10. convert UT value to local time zone of latitude/longitude
@@ -243,7 +295,20 @@ void SunCalculator::CalculateSun(double latit, double longit, int dayOfYear,
  * @return DayTime enum indicating whether it's day or night
  */
 DayLightStatus SunCalculator::GetDayLightStatus(double lat, double lon,
-                                                const wxDateTime& time) {
+                                                const wxDateTime& time,
+                                                double* sunElevation) {
+  // Helper lambda to calculate precise sun elevation using US Naval Observatory
+  // algorithm
+  auto calculateElevation = [&]() -> double {
+    if (sunElevation == nullptr) return 0.0;  // Skip calculation if not needed
+
+    // Use the enhanced CalculateSun function with elevation calculation
+    wxDateTime sunrise, sunset;
+    double elevation;
+    CalculateSun(lat, lon, time.GetDayOfYear(), sunrise, sunset, &time,
+                 &elevation);
+    return elevation;
+  };
   // Use coarse-grained grid for caching (1-degree precision)
   // This reduces cache misses while maintaining acceptable accuracy
   int lat_index = static_cast<int>(round(lat));
@@ -279,12 +344,19 @@ DayLightStatus SunCalculator::GetDayLightStatus(double lat, double lon,
       int sunriseHour = entry.sunriseHour;
       int sunsetHour = entry.sunsetHour;
 
+      // Calculate sun elevation if requested (for cache hits)
+      if (sunElevation != nullptr) {
+        *sunElevation = calculateElevation();
+      }
+
       // Handle edge cases
       if (sunriseYear == 999) {
-        // Sun never rises (polar night)
+        // Sun never rises (polar night) - elevation already set by
+        // calculateElevation
         return DayLightStatus::Night;
       } else if (sunsetYear == 999) {
-        // Sun never sets (midnight sun)
+        // Sun never sets (midnight sun) - elevation already set by
+        // calculateElevation
         return DayLightStatus::Day;
       }
 
@@ -345,11 +417,18 @@ DayLightStatus SunCalculator::GetDayLightStatus(double lat, double lon,
     m_cacheMap[key] = m_cache.size() - 1;
   }
 
+  // Calculate sun elevation if requested (for cache misses)
+  if (sunElevation != nullptr) {
+    *sunElevation = calculateElevation();
+  }
+
   // Determine day/night status with new calculation
   if (sunriseYear == 999) {
-    return DayLightStatus::Night;  // Polar night
+    // Polar night - elevation already set by calculateElevation
+    return DayLightStatus::Night;
   } else if (sunsetYear == 999) {
-    return DayLightStatus::Day;  // Midnight sun
+    // Midnight sun - elevation already set by calculateElevation
+    return DayLightStatus::Day;
   }
   if (sunsetHour < sunriseHour) {
     // Sun sets after midnight
