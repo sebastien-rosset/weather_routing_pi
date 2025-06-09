@@ -26,6 +26,7 @@
 #include "RouteMapOverlay.h"
 #include "WeatherRouting.h"
 #include "RoutingTablePanel.h"
+#include "SunCalculator.h"
 
 BEGIN_EVENT_TABLE(RoutingTablePanel, wxPanel)
 EVT_SIZE(RoutingTablePanel::OnSize)
@@ -481,6 +482,51 @@ static wxColor GetCurrentEffectColor(double currentAngle, double currentSpeed) {
   }
 }
 
+// Helper function to get time-of-day color based on sun elevation angle
+// Color scheme follows nautical standards for visibility and navigation
+// conditions:
+// - High sun (>15°): Bright yellow - excellent visibility
+// - Civil twilight (0° to 6°): Light colors - good navigation conditions
+// - Nautical twilight (-6° to 0°): Moderate colors - horizon visible
+// - Astronomical twilight (-12° to -6°): Darker colors - star navigation
+// - Deep night (<-18°): Dark blue - full night conditions
+static wxColor GetTimeOfDayColor(const wxDateTime& dateTime, double lat,
+                                 double lon) {
+  // Use the enhanced CalculateSun function with precise sun elevation
+  // calculation
+  wxDateTime sunrise, sunset;
+  double sunElevation;
+  SunCalculator::CalculateSun(lat, lon, dateTime.GetDayOfYear(), sunrise,
+                              sunset, &dateTime, &sunElevation);
+
+  // Define color transitions based on sun elevation angles (following nautical
+  // standards)
+  if (sunElevation > 15.0) {
+    // High sun - excellent visibility for coral reefs, navigation, harbor entry
+    return wxColor(255, 255, 180);  // Bright yellow - high visibility
+  } else if (sunElevation > 6.0) {
+    // Civil twilight begins - sun visible, good general navigation
+    return wxColor(255, 248, 220);  // Light cream - good visibility
+  } else if (sunElevation > 0.0) {
+    // Civil twilight - some natural light, horizon clearly visible
+    return wxColor(255, 228, 181);  // Soft peach - moderate visibility
+  } else if (sunElevation > -6.0) {
+    // Nautical twilight - horizon no longer visible, but navigation still
+    // possible
+    return wxColor(205, 181, 205);  // Light lavender - twilight navigation
+  } else if (sunElevation > -12.0) {
+    // Astronomical twilight - quite dark, celestial navigation
+    return wxColor(147, 112, 147);  // Medium purple - star navigation
+  } else if (sunElevation > -18.0) {
+    // End of astronomical twilight - very dark but some astronomical objects
+    // visible
+    return wxColor(72, 61, 139);  // Dark slate blue - deep twilight
+  } else {
+    // Complete night - sun more than 18 degrees below horizon
+    return wxColor(25, 25, 112);  // Midnight blue - full night
+  }
+}
+
 RoutingTablePanel::RoutingTablePanel(wxWindow* parent,
                                      WeatherRouting& weatherRouting,
                                      RouteMapOverlay* routemap)
@@ -603,6 +649,15 @@ void RoutingTablePanel::setCellWithColor(int row, int col,
   m_gridWeatherTable->SetAttr(row, col, attr);
 }
 
+// Helper function to set cell value with time-of-day background color
+void RoutingTablePanel::setCellWithTimeOfDayColor(int row, int col,
+                                                  const wxString& value,
+                                                  const wxDateTime& dateTime,
+                                                  double lat, double lon) {
+  wxColor timeColor = GetTimeOfDayColor(dateTime, lat, lon);
+  setCellWithColor(row, col, value, timeColor);
+}
+
 // Helper function to format and display sail plan information
 void RoutingTablePanel::handleSailPlanCell(
     int row, const PlotData& data, const RouteMapConfiguration& configuration,
@@ -657,9 +712,10 @@ void RoutingTablePanel::PopulateTable() {
   double cumulativeDistance = 0.0;  // Track total distance
 
   for (const PlotData& data : plotData) {
-    // Populate the leg number column
-    m_gridWeatherTable->SetCellValue(row, COL_LEG_NUMBER,
-                                     wxString::Format("%d", row + 1));
+    // Populate the leg number column with time-of-day background color
+    setCellWithTimeOfDayColor(row, COL_LEG_NUMBER,
+                              wxString::Format("%d", row + 1), data.time,
+                              data.lat, data.lon);
 
     // ETA column - actual date/time of arrival at this point
     // Check for API 1.20 which has toUsrDateTimeFormat_Plugin function
@@ -668,15 +724,28 @@ void RoutingTablePanel::PopulateTable() {
     (OCPN_API_VERSION_MAJOR == 1 && OCPN_API_VERSION_MINOR >= 20)
     timeString = toUsrDateTimeFormat_Plugin(data.time);
 #else
-    // Fallback for earlier API versions - format time in UTC
-    timeString = data.time.Format(_T("%Y-%m-%d %H:%M UTC"));
+    // Fallback for earlier API versions - format time with proper timezone
+    // label
+    wxDateTime displayTime = data.time;
+    if (useLocalTime) {
+      displayTime = data.time.FromUTC();
+    }
+    if (useLocalTime) {
+      timeString = displayTime.Format(_T("%Y-%m-%d %H:%M %Z"));
+    } else {
+      timeString = displayTime.Format(_T("%Y-%m-%d %H:%M UTC"));
+    }
 #endif
-    m_gridWeatherTable->SetCellValue(row, COL_ETA, timeString);
+    // ETA column with time-of-day background color
+    setCellWithTimeOfDayColor(row, COL_ETA, timeString, data.time, data.lat,
+                              data.lon);
 
     // Store the first point's time to calculate total time from start
     if (firstPoint) {
       startTime = data.time;
-      m_gridWeatherTable->SetCellValue(row, COL_ENROUTE, _("Start"));
+      // Total Time column with time-of-day background color
+      setCellWithTimeOfDayColor(row, COL_ENROUTE, _("Start"), data.time,
+                                data.lat, data.lon);
       m_gridWeatherTable->SetCellValue(row, COL_LEG_DISTANCE, _("0.0"));
       firstPoint = false;
     } else {
@@ -700,8 +769,10 @@ void RoutingTablePanel::PopulateTable() {
                              totalDuration.GetMinutes() % 60);
       }
 
-      // Set the cumulative duration in EnRoute column
-      m_gridWeatherTable->SetCellValue(row, COL_ENROUTE, totalDurationString);
+      // Set the cumulative duration in EnRoute column with time-of-day
+      // background color
+      setCellWithTimeOfDayColor(row, COL_ENROUTE, totalDurationString,
+                                data.time, data.lat, data.lon);
 
       // Set the cumulative distance in Distance column using unit conversion
       m_gridWeatherTable->SetCellValue(row, COL_LEG_DISTANCE,

@@ -94,6 +94,22 @@ private:
   void setCellWithColor(int row, int col, const wxString& value,
                         const wxColor& bgColor);
 
+  /**
+   * Helper function to set cell value with time-of-day background color.
+   * This method uses the SunCalculator to determine appropriate colors based on
+   * the time of day and daylight status at the given location.
+   *
+   * @param row Grid row number
+   * @param col Grid column number
+   * @param value Text value to display in the cell
+   * @param dateTime UTC time for this route point
+   * @param lat Latitude of the route point
+   * @param lon Longitude of the route point
+   */
+  void setCellWithTimeOfDayColor(int row, int col, const wxString& value,
+                                 const wxDateTime& dateTime, double lat,
+                                 double lon);
+
   enum WeatherDataColumn {
     COL_LEG_NUMBER,  //!< Leg number
     COL_ETA,  //!< Estimated Time of Arrival - actual date/time of this point
