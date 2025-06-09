@@ -50,6 +50,8 @@ bool RoutePoint::GetPlotData(RoutePoint* next, double dt,
   data.polar = polar;
 
   data.WVHT = WeatherDataProvider::GetSwell(configuration, lat, lon);
+  data.WVDIR = WeatherDataProvider::GetWaveDirection(configuration, lat, lon);
+  data.WVPER = WeatherDataProvider::GetWavePeriod(configuration, lat, lon);
   data.VW_GUST = WeatherDataProvider::GetGust(configuration, lat, lon);
   data.delta = dt;
 
@@ -98,6 +100,18 @@ bool RoutePoint::GetPlotData(RoutePoint* next, double dt,
   WeatherDataProvider::GroundToWaterFrame(data.cog, data.sog, data.currentDir,
                                           data.currentSpeed, data.ctw,
                                           data.stw);
+
+  // CTW is the track through water, but heading should account for current and
+  // leeway.
+  data.hdg = data.ctw;
+
+  // Calculate wave direction relative to boat heading
+  if (!std::isnan(data.WVDIR) && !std::isnan(data.hdg)) {
+    data.WVREL = heading_resolve(data.WVDIR - data.hdg);
+  } else {
+    data.WVREL = NAN;
+  }
+
   configuration.grib_is_data_deficient = old;
   return true;
 }

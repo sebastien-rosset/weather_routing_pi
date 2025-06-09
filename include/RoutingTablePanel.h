@@ -119,6 +119,7 @@ private:
     COL_COG,             //!< Course Over Ground
     COL_STW,             //!< Speed Through Water
     COL_CTW,             //!< Course Through Water
+    COL_HDG,             //!< Boat Heading
     COL_WIND_SOURCE,     //!< Wind data source (GRIB, climatology, deficient)
     COL_AWS,             //!< Apparent Wind Speed
     COL_TWS,             //!< True Wind Speed
@@ -129,6 +130,9 @@ private:
     COL_SAIL_PLAN,       //!< Sail Plan
     COL_COMFORT,         //!< Sailing Comfort Level
     COL_WAVE_HEIGHT,     //!< Wave Height
+    COL_WAVE_DIRECTION,  //!< Wave Direction
+    COL_WAVE_REL,        //!< Wave Direction Relative to Heading
+    COL_WAVE_PERIOD,     //!< Wave Period
     COL_RAIN,            //!< Rain
     COL_CLOUD,           //!< Cloud Cover
     COL_AIR_TEMP,        //!< Air Temperature

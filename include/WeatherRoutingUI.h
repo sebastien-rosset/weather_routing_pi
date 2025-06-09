@@ -547,6 +547,8 @@ protected:
     /** Vessel's Course Through Water (CTW) relative to the water in degrees -
        differs from heading by accounting for leeway */
     COURSE_THROUGH_WATER,
+    /** Boat heading in degrees */
+    HEADING,
     /** True Wind Speed relative to the water's frame of reference in knots. */
     TRUE_WIND_SPEED_OVER_WATER,
     /** True Wind Angle between vessel's Course Through Water and the True Wind
@@ -582,6 +584,9 @@ protected:
     CURRENT_DIRECTION,
     /** Significant wave height in meters */
     SIG_WAVE_HEIGHT,
+    WAVE_DIRECTION,  //!< Wave direction in degrees
+    WAVE_REL,        //!< Wave direction relative to boat heading
+    WAVE_PERIOD,     //!< Wave period in seconds
     /** Number of tacking maneuvers in a sailing route. */
     TACKS,
     /** Number of jibes in a sailing route. */
@@ -634,6 +639,7 @@ protected:
         {COURSE_OVER_GROUND, _("Course Over Ground (COG)")},
         {SPEED_THROUGH_WATER, _("Speed Through Water (STW)")},
         {COURSE_THROUGH_WATER, _("Course Through Water (CTW)")},
+        {HEADING, _("Heading (HDG)")},
         {TRUE_WIND_DIRECTION_OVER_GROUND, _("TWD over Ground")},
         {TRUE_WIND_SPEED_OVER_GROUND, _("TWS over Ground")},
         {TRUE_WIND_ANGLE_OVER_GROUND, _("TWA over Ground")},
@@ -646,6 +652,9 @@ protected:
         {CURRENT_VELOCITY, _("Current Velocity")},
         {CURRENT_DIRECTION, _("Current Direction")},
         {SIG_WAVE_HEIGHT, _("Significant Wave Height")},
+        {WAVE_DIRECTION, _("Wave Dir")},
+        {WAVE_REL, _("Wave Rel")},
+        {WAVE_PERIOD, _("Wave Period")},
         {TACKS, _("Tacks")},
         {JIBES, _("Jibes")},
         {SAIL_PLAN_CHANGES, _("Sail Plan Changes")},

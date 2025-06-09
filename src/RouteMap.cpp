@@ -573,7 +573,9 @@ void RouteMap::SetNewGrib(GribRecordSet* grib) {
   m_NewGrib->m_Reference_Time = grib->m_Reference_Time;
   for (int i = 0; i < Idx_COUNT; i++) {
     switch (i) {
-      case Idx_HTSIGW:
+      case Idx_HTSIGW:  // significant wave height
+      case Idx_WVDIR:   // wave direction
+      case Idx_WVPER:   // wave period
       case Idx_WIND_GUST:
       case Idx_WIND_VX:
       case Idx_WIND_VY:
