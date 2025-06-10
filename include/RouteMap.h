@@ -93,6 +93,7 @@ public:
   double cog;  //!< Course Over Ground in degrees.
   double stw;  //!< Speed Through Water (STW) in knots.
   double ctw;  //!< Course Through Water (CTW) in degrees.
+  double hdg;  //!< Boat heading in degrees.
   /**
    * True Wind Speed relative to water (TWS over water) in knots, as predicted
    * by the forecast.
@@ -145,8 +146,11 @@ public:
   double currentSpeed;  //!< Speed of sea current over ground in knots.
   double currentDir;    //!< Sea current direction over ground in degrees.
   double WVHT;          //!< Significant swell height in meters.
-  double VW_GUST;       //!< Gust wind speed in knots.
-
+  double WVDIR;    //!< Swell direction in degrees (meteorological convention).
+  double WVREL;    //!< Relative swell direction in degrees (relative to boat
+                   //!< heading).
+  double WVPER;    //!< Swell period in seconds.
+  double VW_GUST;  //!< Gust wind speed in knots.
   double cloud_cover;        //!< Cloud cover in percent (0-100%).
   double rain_mm_per_hour;   //!< Rainfall in mm.
   double air_temp;           //!< Air temperature in degrees Celsius.

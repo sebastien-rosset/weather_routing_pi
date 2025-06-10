@@ -57,12 +57,17 @@ public:
    * times
    * @param sunrise [out] Returns the sunrise time in UTC for the specified date
    * @param sunset [out] Returns the sunset time in UTC for the specified date
+   * @param dateTime Optional UTC date and time for sun elevation calculation
+   * @param sunElevation Optional output parameter for sun elevation angle in
+   * degrees
    */
   static void CalculateSun(double latit, double longit, int dayOfYear,
-                           wxDateTime& sunrise, wxDateTime& sunset);
+                           wxDateTime& sunrise, wxDateTime& sunset,
+                           const wxDateTime* dateTime = nullptr,
+                           double* sunElevation = nullptr);
 
   /**
-   * Determines whether it's day or night at a specific location and time
+   * Determines whether it's day or night at a specific location and time.
    *
    * This function checks if a given time at a particular location is during
    * daylight or nighttime by calculating the sunrise and sunset times. It uses
@@ -77,11 +82,14 @@ public:
    * @param lon Longitude in decimal degrees (positive for East, negative for
    * West)
    * @param time UTC time for which to determine day/night status
+   * @param sunElevation Optional output parameter for sun elevation angle in
+   * degrees (positive above horizon, negative below horizon)
    * @return DayTime enum value (Day or Night) indicating whether it's daytime
    * or nighttime
    */
   DayLightStatus GetDayLightStatus(double lat, double lon,
-                                   const wxDateTime& time);
+                                   const wxDateTime& time,
+                                   double* sunElevation = nullptr);
 
 private:
   SunCalculator() {

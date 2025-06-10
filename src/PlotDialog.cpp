@@ -91,6 +91,8 @@ double PlotDialog::GetValue(PlotData& data, Variable variable) {
       return data.stw;
     case COURSE_THROUGH_WATER:
       return positive_degrees(data.ctw);
+    case HEADING:
+      return positive_degrees(data.hdg);
 
     case TRUE_WIND_SPEED_OVER_WATER:
       // This would be the same as the TWS reading on the boat, if the
@@ -131,6 +133,12 @@ double PlotDialog::GetValue(PlotData& data, Variable variable) {
       return positive_degrees(data.currentDir);
     case SIG_WAVE_HEIGHT:
       return data.WVHT;
+    case WAVE_DIRECTION:
+      return positive_degrees(data.WVDIR);
+    case WAVE_REL:
+      return positive_degrees(data.WVREL);
+    case WAVE_PERIOD:
+      return data.WVPER;
     case TACKS:
       return data.tacks;
     case JIBES:
@@ -195,6 +203,7 @@ int PlotDialog::GetType(int var) {
       return SPEED;
     case COURSE_OVER_GROUND:
     case COURSE_THROUGH_WATER:
+    case HEADING:
       return COURSE;
     case TRUE_WIND_SPEED_OVER_WATER:
     case TRUE_WIND_SPEED_OVER_GROUND:
@@ -214,6 +223,10 @@ int PlotDialog::GetType(int var) {
       return CURRENT_DIRECTION;
     case SIG_WAVE_HEIGHT:
       return WAVE_HEIGHT;
+    case WAVE_DIRECTION:
+    case WAVE_REL:
+    case WAVE_PERIOD:
+      return WAVE_HEIGHT;  // Group all wave parameters together
     case TACKS:
     case JIBES:
     case SAIL_PLAN_CHANGES:

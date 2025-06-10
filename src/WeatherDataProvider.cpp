@@ -456,6 +456,28 @@ double WeatherDataProvider::GetSwell(RouteMapConfiguration& configuration,
 }
 
 /**
+ * Return the wave direction at the specified lat/long location.
+ * @return the wave direction in degrees.
+ */
+double WeatherDataProvider::GetWaveDirection(
+    RouteMapConfiguration& configuration, double lat, double lon) {
+  return GetWeatherParameter(
+      configuration, lat, lon, "WAVE DIR", Idx_WVDIR, NAN,
+      [](double height) { return height < 0 ? 0 : height; });
+}
+
+/**
+ * Return the wave period at the specified lat/long location.
+ * @return the wave period in seconds.
+ */
+double WeatherDataProvider::GetWavePeriod(RouteMapConfiguration& configuration,
+                                          double lat, double lon) {
+  return GetWeatherParameter(
+      configuration, lat, lon, "WAVE PERIOD", Idx_WVPER, NAN,
+      [](double height) { return height < 0 ? 0 : height; });
+}
+
+/**
  * Return the wind gust speed for the specified lat/long location, in knots.
  * @return the wind gust speed in knots. 0 if no data is available.
  */
