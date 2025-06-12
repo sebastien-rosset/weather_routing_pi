@@ -472,6 +472,7 @@ protected:
   virtual void OnUpdateSpin(wxSpinEvent& event) { event.Skip(); }
   virtual void OnClose(wxCommandEvent& event) { event.Skip(); }
   virtual void OnAvoidCyclones(wxCommandEvent& event) { event.Skip(); }
+  virtual void OnUseMotor(wxCommandEvent& event) { event.Skip(); }
   virtual void OnResetAdvanced(wxCommandEvent& event) { event.Skip(); }
 
 public:
@@ -490,6 +491,11 @@ public:
   wxSpinCtrl* m_sToDegree;    //!< Maximum course relative to true wind.
   /** The increment course angle when calculating a isochrone route. */
   wxSpinCtrlDouble* m_sByDegrees;
+
+  // Motor controls
+  wxCheckBox* m_cbUseMotor;  //!< Enable motor when STW is below threshold
+  wxSpinCtrlDouble* m_sMotorSpeedThreshold;  //!< STW threshold for motor use
+  wxSpinCtrlDouble* m_sMotorSpeed;           //!< Motor speed in knots
 
   ConfigurationDialogBase(
       wxWindow* parent, wxWindowID id = wxID_ANY,
