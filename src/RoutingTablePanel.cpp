@@ -845,7 +845,27 @@ void RoutingTablePanel::PopulateTable() {
     }
 
     if (!std::isnan(data.stw)) {
-      m_gridWeatherTable->SetCellValue(row, COL_STW, FormatSpeed(data.stw));
+      // Check if vessel is motoring and color-code the STW cell accordingly
+      if (data.data_mask & DataMask::MOTOR_USED) {
+        // Use a distinct motor color (light blue) to indicate motoring
+        setCellWithColor(row, COL_STW, FormatSpeed(data.stw),
+                         wxColour(173, 216, 230));  // Light blue for motor
+
+        // Add visual indicator to make motoring more obvious
+        wxString motorValue =
+            FormatSpeed(data.stw) + " (M)";  // Add (M) for Motor
+        m_gridWeatherTable->SetCellValue(row, COL_STW, motorValue);
+
+        // Set cell attribute with background color (setCellWithColor already
+        // does this, but we need to override the value)
+        wxGridCellAttr* attr = new wxGridCellAttr();
+        attr->SetBackgroundColour(wxColour(173, 216, 230));
+        attr->SetTextColour(GetTextColorForBackground(wxColour(173, 216, 230)));
+        m_gridWeatherTable->SetAttr(row, COL_STW, attr);
+      } else {
+        // Standard STW display for sailing
+        m_gridWeatherTable->SetCellValue(row, COL_STW, FormatSpeed(data.stw));
+      }
     }
 
     if (!std::isnan(data.ctw)) {
