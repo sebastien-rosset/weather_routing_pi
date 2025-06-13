@@ -1700,8 +1700,8 @@ ConfigurationDialogBase::ConfigurationDialogBase(wxWindow* parent,
   fgSizerMotor->SetNonFlexibleGrowMode(wxFLEX_GROWMODE_SPECIFIED);
 
   m_cbUseMotor = new wxCheckBox(sbMotor->GetStaticBox(), wxID_ANY,
-                                _("Motor if boat speed is below"), wxDefaultPosition,
-                                wxDefaultSize, 0);
+                                _("Motor if boat speed is below"),
+                                wxDefaultPosition, wxDefaultSize, 0);
   m_cbUseMotor->SetToolTip(
       _("Enable motor when Speed Through Water (STW) falls below the specified "
         "threshold. The vessel will motor at the configured speed instead of "
