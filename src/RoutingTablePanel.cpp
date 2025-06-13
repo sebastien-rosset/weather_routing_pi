@@ -664,7 +664,6 @@ RoutingTablePanel::RoutingTablePanel(wxWindow* parent,
   m_mainSizer->Add(m_notebook, 1, wxEXPAND | wxALL, 2);
 
   SetSizer(m_mainSizer);
-  m_mainSizer->SetSizeHints(this);
   m_mainSizer->Fit(this);
 
   // Force layout update to ensure tabs are visible
@@ -687,11 +686,8 @@ void RoutingTablePanel::OnClose(wxCommandEvent& event) {
 
 void RoutingTablePanel::OnSize(wxSizeEvent& event) {
   event.Skip();
-  if (m_notebook) {
-    // Resize the notebook to fill the panel
-    m_notebook->SetSize(GetClientSize());
-  }
-  // The grid will be automatically resized by the notebook's sizer
+  // Let the sizer handle the layout automatically
+  Layout();
 }
 
 void RoutingTablePanel::SetColorScheme(PI_ColorScheme cs) {
@@ -1274,7 +1270,7 @@ void RoutingTablePanel::CreateSummaryTab() {
   wxBoxSizer* contentSizer = new wxBoxSizer(wxHORIZONTAL);
 
   // Left side - summary information in a grid
-  wxFlexGridSizer* summaryGridSizer = new wxFlexGridSizer(10, 2, 8, 20);
+  wxFlexGridSizer* summaryGridSizer = new wxFlexGridSizer(15, 2, 8, 20);
   summaryGridSizer->AddGrowableCol(1);
 
   // Create summary labels and text controls
@@ -1308,8 +1304,27 @@ void RoutingTablePanel::CreateSummaryTab() {
   summaryGridSizer->Add(m_windRangeText, 1, wxEXPAND | wxALIGN_CENTER_VERTICAL);
 
   summaryGridSizer->Add(
-      new wxStaticText(m_summaryTab, wxID_ANY, _("Significant Wave Height Range:")), 0,
+      new wxStaticText(m_summaryTab, wxID_ANY, _("Wind Gust Range:")), 0,
       wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT);
+  m_windGustRangeText = new wxStaticText(m_summaryTab, wxID_ANY, _("--"));
+  summaryGridSizer->Add(m_windGustRangeText, 1,
+                        wxEXPAND | wxALIGN_CENTER_VERTICAL);
+
+  summaryGridSizer->Add(
+      new wxStaticText(m_summaryTab, wxID_ANY, _("AWS Range:")), 0,
+      wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT);
+  m_awsRangeText = new wxStaticText(m_summaryTab, wxID_ANY, _("--"));
+  summaryGridSizer->Add(m_awsRangeText, 1, wxEXPAND | wxALIGN_CENTER_VERTICAL);
+
+  summaryGridSizer->Add(
+      new wxStaticText(m_summaryTab, wxID_ANY, _("AWA Range:")), 0,
+      wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT);
+  m_awaRangeText = new wxStaticText(m_summaryTab, wxID_ANY, _("--"));
+  summaryGridSizer->Add(m_awaRangeText, 1, wxEXPAND | wxALIGN_CENTER_VERTICAL);
+
+  summaryGridSizer->Add(new wxStaticText(m_summaryTab, wxID_ANY,
+                                         _("Significant Wave Height Range:")),
+                        0, wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT);
   m_waveRangeText = new wxStaticText(m_summaryTab, wxID_ANY, _("--"));
   summaryGridSizer->Add(m_waveRangeText, 1, wxEXPAND | wxALIGN_CENTER_VERTICAL);
 
@@ -1382,22 +1397,22 @@ RoutingTablePanel::SummaryData RoutingTablePanel::CalculateSummaryData() {
   summary.motorDistance = 0.0;
   summary.minWindSpeed = DBL_MAX;
   summary.maxWindSpeed = -DBL_MAX;
+  summary.minWindGust = DBL_MAX;
+  summary.maxWindGust = -DBL_MAX;
+  summary.minAWS = DBL_MAX;
+  summary.maxAWS = -DBL_MAX;
+  summary.minAWA = DBL_MAX;
+  summary.maxAWA = -DBL_MAX;
   summary.minWaveHeight = DBL_MAX;
   summary.maxWaveHeight = -DBL_MAX;
   summary.minTemp = DBL_MAX;
   summary.maxTemp = -DBL_MAX;
-  summary.sailChanges = 0;
-  summary.tackChanges = 0;
-  summary.jibeChanges = 0;
   int motorPoints = 0;
   int totalPoints = 0;
   wxTimeSpan totalMotorTime;
 
   PlotData prevData;
   bool firstPoint = true;
-  int prevPolar = -1;
-  bool prevStarboardTack = true;
-  bool prevRunning = false;  // for jibe detection
   wxDateTime prevTime;
 
   for (const PlotData& data : plotData) {
@@ -1434,6 +1449,37 @@ RoutingTablePanel::SummaryData RoutingTablePanel::CalculateSummaryData() {
       summary.maxWindSpeed = std::max(summary.maxWindSpeed, data.twsOverWater);
     }
 
+    // Track wind gust range
+    if (!std::isnan(data.VW_GUST)) {
+      summary.minWindGust = std::min(summary.minWindGust, data.VW_GUST);
+      summary.maxWindGust = std::max(summary.maxWindGust, data.VW_GUST);
+    }
+
+    // Track AWA and AWS range (calculate apparent wind from available data)
+    if (!std::isnan(data.stw) && !std::isnan(data.twdOverWater) &&
+        !std::isnan(data.twsOverWater) && !std::isnan(data.ctw)) {
+      double apparentWindSpeed = Polar::VelocityApparentWind(
+          data.stw, data.twdOverWater - data.ctw, data.twsOverWater);
+      double apparentWindAngle = Polar::DirectionApparentWind(
+          apparentWindSpeed, data.stw, data.twdOverWater - data.ctw,
+          data.twsOverWater);
+
+      // Track AWS range
+      if (!std::isnan(apparentWindSpeed)) {
+        summary.minAWS = std::min(summary.minAWS, apparentWindSpeed);
+        summary.maxAWS = std::max(summary.maxAWS, apparentWindSpeed);
+      }
+
+      // Track AWA range
+      if (!std::isnan(apparentWindAngle)) {
+        // Convert to absolute value for range calculation (0-180 degrees)
+        double absAWA = std::abs(apparentWindAngle);
+        if (absAWA > 180) absAWA = 360 - absAWA;
+        summary.minAWA = std::min(summary.minAWA, absAWA);
+        summary.maxAWA = std::max(summary.maxAWA, absAWA);
+      }
+    }
+
     // Track wave height range
     if (!std::isnan(data.WVHT) && data.WVHT > 0) {
       summary.minWaveHeight = std::min(summary.minWaveHeight, data.WVHT);
@@ -1447,35 +1493,17 @@ RoutingTablePanel::SummaryData RoutingTablePanel::CalculateSummaryData() {
       summary.maxTemp = std::max(summary.maxTemp, tempC);
     }
 
-    // Check for sail changes
-    if (!firstPoint && prevPolar != -1 && data.polar != prevPolar) {
-      summary.sailChanges++;
-    }
-
-    // Check for tack changes (and jibe changes)
-    if (!firstPoint && !std::isnan(data.twdOverWater) &&
-        !std::isnan(data.ctw)) {
-      double twa = heading_resolve(data.twdOverWater - data.ctw);
-      bool isStarboardTack = (twa > 0 && twa < 180);
-      bool isRunning = (std::abs(twa) > 150 ||
-                        std::abs(twa) < 30);  // approximate running angles
-
-      if (isStarboardTack != prevStarboardTack) {
-        if (prevRunning || isRunning) {
-          summary.jibeChanges++;  // change of tack while running is a jibe
-        } else {
-          summary.tackChanges++;  // change of tack while beating/reaching is a
-                                  // tack
-        }
-      }
-
-      prevStarboardTack = isStarboardTack;
-      prevRunning = isRunning;
-    }
-
     prevData = data;
-    prevPolar = data.polar;
     prevTime = data.time;
+  }
+
+  // Get cumulative tacks, jibes, and sail changes from the last data point
+  // These are already cumulative in the PlotData
+  if (!plotData.empty()) {
+    const PlotData& lastData = plotData.back();
+    summary.sailChanges = lastData.sail_plan_changes;
+    summary.tackChanges = lastData.tacks;
+    summary.jibeChanges = lastData.jibes;
   }
 
   // Calculate motor percentages
@@ -1502,6 +1530,9 @@ void RoutingTablePanel::UpdateSummary() {
     m_distanceText->SetLabel(_("--"));
     m_durationText->SetLabel(_("--"));
     m_windRangeText->SetLabel(_("--"));
+    m_windGustRangeText->SetLabel(_("--"));
+    m_awsRangeText->SetLabel(_("--"));
+    m_awaRangeText->SetLabel(_("--"));
     m_waveRangeText->SetLabel(_("--"));
     m_tempRangeText->SetLabel(_("--"));
     m_sailChangesText->SetLabel(_("--"));
@@ -1549,6 +1580,27 @@ void RoutingTablePanel::UpdateSummary() {
                               FormatSpeed(summary.maxWindSpeed));
   } else {
     m_windRangeText->SetLabel(_("--"));
+  }
+
+  if (summary.minWindGust != DBL_MAX && summary.maxWindGust != -DBL_MAX) {
+    m_windGustRangeText->SetLabel(FormatSpeed(summary.minWindGust) + " - " +
+                                  FormatSpeed(summary.maxWindGust));
+  } else {
+    m_windGustRangeText->SetLabel(_("--"));
+  }
+
+  if (summary.minAWS != DBL_MAX && summary.maxAWS != -DBL_MAX) {
+    m_awsRangeText->SetLabel(FormatSpeed(summary.minAWS) + " - " +
+                             FormatSpeed(summary.maxAWS));
+  } else {
+    m_awsRangeText->SetLabel(_("--"));
+  }
+
+  if (summary.minAWA != DBL_MAX && summary.maxAWA != -DBL_MAX) {
+    m_awaRangeText->SetLabel(wxString::Format("%.0f\u00B0 - %.0f\u00B0",
+                                              summary.minAWA, summary.maxAWA));
+  } else {
+    m_awaRangeText->SetLabel(_("--"));
   }
 
   if (summary.minWaveHeight != DBL_MAX && summary.maxWaveHeight != -DBL_MAX) {
