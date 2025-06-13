@@ -139,6 +139,9 @@ private:
     wxDateTime startTime, endTime;
     double totalDistance;
     double minWindSpeed, maxWindSpeed;
+    double minWindGust, maxWindGust;
+    double minAWS, maxAWS;
+    double minAWA, maxAWA;
     double minWaveHeight, maxWaveHeight;
     double minTemp, maxTemp;
     int sailChanges;
@@ -211,6 +214,9 @@ private:
   wxStaticText* m_distanceText;
   wxStaticText* m_durationText;
   wxStaticText* m_windRangeText;
+  wxStaticText* m_windGustRangeText;
+  wxStaticText* m_awsRangeText;
+  wxStaticText* m_awaRangeText;
   wxStaticText* m_waveRangeText;
   wxStaticText* m_tempRangeText;
   wxStaticText* m_sailChangesText;
