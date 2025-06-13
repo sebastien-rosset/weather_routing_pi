@@ -697,25 +697,35 @@ void RoutingTablePanel::OnSize(wxSizeEvent& event) {
 void RoutingTablePanel::SetColorScheme(PI_ColorScheme cs) {
   m_colorscheme = cs;
 
-  // Apply color scheme to panel background and grid
-  wxColour backColor;
+  // Apply color scheme to panel background
+  wxColour panelBackColor;
+  wxColour cellBackColor;
+  wxColour textColor;
+
   switch (cs) {
     case PI_GLOBAL_COLOR_SCHEME_DAY:
-      backColor = wxColour(212, 208, 200);
+      panelBackColor = wxColour(212, 208, 200);
+      cellBackColor = *wxWHITE;
+      textColor = *wxBLACK;
       break;
     case PI_GLOBAL_COLOR_SCHEME_DUSK:
-      backColor = wxColour(128, 128, 128);
+      panelBackColor = wxColour(128, 128, 128);
+      cellBackColor = wxColour(240, 240, 240);
+      textColor = *wxBLACK;
       break;
     case PI_GLOBAL_COLOR_SCHEME_NIGHT:
-      backColor = wxColour(64, 64, 64);
+      panelBackColor = wxColour(64, 64, 64);
+      cellBackColor = wxColour(48, 48, 48);
+      textColor = *wxWHITE;
       break;
     default:
-      backColor = wxColour(212, 208, 200);
+      panelBackColor = wxColour(212, 208, 200);
+      cellBackColor = *wxWHITE;
+      textColor = *wxBLACK;
   }
-  SetBackgroundColour(backColor);
-  m_gridWeatherTable->SetDefaultCellBackgroundColour(backColor);
-  // Set appropriate text color for the selected scheme
-  wxColour textColor = cs == PI_GLOBAL_COLOR_SCHEME_DAY ? *wxBLACK : *wxWHITE;
+
+  SetBackgroundColour(panelBackColor);
+  m_gridWeatherTable->SetDefaultCellBackgroundColour(cellBackColor);
   m_gridWeatherTable->SetDefaultCellTextColour(textColor);
 
   // Force a complete refresh
@@ -1264,7 +1274,7 @@ void RoutingTablePanel::CreateSummaryTab() {
   wxBoxSizer* contentSizer = new wxBoxSizer(wxHORIZONTAL);
 
   // Left side - summary information in a grid
-  wxFlexGridSizer* summaryGridSizer = new wxFlexGridSizer(6, 2, 8, 20);
+  wxFlexGridSizer* summaryGridSizer = new wxFlexGridSizer(10, 2, 8, 20);
   summaryGridSizer->AddGrowableCol(1);
 
   // Create summary labels and text controls
@@ -1292,13 +1302,13 @@ void RoutingTablePanel::CreateSummaryTab() {
   summaryGridSizer->Add(m_durationText, 1, wxEXPAND | wxALIGN_CENTER_VERTICAL);
 
   summaryGridSizer->Add(
-      new wxStaticText(m_summaryTab, wxID_ANY, _("Wind Range:")), 0,
+      new wxStaticText(m_summaryTab, wxID_ANY, _("TWS Range:")), 0,
       wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT);
   m_windRangeText = new wxStaticText(m_summaryTab, wxID_ANY, _("--"));
   summaryGridSizer->Add(m_windRangeText, 1, wxEXPAND | wxALIGN_CENTER_VERTICAL);
 
   summaryGridSizer->Add(
-      new wxStaticText(m_summaryTab, wxID_ANY, _("Wave Range:")), 0,
+      new wxStaticText(m_summaryTab, wxID_ANY, _("Significant Wave Height Range:")), 0,
       wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT);
   m_waveRangeText = new wxStaticText(m_summaryTab, wxID_ANY, _("--"));
   summaryGridSizer->Add(m_waveRangeText, 1, wxEXPAND | wxALIGN_CENTER_VERTICAL);
@@ -1317,13 +1327,6 @@ void RoutingTablePanel::CreateSummaryTab() {
                         wxEXPAND | wxALIGN_CENTER_VERTICAL);
 
   summaryGridSizer->Add(
-      new wxStaticText(m_summaryTab, wxID_ANY, _("Motor Usage:")), 0,
-      wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT);
-  m_motorUsageText = new wxStaticText(m_summaryTab, wxID_ANY, _("--"));
-  summaryGridSizer->Add(m_motorUsageText, 1,
-                        wxEXPAND | wxALIGN_CENTER_VERTICAL);
-
-  summaryGridSizer->Add(
       new wxStaticText(m_summaryTab, wxID_ANY, _("Tack Changes:")), 0,
       wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT);
   m_tackChangesText = new wxStaticText(m_summaryTab, wxID_ANY, _("--"));
@@ -1335,6 +1338,20 @@ void RoutingTablePanel::CreateSummaryTab() {
       wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT);
   m_jibeChangesText = new wxStaticText(m_summaryTab, wxID_ANY, _("--"));
   summaryGridSizer->Add(m_jibeChangesText, 1,
+                        wxEXPAND | wxALIGN_CENTER_VERTICAL);
+
+  summaryGridSizer->Add(
+      new wxStaticText(m_summaryTab, wxID_ANY, _("Duration under motor:")), 0,
+      wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT);
+  m_motorDurationText = new wxStaticText(m_summaryTab, wxID_ANY, _("--"));
+  summaryGridSizer->Add(m_motorDurationText, 1,
+                        wxEXPAND | wxALIGN_CENTER_VERTICAL);
+
+  summaryGridSizer->Add(
+      new wxStaticText(m_summaryTab, wxID_ANY, _("Distance under motor:")), 0,
+      wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT);
+  m_motorDistanceText = new wxStaticText(m_summaryTab, wxID_ANY, _("--"));
+  summaryGridSizer->Add(m_motorDistanceText, 1,
                         wxEXPAND | wxALIGN_CENTER_VERTICAL);
 
   contentSizer->Add(summaryGridSizer, 1, wxEXPAND | wxALL, 20);
@@ -1362,6 +1379,7 @@ RoutingTablePanel::SummaryData RoutingTablePanel::CalculateSummaryData() {
 
   // Initialize variables for calculations
   summary.totalDistance = 0.0;
+  summary.motorDistance = 0.0;
   summary.minWindSpeed = DBL_MAX;
   summary.maxWindSpeed = -DBL_MAX;
   summary.minWaveHeight = DBL_MAX;
@@ -1373,12 +1391,14 @@ RoutingTablePanel::SummaryData RoutingTablePanel::CalculateSummaryData() {
   summary.jibeChanges = 0;
   int motorPoints = 0;
   int totalPoints = 0;
+  wxTimeSpan totalMotorTime;
 
   PlotData prevData;
   bool firstPoint = true;
   int prevPolar = -1;
   bool prevStarboardTack = true;
   bool prevRunning = false;  // for jibe detection
+  wxDateTime prevTime;
 
   for (const PlotData& data : plotData) {
     if (firstPoint) {
@@ -1389,12 +1409,21 @@ RoutingTablePanel::SummaryData RoutingTablePanel::CalculateSummaryData() {
       double legDistance = DistGreatCircle_Plugin(prevData.lat, prevData.lon,
                                                   data.lat, data.lon);
       summary.totalDistance += legDistance;
+
+      // Calculate time duration for this leg
+      wxTimeSpan legDuration = data.time.Subtract(prevTime);
+
+      // Check if motor was used for this leg
+      if (data.data_mask & DataMask::MOTOR_USED) {
+        summary.motorDistance += legDistance;
+        totalMotorTime = totalMotorTime.Add(legDuration);
+      }
     }
 
     summary.endTime = data.time;
     totalPoints++;
 
-    // Check for motor usage
+    // Check for motor usage (for point-based percentage)
     if (data.data_mask & DataMask::MOTOR_USED) {
       motorPoints++;
     }
@@ -1446,10 +1475,18 @@ RoutingTablePanel::SummaryData RoutingTablePanel::CalculateSummaryData() {
 
     prevData = data;
     prevPolar = data.polar;
+    prevTime = data.time;
   }
 
-  summary.motorPercentage =
+  // Calculate motor percentages
+  summary.motorDurationPercentage =
       totalPoints > 0 ? (double)motorPoints / totalPoints * 100.0 : 0.0;
+  summary.motorDistancePercentage =
+      summary.totalDistance > 0
+          ? summary.motorDistance / summary.totalDistance * 100.0
+          : 0.0;
+  summary.motorDuration = totalMotorTime;
+
   return summary;
 }
 
@@ -1468,7 +1505,8 @@ void RoutingTablePanel::UpdateSummary() {
     m_waveRangeText->SetLabel(_("--"));
     m_tempRangeText->SetLabel(_("--"));
     m_sailChangesText->SetLabel(_("--"));
-    m_motorUsageText->SetLabel(_("--"));
+    m_motorDurationText->SetLabel(_("--"));
+    m_motorDistanceText->SetLabel(_("--"));
     m_tackChangesText->SetLabel(_("--"));
     m_jibeChangesText->SetLabel(_("--"));
     return;
@@ -1487,10 +1525,8 @@ void RoutingTablePanel::UpdateSummary() {
       useLocalTime ? summary.startTime.FromUTC() : summary.startTime;
   wxDateTime displayEndTime =
       useLocalTime ? summary.endTime.FromUTC() : summary.endTime;
-  wxString timeZone = useLocalTime ? "" : " UTC";
-  m_departureText->SetLabel(displayStartTime.Format("%Y-%m-%d %H:%M") +
-                            timeZone);
-  m_arrivalText->SetLabel(displayEndTime.Format("%Y-%m-%d %H:%M") + timeZone);
+  m_departureText->SetLabel(displayStartTime.Format("%Y-%m-%d %H:%M %Z"));
+  m_arrivalText->SetLabel(displayEndTime.Format("%Y-%m-%d %H:%M %Z"));
 #endif
 
   m_distanceText->SetLabel(FormatDistance(summary.totalDistance));
@@ -1533,8 +1569,29 @@ void RoutingTablePanel::UpdateSummary() {
   }
 
   m_sailChangesText->SetLabel(wxString::Format("%d", summary.sailChanges));
-  m_motorUsageText->SetLabel(
-      wxString::Format("%.1f%%", summary.motorPercentage));
+
+  // Format motor duration
+  wxString motorDurationStr;
+  int motorDays = summary.motorDuration.GetDays();
+  if (motorDays > 0) {
+    motorDurationStr = wxString::Format("%dd %02d:%02d (%.1f%%)", motorDays,
+                                        summary.motorDuration.GetHours() % 24,
+                                        summary.motorDuration.GetMinutes() % 60,
+                                        summary.motorDurationPercentage);
+  } else {
+    motorDurationStr =
+        wxString::Format("%02d:%02d (%.1f%%)", summary.motorDuration.GetHours(),
+                         summary.motorDuration.GetMinutes() % 60,
+                         summary.motorDurationPercentage);
+  }
+  m_motorDurationText->SetLabel(motorDurationStr);
+
+  // Format motor distance
+  wxString motorDistanceStr =
+      FormatDistance(summary.motorDistance) +
+      wxString::Format(" (%.1f%%)", summary.motorDistancePercentage);
+  m_motorDistanceText->SetLabel(motorDistanceStr);
+
   m_tackChangesText->SetLabel(wxString::Format("%d", summary.tackChanges));
   m_jibeChangesText->SetLabel(wxString::Format("%d", summary.jibeChanges));
 }

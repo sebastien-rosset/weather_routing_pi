@@ -144,7 +144,10 @@ private:
     int sailChanges;
     int tackChanges;
     int jibeChanges;
-    double motorPercentage;
+    double motorDurationPercentage;  // Percentage of time under motor
+    double motorDistancePercentage;  // Percentage of distance under motor
+    double motorDistance;            // Total distance under motor
+    wxTimeSpan motorDuration;        // Total time under motor
   };
   SummaryData CalculateSummaryData();
 
@@ -211,7 +214,8 @@ private:
   wxStaticText* m_waveRangeText;
   wxStaticText* m_tempRangeText;
   wxStaticText* m_sailChangesText;
-  wxStaticText* m_motorUsageText;
+  wxStaticText* m_motorDurationText;
+  wxStaticText* m_motorDistanceText;
   wxStaticText* m_tackChangesText;
   wxStaticText* m_jibeChangesText;
   wxButton* m_exportButton;
