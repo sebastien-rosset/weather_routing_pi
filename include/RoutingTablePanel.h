@@ -72,12 +72,23 @@ public:
    */
   void UpdateTimeHighlight(wxDateTime timelineTime);
 
+  /**
+   * Export the table data to Excel XML format with formatting preserved
+   */
+  void ExportToExcel();
+
+  /**
+   * Update the summary information displayed above the table
+   */
+  void UpdateSummary();
+
 protected:
   RouteMapOverlay* m_RouteMap;
 
 private:
   void OnClose(wxCommandEvent& event);
   void OnSize(wxSizeEvent& event);
+  void OnExportButton(wxCommandEvent& event);
 
   /**
    * Helper function to format and display sail plan information
@@ -109,6 +120,33 @@ private:
   void setCellWithTimeOfDayColor(int row, int col, const wxString& value,
                                  const wxDateTime& dateTime, double lat,
                                  double lon);
+
+  /** Helper functions for Excel export */
+  wxString ConvertColorToHex(const wxColour& color);
+  wxString EscapeXML(const wxString& text);
+  bool WriteExcelXML(const wxString& filename);
+  bool WriteXLSX(const wxString& filename);
+  bool WriteSimpleXML(const wxString& filename);
+  wxString CreateStylesXML();
+  wxString CreateWorksheetXML();
+  wxString GetCellReference(int row, int col);
+
+  /** Helper function to create summary tab */
+  void CreateSummaryTab();
+
+  /** Helper function to calculate summary statistics */
+  struct SummaryData {
+    wxDateTime startTime, endTime;
+    double totalDistance;
+    double minWindSpeed, maxWindSpeed;
+    double minWaveHeight, maxWaveHeight;
+    double minTemp, maxTemp;
+    int sailChanges;
+    int tackChanges;
+    int jibeChanges;
+    double motorPercentage;
+  };
+  SummaryData CalculateSummaryData();
 
   enum WeatherDataColumn {
     COL_LEG_NUMBER,  //!< Leg number
@@ -159,6 +197,24 @@ private:
 
   WeatherRouting& m_WeatherRouting;
   PI_ColorScheme m_colorscheme;
+
+  wxNotebook* m_notebook;
+  wxPanel* m_summaryTab;
+  wxPanel* m_tableTab;
+
+  // Summary controls
+  wxStaticText* m_departureText;
+  wxStaticText* m_arrivalText;
+  wxStaticText* m_distanceText;
+  wxStaticText* m_durationText;
+  wxStaticText* m_windRangeText;
+  wxStaticText* m_waveRangeText;
+  wxStaticText* m_tempRangeText;
+  wxStaticText* m_sailChangesText;
+  wxStaticText* m_motorUsageText;
+  wxStaticText* m_tackChangesText;
+  wxStaticText* m_jibeChangesText;
+  wxButton* m_exportButton;
 
   wxGrid* m_gridWeatherTable;
   wxSizer* m_mainSizer;
