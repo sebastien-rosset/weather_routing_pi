@@ -123,6 +123,7 @@ private:
 
   /** Helper functions for Excel export */
   wxString ConvertColorToHex(const wxColour& color);
+  wxString ConvertColorToARGB(const wxColour& color);
   wxString EscapeXML(const wxString& text);
   bool WriteExcelXML(const wxString& filename);
   bool WriteXLSX(const wxString& filename);
@@ -130,6 +131,32 @@ private:
   wxString CreateStylesXML();
   wxString CreateWorksheetXML();
   wxString GetCellReference(int row, int col);
+
+  /** Helper functions for cell styling in Excel export */
+  struct CellStyle {
+    wxColour bgColor;
+    wxColour textColor;
+    bool isBold;
+
+    CellStyle() : bgColor(*wxWHITE), textColor(*wxBLACK), isBold(false) {}
+    CellStyle(const wxColour& bg, const wxColour& text, bool bold = false)
+        : bgColor(bg), textColor(text), isBold(bold) {}
+
+    bool operator<(const CellStyle& other) const {
+      if (bgColor.GetRGB() != other.bgColor.GetRGB()) {
+        return bgColor.GetRGB() < other.bgColor.GetRGB();
+      }
+      if (textColor.GetRGB() != other.textColor.GetRGB()) {
+        return textColor.GetRGB() < other.textColor.GetRGB();
+      }
+      return isBold < other.isBold;
+    }
+  };
+
+  CellStyle GetCellStyle(int row, int col);
+  int GetOrCreateStyleId(const CellStyle& style);
+  wxString CreateStylesXMLWithColors();
+  wxString CreateWorksheetXMLWithColors();
 
   /** Helper function to create summary tab */
   void CreateSummaryTab();
@@ -235,6 +262,10 @@ private:
 
   // Store original cell colors before highlighting
   std::map<int, std::vector<wxColour>> m_originalCellColors;
+
+  // Style mapping for Excel export
+  std::map<CellStyle, int> m_styleMap;
+  std::vector<CellStyle> m_styles;
 
   DECLARE_EVENT_TABLE()
 };
