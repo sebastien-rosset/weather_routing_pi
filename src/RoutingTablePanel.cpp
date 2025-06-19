@@ -1686,6 +1686,11 @@ wxString RoutingTablePanel::ConvertColorToHex(const wxColour& color) {
                           color.Blue());
 }
 
+wxString RoutingTablePanel::ConvertColorToARGB(const wxColour& color) {
+  return wxString::Format("FF%02X%02X%02X", color.Red(), color.Green(),
+                          color.Blue());
+}
+
 wxString RoutingTablePanel::EscapeXML(const wxString& text) {
   wxString escaped = text;
   escaped.Replace("&", "&amp;");
@@ -1694,6 +1699,175 @@ wxString RoutingTablePanel::EscapeXML(const wxString& text) {
   escaped.Replace("\"", "&quot;");
   escaped.Replace("'", "&apos;");
   return escaped;
+}
+
+RoutingTablePanel::CellStyle RoutingTablePanel::GetCellStyle(int row, int col) {
+  CellStyle style;
+
+  if (row >= 0 && row < m_gridWeatherTable->GetNumberRows() && col >= 0 &&
+      col < m_gridWeatherTable->GetNumberCols()) {
+    // Use public methods to get cell attributes
+    style.bgColor = m_gridWeatherTable->GetCellBackgroundColour(row, col);
+    style.textColor = m_gridWeatherTable->GetCellTextColour(row, col);
+
+    // Get font information
+    wxFont cellFont = m_gridWeatherTable->GetCellFont(row, col);
+    style.isBold = cellFont.GetWeight() == wxFONTWEIGHT_BOLD;
+  }
+
+  return style;
+}
+
+int RoutingTablePanel::GetOrCreateStyleId(const CellStyle& style) {
+  auto it = m_styleMap.find(style);
+  if (it != m_styleMap.end()) {
+    return it->second;
+  }
+
+  int styleId = m_styles.size();
+  m_styles.push_back(style);
+  m_styleMap[style] = styleId;
+  return styleId;
+}
+
+wxString RoutingTablePanel::CreateStylesXMLWithColors() {
+  // Clear and rebuild styles for this export
+  m_styles.clear();
+  m_styleMap.clear();
+
+  // Add default style
+  CellStyle defaultStyle(*wxWHITE, *wxBLACK, false);
+  GetOrCreateStyleId(defaultStyle);
+
+  // Add header style
+  CellStyle headerStyle(wxColour(211, 211, 211), *wxBLACK, true);
+  GetOrCreateStyleId(headerStyle);
+
+  // Scan all cells to build style collection
+  for (int row = 0; row < m_gridWeatherTable->GetNumberRows(); row++) {
+    for (int col = 0; col < m_gridWeatherTable->GetNumberCols(); col++) {
+      CellStyle cellStyle = GetCellStyle(row, col);
+      GetOrCreateStyleId(cellStyle);
+    }
+  }
+
+  wxString xml =
+      "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+      "<styleSheet "
+      "xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">\n";
+
+  // Fonts section
+  xml += wxString::Format("<fonts count=\"%d\">\n", (int)m_styles.size());
+  for (const auto& style : m_styles) {
+    xml += "<font>";
+    if (style.isBold) {
+      xml += "<b/>";
+    }
+    xml += "<sz val=\"11\"/>";
+    xml += "<name val=\"Calibri\"/>";
+    xml += wxString::Format("<color rgb=\"%s\"/>",
+                            ConvertColorToARGB(style.textColor));
+    xml += "</font>\n";
+  }
+  xml += "</fonts>\n";
+
+  // Fills section
+  xml += wxString::Format("<fills count=\"%d\">\n", (int)m_styles.size() + 2);
+  xml += "<fill><patternFill patternType=\"none\"/></fill>\n";
+  xml += "<fill><patternFill patternType=\"gray125\"/></fill>\n";
+  for (const auto& style : m_styles) {
+    xml += "<fill><patternFill patternType=\"solid\">";
+    xml += wxString::Format("<fgColor rgb=\"%s\"/>",
+                            ConvertColorToARGB(style.bgColor));
+    xml += "</patternFill></fill>\n";
+  }
+  xml += "</fills>\n";
+
+  // Borders section
+  xml += "<borders count=\"2\">\n";
+  xml += "<border><left/><right/><top/><bottom/><diagonal/></border>\n";
+  xml +=
+      "<border><left style=\"thin\"/><right style=\"thin\"/><top "
+      "style=\"thin\"/><bottom style=\"thin\"/><diagonal/></border>\n";
+  xml += "</borders>\n";
+
+  // Cell style formats
+  xml += "<cellStyleXfs count=\"1\">\n";
+  xml += "<xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\"/>\n";
+  xml += "</cellStyleXfs>\n";
+
+  // Cell formats
+  xml += wxString::Format("<cellXfs count=\"%d\">\n", (int)m_styles.size());
+  for (size_t i = 0; i < m_styles.size(); i++) {
+    int borderId = (i == 1) ? 1 : 0;  // Use border for header style
+    xml += wxString::Format(
+        "<xf numFmtId=\"0\" fontId=\"%d\" fillId=\"%d\" borderId=\"%d\" "
+        "xfId=\"0\"/>\n",
+        (int)i, (int)i + 2, borderId);
+  }
+  xml += "</cellXfs>\n";
+
+  xml += "</styleSheet>";
+  return xml;
+}
+
+wxString RoutingTablePanel::CreateWorksheetXMLWithColors() {
+  wxString xml =
+      "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+      "<worksheet "
+      "xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">\n"
+      "<sheetData>\n";
+
+  // Header row with style
+  xml += "<row r=\"1\">\n";
+  CellStyle headerStyle(wxColour(211, 211, 211), *wxBLACK, true);
+  int headerStyleId = GetOrCreateStyleId(headerStyle);
+
+  for (int col = 0; col < m_gridWeatherTable->GetNumberCols(); col++) {
+    wxString cellRef = GetCellReference(1, col + 1);
+    wxString header = EscapeXML(m_gridWeatherTable->GetColLabelValue(col));
+    xml += wxString::Format(
+        "<c r=\"%s\" t=\"inlineStr\" s=\"%d\"><is><t>%s</t></is></c>\n",
+        cellRef, headerStyleId, header);
+  }
+  xml += "</row>\n";
+
+  // Data rows
+  for (int row = 0; row < m_gridWeatherTable->GetNumberRows(); row++) {
+    xml += wxString::Format("<row r=\"%d\">\n", row + 2);
+    for (int col = 0; col < m_gridWeatherTable->GetNumberCols(); col++) {
+      wxString cellRef = GetCellReference(row + 2, col + 1);
+      wxString value = EscapeXML(m_gridWeatherTable->GetCellValue(row, col));
+
+      // Get the style for this cell
+      CellStyle cellStyle = GetCellStyle(row, col);
+      int styleId = GetOrCreateStyleId(cellStyle);
+
+      if (value.IsEmpty()) {
+        xml += wxString::Format(
+            "<c r=\"%s\" t=\"inlineStr\" s=\"%d\"><is><t></t></is></c>\n",
+            cellRef, styleId);
+      } else {
+        xml += wxString::Format(
+            "<c r=\"%s\" t=\"inlineStr\" s=\"%d\"><is><t>%s</t></is></c>\n",
+            cellRef, styleId, value);
+      }
+    }
+    xml += "</row>\n";
+  }
+
+  xml += "</sheetData>\n</worksheet>";
+  return xml;
+}
+
+wxString RoutingTablePanel::GetCellReference(int row, int col) {
+  wxString colStr;
+  while (col > 0) {
+    col--;
+    colStr = wxChar('A' + (col % 26)) + colStr;
+    col /= 26;
+  }
+  return wxString::Format("%s%d", colStr, row);
 }
 
 bool RoutingTablePanel::WriteExcelXML(const wxString& filename) {
@@ -1793,15 +1967,15 @@ bool RoutingTablePanel::WriteXLSX(const wxString& filename) {
   zipStream.Write(buffer.data(), buffer.length());
   zipStream.CloseEntry();
 
-  // Create xl/styles.xml
-  wxString styles = CreateStylesXML();
+  // Create xl/styles.xml with colors
+  wxString styles = CreateStylesXMLWithColors();
   zipStream.PutNextEntry("xl/styles.xml");
   buffer = styles.ToUTF8();
   zipStream.Write(buffer.data(), buffer.length());
   zipStream.CloseEntry();
 
-  // Create xl/worksheets/sheet1.xml with actual data
-  wxString worksheet = CreateWorksheetXML();
+  // Create xl/worksheets/sheet1.xml with actual data and colors
+  wxString worksheet = CreateWorksheetXMLWithColors();
   zipStream.PutNextEntry("xl/worksheets/sheet1.xml");
   buffer = worksheet.ToUTF8();
   zipStream.Write(buffer.data(), buffer.length());
@@ -1886,16 +2060,6 @@ wxString RoutingTablePanel::CreateWorksheetXML() {
   return xml;
 }
 
-wxString RoutingTablePanel::GetCellReference(int row, int col) {
-  wxString colStr;
-  while (col > 0) {
-    col--;
-    colStr = wxChar('A' + (col % 26)) + colStr;
-    col /= 26;
-  }
-  return wxString::Format("%s%d", colStr, row);
-}
-
 bool RoutingTablePanel::WriteSimpleXML(const wxString& filename) {
   wxTextFile file(filename);
 
@@ -1925,36 +2089,69 @@ bool RoutingTablePanel::WriteSimpleXML(const wxString& filename) {
                "</Created>");
   file.AddLine("</DocumentProperties>");
 
-  // Styles - simplified
-  file.AddLine("<Styles>");
-  file.AddLine("<Style ss:ID=\"Default\" ss:Name=\"Normal\">");
-  file.AddLine("<Alignment ss:Vertical=\"Bottom\"/>");
-  file.AddLine("<Borders/>");
-  file.AddLine(
+  // Build unique styles based on cell colors
+  std::map<wxString, int> styleMap;
+  std::vector<wxString> styleDefinitions;
+  int styleIndex = 0;
+
+  // Default style
+  styleMap["default"] = styleIndex++;
+  styleDefinitions.push_back(
+      "<Style ss:ID=\"Default\" ss:Name=\"Normal\">"
+      "<Alignment ss:Vertical=\"Bottom\"/>"
+      "<Borders/>"
       "<Font ss:FontName=\"Calibri\" x:Family=\"Swiss\" ss:Size=\"10\" "
-      "ss:Color=\"#000000\"/>");
-  file.AddLine("<Interior/>");
-  file.AddLine("</Style>");
-  file.AddLine("<Style ss:ID=\"Header\">");
-  file.AddLine(
+      "ss:Color=\"#000000\"/>"
+      "<Interior/>"
+      "</Style>");
+
+  // Header style
+  styleMap["header"] = styleIndex++;
+  styleDefinitions.push_back(
+      "<Style ss:ID=\"Header\">"
       "<Font ss:FontName=\"Calibri\" ss:Size=\"10\" ss:Color=\"#000000\" "
-      "ss:Bold=\"1\"/>");
-  file.AddLine("<Interior ss:Color=\"#D3D3D3\" ss:Pattern=\"Solid\"/>");
-  file.AddLine("<Borders>");
-  file.AddLine(
+      "ss:Bold=\"1\"/>"
+      "<Interior ss:Color=\"#D3D3D3\" ss:Pattern=\"Solid\"/>"
+      "<Borders>"
       "<Border ss:Position=\"Bottom\" ss:LineStyle=\"Continuous\" "
-      "ss:Weight=\"1\"/>");
-  file.AddLine(
+      "ss:Weight=\"1\"/>"
       "<Border ss:Position=\"Left\" ss:LineStyle=\"Continuous\" "
-      "ss:Weight=\"1\"/>");
-  file.AddLine(
+      "ss:Weight=\"1\"/>"
       "<Border ss:Position=\"Right\" ss:LineStyle=\"Continuous\" "
-      "ss:Weight=\"1\"/>");
-  file.AddLine(
+      "ss:Weight=\"1\"/>"
       "<Border ss:Position=\"Top\" ss:LineStyle=\"Continuous\" "
-      "ss:Weight=\"1\"/>");
-  file.AddLine("</Borders>");
-  file.AddLine("</Style>");
+      "ss:Weight=\"1\"/>"
+      "</Borders>"
+      "</Style>");
+
+  // Scan all cells to create unique styles
+  for (int row = 0; row < m_gridWeatherTable->GetNumberRows(); row++) {
+    for (int col = 0; col < m_gridWeatherTable->GetNumberCols(); col++) {
+      CellStyle cellStyle = GetCellStyle(row, col);
+      wxString bgHex = ConvertColorToHex(cellStyle.bgColor);
+      wxString textHex = ConvertColorToHex(cellStyle.textColor);
+      wxString styleKey = wxString::Format(
+          "%s_%s_%s", bgHex, textHex, cellStyle.isBold ? "bold" : "normal");
+
+      if (styleMap.find(styleKey) == styleMap.end()) {
+        styleMap[styleKey] = styleIndex++;
+        wxString styleId = wxString::Format("Style%d", styleMap[styleKey]);
+        wxString styleDef = wxString::Format(
+            "<Style ss:ID=\"%s\">"
+            "<Font ss:FontName=\"Calibri\" ss:Size=\"10\" ss:Color=\"%s\"%s/>"
+            "<Interior ss:Color=\"%s\" ss:Pattern=\"Solid\"/>"
+            "</Style>",
+            styleId, textHex, cellStyle.isBold ? " ss:Bold=\"1\"" : "", bgHex);
+        styleDefinitions.push_back(styleDef);
+      }
+    }
+  }
+
+  // Write styles section
+  file.AddLine("<Styles>");
+  for (const auto& styleDef : styleDefinitions) {
+    file.AddLine(styleDef);
+  }
   file.AddLine("</Styles>");
 
   // Worksheet
@@ -1981,11 +2178,24 @@ bool RoutingTablePanel::WriteSimpleXML(const wxString& filename) {
   }
   file.AddLine("</Row>");
 
-  // Data rows
+  // Data rows with colors
   for (int row = 0; row < m_gridWeatherTable->GetNumberRows(); row++) {
     file.AddLine("<Row>");
     for (int col = 0; col < m_gridWeatherTable->GetNumberCols(); col++) {
-      file.AddLine("<Cell>");
+      // Get cell style and determine style ID
+      CellStyle cellStyle = GetCellStyle(row, col);
+      wxString bgHex = ConvertColorToHex(cellStyle.bgColor);
+      wxString textHex = ConvertColorToHex(cellStyle.textColor);
+      wxString styleKey = wxString::Format(
+          "%s_%s_%s", bgHex, textHex, cellStyle.isBold ? "bold" : "normal");
+
+      wxString styleRef = "Default";
+      auto it = styleMap.find(styleKey);
+      if (it != styleMap.end()) {
+        styleRef = wxString::Format("Style%d", it->second);
+      }
+
+      file.AddLine(wxString::Format("<Cell ss:StyleID=\"%s\">", styleRef));
 
       // Add the data
       wxString value = m_gridWeatherTable->GetCellValue(row, col);
