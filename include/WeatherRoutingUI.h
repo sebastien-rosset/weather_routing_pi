@@ -726,6 +726,8 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 class BoatDialogBase : public wxDialog {
 private:
+  void CreateCursorInfoPanel(wxWindow* parent, wxSizer* parentSizer);
+
 protected:
   wxFlexGridSizer* m_fgSizer;
   wxSplitterWindow* m_splitter2;
@@ -763,6 +765,13 @@ protected:
   wxButton* m_bOpenBoat;
   wxButton* m_bSaveBoat;
   wxButton* m_bSaveAsBoat;
+
+  // Cursor information display
+  wxStaticText* m_stCursorWindAngle;
+  wxStaticText* m_stCursorWindSpeed;
+  wxStaticText* m_stCursorBoatSpeed;
+  wxStaticText* m_stCursorVMG;
+  wxStaticText* m_stCursorVMGAngle;
 
   // Virtual event handlers, overide them in your derived class
   virtual void OnMouseEventsPolarPlot(wxMouseEvent& event) { event.Skip(); }

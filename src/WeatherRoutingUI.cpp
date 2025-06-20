@@ -4195,6 +4195,9 @@ BoatDialogBase::BoatDialogBase(wxWindow* parent, wxWindowID id,
 
   sbSizer31->Add(fgSizer92, 1, wxEXPAND, 5);
 
+  // Add cursor information panel using helper function
+  CreateCursorInfoPanel(m_panel21, sbSizer31);
+
   m_panel21->SetSizer(sbSizer31);
   m_panel21->Layout();
   sbSizer31->Fit(m_panel21);
@@ -4431,6 +4434,52 @@ BoatDialogBase::~BoatDialogBase() {
   m_bSaveAsBoat->Disconnect(wxEVT_COMMAND_BUTTON_CLICKED,
                             wxCommandEventHandler(BoatDialogBase::OnSaveAsBoat),
                             NULL, this);
+}
+
+void BoatDialogBase::CreateCursorInfoPanel(wxWindow* parent,
+                                           wxSizer* parentSizer) {
+  // Create sizer for the cursor info panel
+  wxStaticBoxSizer* cursorSizer =
+      new wxStaticBoxSizer(wxVERTICAL, parent, _("Cursor Information"));
+
+  // Create a grid sizer for the labels and values
+  wxFlexGridSizer* gridSizer = new wxFlexGridSizer(5, 2, 5, 10);
+  gridSizer->AddGrowableCol(1);
+
+  // Wind Angle
+  gridSizer->Add(new wxStaticText(parent, wxID_ANY, _("Wind Angle:")), 0,
+                 wxALIGN_CENTER_VERTICAL);
+  m_stCursorWindAngle = new wxStaticText(parent, wxID_ANY, _("N/A"));
+  gridSizer->Add(m_stCursorWindAngle, 1, wxALIGN_CENTER_VERTICAL | wxEXPAND);
+
+  // Wind Speed
+  gridSizer->Add(new wxStaticText(parent, wxID_ANY, _("Wind Speed:")), 0,
+                 wxALIGN_CENTER_VERTICAL);
+  m_stCursorWindSpeed = new wxStaticText(parent, wxID_ANY, _("N/A"));
+  gridSizer->Add(m_stCursorWindSpeed, 1, wxALIGN_CENTER_VERTICAL | wxEXPAND);
+
+  // Boat Speed
+  gridSizer->Add(new wxStaticText(parent, wxID_ANY, _("Boat Speed:")), 0,
+                 wxALIGN_CENTER_VERTICAL);
+  m_stCursorBoatSpeed = new wxStaticText(parent, wxID_ANY, _("N/A"));
+  gridSizer->Add(m_stCursorBoatSpeed, 1, wxALIGN_CENTER_VERTICAL | wxEXPAND);
+
+  // VMG
+  gridSizer->Add(new wxStaticText(parent, wxID_ANY, _("VMG:")), 0,
+                 wxALIGN_CENTER_VERTICAL);
+  m_stCursorVMG = new wxStaticText(parent, wxID_ANY, _("N/A"));
+  gridSizer->Add(m_stCursorVMG, 1, wxALIGN_CENTER_VERTICAL | wxEXPAND);
+
+  // VMG Angle
+  gridSizer->Add(new wxStaticText(parent, wxID_ANY, _("VMG Angle:")), 0,
+                 wxALIGN_CENTER_VERTICAL);
+  m_stCursorVMGAngle = new wxStaticText(parent, wxID_ANY, _("N/A"));
+  gridSizer->Add(m_stCursorVMGAngle, 1, wxALIGN_CENTER_VERTICAL | wxEXPAND);
+
+  cursorSizer->Add(gridSizer, 1, wxEXPAND | wxALL, 5);
+
+  // Add the cursor info panel to the parent sizer
+  parentSizer->Add(cursorSizer, 0, wxEXPAND | wxALL, 5);
 }
 
 StatisticsDialogBase::StatisticsDialogBase(wxWindow* parent, wxWindowID id,
