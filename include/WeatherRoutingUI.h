@@ -773,6 +773,15 @@ protected:
   wxStaticText* m_stCursorVMG;
   wxStaticText* m_stCursorVMGAngle;
 
+  // Best VMG information display
+  wxStaticText* m_stBestVMGWindSpeed;
+  wxStaticText* m_stBestVMGUpwindAngle;
+  wxStaticText* m_stBestVMGUpwindSpeed;
+  wxStaticText* m_stBestVMGUpwindVMG;
+  wxStaticText* m_stBestVMGDownwindAngle;
+  wxStaticText* m_stBestVMGDownwindSpeed;
+  wxStaticText* m_stBestVMGDownwindVMG;
+
   // Virtual event handlers, overide them in your derived class
   virtual void OnMouseEventsPolarPlot(wxMouseEvent& event) { event.Skip(); }
   virtual void OnPaintPlot(wxPaintEvent& event) { event.Skip(); }

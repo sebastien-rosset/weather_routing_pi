@@ -4438,48 +4438,137 @@ BoatDialogBase::~BoatDialogBase() {
 
 void BoatDialogBase::CreateCursorInfoPanel(wxWindow* parent,
                                            wxSizer* parentSizer) {
-  // Create sizer for the cursor info panel
-  wxStaticBoxSizer* cursorSizer =
-      new wxStaticBoxSizer(wxVERTICAL, parent, _("Cursor Information"));
+  // Create main vertical sizer for both sections
+  wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
 
-  // Create a grid sizer for the labels and values
-  wxFlexGridSizer* gridSizer = new wxFlexGridSizer(5, 2, 5, 10);
-  gridSizer->AddGrowableCol(1);
+  // ========== CURSOR DATA SECTION ==========
+  wxStaticBoxSizer* cursorSizer =
+      new wxStaticBoxSizer(wxVERTICAL, parent, _("Data at Cursor"));
+
+  // Create a grid sizer for the cursor labels and values
+  wxFlexGridSizer* cursorGridSizer = new wxFlexGridSizer(5, 2, 5, 10);
+  cursorGridSizer->AddGrowableCol(1);
 
   // Wind Angle
-  gridSizer->Add(new wxStaticText(parent, wxID_ANY, _("Wind Angle:")), 0,
-                 wxALIGN_CENTER_VERTICAL);
+  cursorGridSizer->Add(new wxStaticText(parent, wxID_ANY, _("Wind Angle:")), 0,
+                       wxALIGN_CENTER_VERTICAL);
   m_stCursorWindAngle = new wxStaticText(parent, wxID_ANY, _("N/A"));
-  gridSizer->Add(m_stCursorWindAngle, 1, wxALIGN_CENTER_VERTICAL | wxEXPAND);
+  cursorGridSizer->Add(m_stCursorWindAngle, 1,
+                       wxALIGN_CENTER_VERTICAL | wxEXPAND);
 
   // Wind Speed
-  gridSizer->Add(new wxStaticText(parent, wxID_ANY, _("Wind Speed:")), 0,
-                 wxALIGN_CENTER_VERTICAL);
+  cursorGridSizer->Add(new wxStaticText(parent, wxID_ANY, _("Wind Speed:")), 0,
+                       wxALIGN_CENTER_VERTICAL);
   m_stCursorWindSpeed = new wxStaticText(parent, wxID_ANY, _("N/A"));
-  gridSizer->Add(m_stCursorWindSpeed, 1, wxALIGN_CENTER_VERTICAL | wxEXPAND);
+  cursorGridSizer->Add(m_stCursorWindSpeed, 1,
+                       wxALIGN_CENTER_VERTICAL | wxEXPAND);
 
   // Boat Speed
-  gridSizer->Add(new wxStaticText(parent, wxID_ANY, _("Boat Speed:")), 0,
-                 wxALIGN_CENTER_VERTICAL);
+  cursorGridSizer->Add(new wxStaticText(parent, wxID_ANY, _("Boat Speed:")), 0,
+                       wxALIGN_CENTER_VERTICAL);
   m_stCursorBoatSpeed = new wxStaticText(parent, wxID_ANY, _("N/A"));
-  gridSizer->Add(m_stCursorBoatSpeed, 1, wxALIGN_CENTER_VERTICAL | wxEXPAND);
+  cursorGridSizer->Add(m_stCursorBoatSpeed, 1,
+                       wxALIGN_CENTER_VERTICAL | wxEXPAND);
 
-  // VMG
-  gridSizer->Add(new wxStaticText(parent, wxID_ANY, _("VMG:")), 0,
-                 wxALIGN_CENTER_VERTICAL);
+  // VMG at cursor
+  cursorGridSizer->Add(new wxStaticText(parent, wxID_ANY, _("VMG:")), 0,
+                       wxALIGN_CENTER_VERTICAL);
   m_stCursorVMG = new wxStaticText(parent, wxID_ANY, _("N/A"));
-  gridSizer->Add(m_stCursorVMG, 1, wxALIGN_CENTER_VERTICAL | wxEXPAND);
+  cursorGridSizer->Add(m_stCursorVMG, 1, wxALIGN_CENTER_VERTICAL | wxEXPAND);
 
-  // VMG Angle
-  gridSizer->Add(new wxStaticText(parent, wxID_ANY, _("VMG Angle:")), 0,
-                 wxALIGN_CENTER_VERTICAL);
+  // VMG Angle (not used in cursor section, keeping for compatibility)
+  cursorGridSizer->Add(new wxStaticText(parent, wxID_ANY, _("Course Angle:")),
+                       0, wxALIGN_CENTER_VERTICAL);
   m_stCursorVMGAngle = new wxStaticText(parent, wxID_ANY, _("N/A"));
-  gridSizer->Add(m_stCursorVMGAngle, 1, wxALIGN_CENTER_VERTICAL | wxEXPAND);
+  cursorGridSizer->Add(m_stCursorVMGAngle, 1,
+                       wxALIGN_CENTER_VERTICAL | wxEXPAND);
 
-  cursorSizer->Add(gridSizer, 1, wxEXPAND | wxALL, 5);
+  cursorSizer->Add(cursorGridSizer, 1, wxEXPAND | wxALL, 5);
+  mainSizer->Add(cursorSizer, 0, wxEXPAND | wxALL, 5);
 
-  // Add the cursor info panel to the parent sizer
-  parentSizer->Add(cursorSizer, 0, wxEXPAND | wxALL, 5);
+  // ========== BEST VMG SECTION ==========
+  wxStaticBoxSizer* bestVMGSizer =
+      new wxStaticBoxSizer(wxVERTICAL, parent, _("Optimal VMG Performance"));
+
+  // Wind speed reference
+  wxBoxSizer* windSpeedSizer = new wxBoxSizer(wxHORIZONTAL);
+  windSpeedSizer->Add(
+      new wxStaticText(parent, wxID_ANY, _("Reference Wind Speed:")), 0,
+      wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
+  m_stBestVMGWindSpeed = new wxStaticText(parent, wxID_ANY, _("N/A"));
+  m_stBestVMGWindSpeed->SetFont(m_stBestVMGWindSpeed->GetFont().Bold());
+  windSpeedSizer->Add(m_stBestVMGWindSpeed, 1, wxALIGN_CENTER_VERTICAL);
+  bestVMGSizer->Add(windSpeedSizer, 0, wxEXPAND | wxALL, 3);
+
+  // Create a grid for upwind and downwind VMG data
+  wxFlexGridSizer* vmgGridSizer = new wxFlexGridSizer(7, 2, 3, 10);
+  vmgGridSizer->AddGrowableCol(1);
+
+  // Upwind section header
+  wxStaticText* upwindLabel =
+      new wxStaticText(parent, wxID_ANY, _("UPWIND OPTIMAL:"));
+  upwindLabel->SetFont(upwindLabel->GetFont().Bold());
+  vmgGridSizer->Add(upwindLabel, 0, wxALIGN_CENTER_VERTICAL);
+  vmgGridSizer->Add(new wxStaticText(parent, wxID_ANY, _("")),
+                    0);  // Empty cell
+
+  // Best upwind angle
+  vmgGridSizer->Add(new wxStaticText(parent, wxID_ANY, _("  Angle:")), 0,
+                    wxALIGN_CENTER_VERTICAL);
+  m_stBestVMGUpwindAngle = new wxStaticText(parent, wxID_ANY, _("N/A"));
+  vmgGridSizer->Add(m_stBestVMGUpwindAngle, 1,
+                    wxALIGN_CENTER_VERTICAL | wxEXPAND);
+
+  // Best upwind speed
+  vmgGridSizer->Add(new wxStaticText(parent, wxID_ANY, _("  Speed:")), 0,
+                    wxALIGN_CENTER_VERTICAL);
+  m_stBestVMGUpwindSpeed = new wxStaticText(parent, wxID_ANY, _("N/A"));
+  vmgGridSizer->Add(m_stBestVMGUpwindSpeed, 1,
+                    wxALIGN_CENTER_VERTICAL | wxEXPAND);
+
+  // Best upwind VMG
+  vmgGridSizer->Add(new wxStaticText(parent, wxID_ANY, _("  VMG:")), 0,
+                    wxALIGN_CENTER_VERTICAL);
+  m_stBestVMGUpwindVMG = new wxStaticText(parent, wxID_ANY, _("N/A"));
+  m_stBestVMGUpwindVMG->SetFont(m_stBestVMGUpwindVMG->GetFont().Bold());
+  vmgGridSizer->Add(m_stBestVMGUpwindVMG, 1,
+                    wxALIGN_CENTER_VERTICAL | wxEXPAND);
+
+  // Downwind section header
+  wxStaticText* downwindLabel =
+      new wxStaticText(parent, wxID_ANY, _("DOWNWIND OPTIMAL:"));
+  downwindLabel->SetFont(downwindLabel->GetFont().Bold());
+  vmgGridSizer->Add(downwindLabel, 0, wxALIGN_CENTER_VERTICAL);
+  vmgGridSizer->Add(new wxStaticText(parent, wxID_ANY, _("")),
+                    0);  // Empty cell
+
+  // Best downwind angle
+  vmgGridSizer->Add(new wxStaticText(parent, wxID_ANY, _("  Angle:")), 0,
+                    wxALIGN_CENTER_VERTICAL);
+  m_stBestVMGDownwindAngle = new wxStaticText(parent, wxID_ANY, _("N/A"));
+  vmgGridSizer->Add(m_stBestVMGDownwindAngle, 1,
+                    wxALIGN_CENTER_VERTICAL | wxEXPAND);
+
+  // Best downwind speed
+  vmgGridSizer->Add(new wxStaticText(parent, wxID_ANY, _("  Speed:")), 0,
+                    wxALIGN_CENTER_VERTICAL);
+  m_stBestVMGDownwindSpeed = new wxStaticText(parent, wxID_ANY, _("N/A"));
+  vmgGridSizer->Add(m_stBestVMGDownwindSpeed, 1,
+                    wxALIGN_CENTER_VERTICAL | wxEXPAND);
+
+  // Best downwind VMG
+  vmgGridSizer->Add(new wxStaticText(parent, wxID_ANY, _("  VMG:")), 0,
+                    wxALIGN_CENTER_VERTICAL);
+  m_stBestVMGDownwindVMG = new wxStaticText(parent, wxID_ANY, _("N/A"));
+  m_stBestVMGDownwindVMG->SetFont(m_stBestVMGDownwindVMG->GetFont().Bold());
+  vmgGridSizer->Add(m_stBestVMGDownwindVMG, 1,
+                    wxALIGN_CENTER_VERTICAL | wxEXPAND);
+
+  bestVMGSizer->Add(vmgGridSizer, 1, wxEXPAND | wxALL, 5);
+  mainSizer->Add(bestVMGSizer, 0, wxEXPAND | wxALL, 5);
+
+  // Add the complete panel to the parent sizer
+  parentSizer->Add(mainSizer, 0, wxEXPAND | wxALL, 0);
 }
 
 StatisticsDialogBase::StatisticsDialogBase(wxWindow* parent, wxWindowID id,
