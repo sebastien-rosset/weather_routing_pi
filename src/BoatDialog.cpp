@@ -1112,6 +1112,7 @@ void BoatDialog::OnPolarSelected() {
 
   RefreshPlots();
   UpdateVMG();
+  UpdateBestVMGInfo();  // Update best VMG info when polar selection changes
 }
 
 void BoatDialog::OnUpdatePlot() {
@@ -1373,39 +1374,18 @@ void BoatDialog::UpdateVMG() {
                        ? polar.GetVMGApparentWind(windspeed)
                        : polar.GetVMGTrueWind(windspeed);
 
-  // Update VMG labels with cursor info if cursor is valid, otherwise show VMG
-  // for selected wind speed
-  if (m_CursorValid) {
-    // Show cursor information
-    wxString cursor_info = wxString::Format(
-        _("Cursor: %.0f° @ %.1f kts"), m_CursorWindAngle, m_CursorWindSpeed);
-    m_stBestCourseUpWindPortTack->SetLabel(cursor_info);
+  // Update the original VMG display labels (for backward compatibility)
+  m_stBestCourseUpWindPortTack->SetLabel(
+      FormatVMG(vmg.values[SailingVMG::PORT_UPWIND], windspeed));
+  m_stBestCourseUpWindStarboardTack->SetLabel(
+      FormatVMG(vmg.values[SailingVMG::STARBOARD_UPWIND], windspeed));
+  m_stBestCourseDownWindPortTack->SetLabel(
+      FormatVMG(vmg.values[SailingVMG::PORT_DOWNWIND], windspeed));
+  m_stBestCourseDownWindStarboardTack->SetLabel(
+      FormatVMG(vmg.values[SailingVMG::STARBOARD_DOWNWIND], windspeed));
 
-    wxString speed_info =
-        wxString::Format(_("Speed: %.1f kts"), m_CursorBoatSpeed);
-    m_stBestCourseUpWindStarboardTack->SetLabel(speed_info);
-
-    wxString vmg_info = wxString::Format(_("VMG: %.1f kts"), m_CursorVMG);
-    m_stBestCourseDownWindPortTack->SetLabel(vmg_info);
-
-    // Show VMG angle for current cursor wind speed
-    SailingVMG cursor_vmg = polar.GetVMGTrueWind(m_CursorWindSpeed);
-    wxString vmg_angle_info =
-        wxString::Format(_("VMG Angles: %.0f°/%.0f°"),
-                         cursor_vmg.values[SailingVMG::STARBOARD_UPWIND],
-                         cursor_vmg.values[SailingVMG::STARBOARD_DOWNWIND]);
-    m_stBestCourseDownWindStarboardTack->SetLabel(vmg_angle_info);
-  } else {
-    // Show normal VMG information
-    m_stBestCourseUpWindPortTack->SetLabel(
-        FormatVMG(vmg.values[SailingVMG::PORT_UPWIND], windspeed));
-    m_stBestCourseUpWindStarboardTack->SetLabel(
-        FormatVMG(vmg.values[SailingVMG::STARBOARD_UPWIND], windspeed));
-    m_stBestCourseDownWindPortTack->SetLabel(
-        FormatVMG(vmg.values[SailingVMG::PORT_DOWNWIND], windspeed));
-    m_stBestCourseDownWindStarboardTack->SetLabel(
-        FormatVMG(vmg.values[SailingVMG::STARBOARD_DOWNWIND], windspeed));
-  }
+  // Update the new best VMG info panel
+  UpdateBestVMGInfo();
 }
 
 void BoatDialog::UpdateCursorInfo() {
@@ -1420,12 +1400,9 @@ void BoatDialog::UpdateCursorInfo() {
         wxString::Format(_("%.1f kts"), m_CursorBoatSpeed));
     m_stCursorVMG->SetLabel(wxString::Format(_("%.1f kts"), m_CursorVMG));
     if (m_stCursorVMGAngle) {
-      if (!std::isnan(m_CursorVMGAngle)) {
-        m_stCursorVMGAngle->SetLabel(
-            wxString::Format(_("%.1f°"), m_CursorVMGAngle));
-      } else {
-        m_stCursorVMGAngle->SetLabel(_("N/A"));
-      }
+      // Show the actual cursor angle (course angle)
+      m_stCursorVMGAngle->SetLabel(
+          wxString::Format(_("%.1f°"), m_CursorWindAngle));
     }
   } else {
     m_stCursorWindAngle->SetLabel(_("N/A"));
@@ -1435,5 +1412,83 @@ void BoatDialog::UpdateCursorInfo() {
     if (m_stCursorVMGAngle) {
       m_stCursorVMGAngle->SetLabel(_("N/A"));
     }
+  }
+
+  // Always update the best VMG information
+  UpdateBestVMGInfo();
+}
+
+void BoatDialog::UpdateBestVMGInfo() {
+  if (!m_stBestVMGWindSpeed) return;  // Panel not created yet
+
+  long index = SelectedPolar();
+  if (index < 0) {
+    // No polar selected, clear all fields
+    m_stBestVMGWindSpeed->SetLabel(_("N/A"));
+    m_stBestVMGUpwindAngle->SetLabel(_("N/A"));
+    m_stBestVMGUpwindSpeed->SetLabel(_("N/A"));
+    m_stBestVMGUpwindVMG->SetLabel(_("N/A"));
+    m_stBestVMGDownwindAngle->SetLabel(_("N/A"));
+    m_stBestVMGDownwindSpeed->SetLabel(_("N/A"));
+    m_stBestVMGDownwindVMG->SetLabel(_("N/A"));
+    return;
+  }
+
+  // Determine wind speed to use for best VMG calculation
+  double referenceWindSpeed;
+  if (m_CursorValid && m_CursorWindSpeed > 0) {
+    // Use wind speed from cursor position
+    referenceWindSpeed = m_CursorWindSpeed;
+  } else {
+    // Use wind speed from VMG control
+    referenceWindSpeed = m_sVMGWindSpeed->GetValue();
+  }
+
+  m_stBestVMGWindSpeed->SetLabel(
+      wxString::Format(_("%.1f kts"), referenceWindSpeed));
+
+  Polar& polar = m_Boat.Polars[index];
+  SailingVMG vmg = polar.GetVMGTrueWind(referenceWindSpeed);
+
+  // Upwind VMG (use starboard upwind as primary, port as backup)
+  double upwindAngle = vmg.values[SailingVMG::STARBOARD_UPWIND];
+  if (std::isnan(upwindAngle)) {
+    upwindAngle = vmg.values[SailingVMG::PORT_UPWIND];
+  }
+
+  if (!std::isnan(upwindAngle)) {
+    double upwindSpeed = polar.Speed(upwindAngle, referenceWindSpeed);
+    double upwindVMG = upwindSpeed * cos(deg2rad(upwindAngle));
+
+    m_stBestVMGUpwindAngle->SetLabel(wxString::Format(_("%.1f°"), upwindAngle));
+    m_stBestVMGUpwindSpeed->SetLabel(
+        wxString::Format(_("%.1f kts"), upwindSpeed));
+    m_stBestVMGUpwindVMG->SetLabel(wxString::Format(_("%.1f kts"), upwindVMG));
+  } else {
+    m_stBestVMGUpwindAngle->SetLabel(_("N/A"));
+    m_stBestVMGUpwindSpeed->SetLabel(_("N/A"));
+    m_stBestVMGUpwindVMG->SetLabel(_("N/A"));
+  }
+
+  // Downwind VMG (use starboard downwind as primary, port as backup)
+  double downwindAngle = vmg.values[SailingVMG::STARBOARD_DOWNWIND];
+  if (std::isnan(downwindAngle)) {
+    downwindAngle = vmg.values[SailingVMG::PORT_DOWNWIND];
+  }
+
+  if (!std::isnan(downwindAngle)) {
+    double downwindSpeed = polar.Speed(downwindAngle, referenceWindSpeed);
+    double downwindVMG = downwindSpeed * cos(deg2rad(180.0 - downwindAngle));
+
+    m_stBestVMGDownwindAngle->SetLabel(
+        wxString::Format(_("%.1f°"), downwindAngle));
+    m_stBestVMGDownwindSpeed->SetLabel(
+        wxString::Format(_("%.1f kts"), downwindSpeed));
+    m_stBestVMGDownwindVMG->SetLabel(
+        wxString::Format(_("%.1f kts"), downwindVMG));
+  } else {
+    m_stBestVMGDownwindAngle->SetLabel(_("N/A"));
+    m_stBestVMGDownwindSpeed->SetLabel(_("N/A"));
+    m_stBestVMGDownwindVMG->SetLabel(_("N/A"));
   }
 }

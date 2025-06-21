@@ -155,6 +155,7 @@ private:
   void RepopulatePolars();
 
   void UpdateCursorInfo();
+  void UpdateBestVMGInfo();
 
   void RefreshPlots() {
     m_PlotWindow->Refresh();
