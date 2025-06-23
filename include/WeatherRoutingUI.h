@@ -738,8 +738,10 @@ protected:
   wxPanel* m_panel10;
   wxScrolledWindow* m_CrossOverChart;
   wxStaticText* m_staticText137;
-  wxSpinCtrl* m_sOverlapPercentage;
+  wxSpinCtrlDouble* m_sOverlapPercentage;
   wxStaticText* m_staticText138;
+  wxStaticText* m_staticText139;
+  wxChoice* m_cLowWindSpeedInterpolationMethod;
   wxPanel* m_panel24;
   wxStaticText* m_staticText125;
   wxStaticText* m_stBestCourseUpWindPortTack;
@@ -787,7 +789,7 @@ protected:
   virtual void OnPaintPlot(wxPaintEvent& event) { event.Skip(); }
   virtual void OnUpdatePlot(wxSizeEvent& event) { event.Skip(); }
   virtual void OnPaintCrossOverChart(wxPaintEvent& event) { event.Skip(); }
-  virtual void OnOverlapPercentage(wxSpinEvent& event) { event.Skip(); }
+  virtual void OnOverlapPercentage(wxSpinDoubleEvent& event) { event.Skip(); }
   virtual void OnVMGWindSpeed(wxSpinEvent& event) { event.Skip(); }
   virtual void OnUpdatePlot(wxCommandEvent& event) { event.Skip(); }
   virtual void OnPolarSelected(wxListEvent& event) { event.Skip(); }
