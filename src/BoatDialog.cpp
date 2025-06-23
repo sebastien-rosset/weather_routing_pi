@@ -1004,7 +1004,7 @@ void BoatDialog::OnPaintCrossOverChart(wxPaintEvent& event) {
   }
 }
 
-void BoatDialog::OnOverlapPercentage(wxSpinEvent& event) {
+void BoatDialog::OnOverlapPercentage(wxSpinDoubleEvent& event) {
   long i = SelectedPolar();
   if (i != -1)
     m_Boat.Polars[i].m_crossoverpercentage =
@@ -1108,7 +1108,7 @@ void BoatDialog::OnPolarSelected() {
   m_sOverlapPercentage->Enable(i != -1);
   if (i != -1)
     m_sOverlapPercentage->SetValue(m_Boat.Polars[i].m_crossoverpercentage *
-                                   100);
+                                   100.0);
 
   RefreshPlots();
   UpdateVMG();

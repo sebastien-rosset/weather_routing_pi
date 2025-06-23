@@ -399,6 +399,31 @@ public:
    */
   bool InsideCrossOverContour(float twa, float tws, bool optimize_tacking,
                               PolarSpeedStatus* status = nullptr);
+
+  /**
+   * Defines the optimal wind conditions where this sail configuration
+   * outperforms other available sail configurations.
+   *
+   * The CrossOverRegion is a polygon in TWA (True Wind Angle) vs TWS (True Wind
+   * Speed) coordinate space that represents the envelope of conditions where
+   * this specific polar (sail configuration) provides the best boat performance
+   * compared to other available polars in the boat's sail inventory.
+   *
+   * Key characteristics:
+   * - Coordinates: x = TWA (degrees), y = TWS (knots)
+   * - Non-overlapping: Each CrossOverRegion is mutually exclusive with others
+   * - Performance-based: Boundaries determined by speed comparisons between
+   * polars
+   * - Sail-specific: Different sail configurations have different optimal
+   * regions
+   *
+   * Example scenarios:
+   * - A lightweight spinnaker polar might have a CrossOverRegion covering
+   *   broad angles (120-180°) in light winds (4-12 knots)
+   * - A heavy weather jib polar might cover close-hauled angles (40-80°)
+   *   in strong winds (20+ knots)
+   * - A working jib polar might fill gaps where other sails are less optimal
+   */
   PolygonRegion CrossOverRegion;
 
   void Generate(const std::list<PolarMeasurement>& measurements);
@@ -407,6 +432,7 @@ public:
   void AddWindSpeed(double tws);
   void RemoveWindSpeed(int index);
 
+  // Crossover region configuration
   double m_crossoverpercentage;
 
 private:
