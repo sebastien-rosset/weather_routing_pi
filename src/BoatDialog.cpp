@@ -1393,7 +1393,7 @@ void BoatDialog::UpdateCursorInfo() {
 
   if (m_CursorValid) {
     m_stCursorWindAngle->SetLabel(
-        wxString::Format(_("%.1f°"), m_CursorWindAngle));
+        wxString::Format(_("%.1f\u00B0"), m_CursorWindAngle));
     m_stCursorWindSpeed->SetLabel(
         wxString::Format(_("%.1f kts"), m_CursorWindSpeed));
     m_stCursorBoatSpeed->SetLabel(
@@ -1402,7 +1402,7 @@ void BoatDialog::UpdateCursorInfo() {
     if (m_stCursorVMGAngle) {
       // Show the actual cursor angle (course angle)
       m_stCursorVMGAngle->SetLabel(
-          wxString::Format(_("%.1f°"), m_CursorWindAngle));
+          wxString::Format(_("%.1f\u00B0"), m_CursorWindAngle));
     }
   } else {
     m_stCursorWindAngle->SetLabel(_("N/A"));
@@ -1460,7 +1460,8 @@ void BoatDialog::UpdateBestVMGInfo() {
     double upwindSpeed = polar.Speed(upwindAngle, referenceWindSpeed);
     double upwindVMG = upwindSpeed * cos(deg2rad(upwindAngle));
 
-    m_stBestVMGUpwindAngle->SetLabel(wxString::Format(_("%.1f°"), upwindAngle));
+    m_stBestVMGUpwindAngle->SetLabel(
+        wxString::Format(_("%.1f\u00B0"), upwindAngle));
     m_stBestVMGUpwindSpeed->SetLabel(
         wxString::Format(_("%.1f kts"), upwindSpeed));
     m_stBestVMGUpwindVMG->SetLabel(wxString::Format(_("%.1f kts"), upwindVMG));
@@ -1481,7 +1482,7 @@ void BoatDialog::UpdateBestVMGInfo() {
     double downwindVMG = downwindSpeed * cos(deg2rad(180.0 - downwindAngle));
 
     m_stBestVMGDownwindAngle->SetLabel(
-        wxString::Format(_("%.1f°"), downwindAngle));
+        wxString::Format(_("%.1f\u00B0"), downwindAngle));  // "°"
     m_stBestVMGDownwindSpeed->SetLabel(
         wxString::Format(_("%.1f kts"), downwindSpeed));
     m_stBestVMGDownwindVMG->SetLabel(

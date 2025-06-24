@@ -3535,22 +3535,20 @@ void WeatherRouting::SaveSimplifiedRoute(
 
   // Set route name
   RouteMapConfiguration config = routemapoverlay.GetConfiguration();
-  wxString name = wxString::Format(_T("Simplified %s to %s"),
-                                   config.Start.c_str(), config.End.c_str());
+  wxString name = wxString::Format("Simplified %s to %s", config.Start.c_str(),
+                                   config.End.c_str());
   newRoute->m_NameString = name;
-  newRoute->m_GUID =
-      wxString::Format(_T("%i"), (int)GetRandomNumber(1, 4000000));
+  newRoute->m_GUID = wxString::Format("%i", (int)GetRandomNumber(1, 4000000));
 
   // Add waypoints
   for (Position* pos : simplifiedRoute) {
     PlugIn_Waypoint* waypoint = new PlugIn_Waypoint();
     waypoint->m_lat = pos->lat;
     waypoint->m_lon = pos->lon;
-    waypoint->m_GUID =
-        wxString::Format(_T("%i"), (int)GetRandomNumber(1, 4000000));
-    waypoint->m_IconName = _T("circle");
+    waypoint->m_GUID = wxString::Format("%i", (int)GetRandomNumber(1, 4000000));
+    waypoint->m_IconName = "circle";
     waypoint->m_MarkName =
-        wxString::Format(_T("WP%03d"), newRoute->pWaypointList->GetCount() + 1);
+        wxString::Format("WP%03d", newRoute->pWaypointList->GetCount() + 1);
 
     // Try to add time information if available
     std::list<PlotData> plotData = routemapoverlay.GetPlotData(false);
@@ -3574,15 +3572,15 @@ void WeatherRouting::SaveSimplifiedRoute(
         if (m_SettingsDialog.m_cbUseLocalTime->GetValue())
           time = time.FromUTC();
 
-        waypoint->m_MarkDescription = time.Format(_T("%x %H:%M"));
+        waypoint->m_MarkDescription = time.Format("%x %H:%M");
 
         // Optionally add other information (wind, etc.)
         waypoint->m_MarkDescription += wxString::Format(
-            _T("\nWind: %.1f kts at %.0f°"), closestData->twsOverWater,
+            "\nWind: %.1f kts at %.0f\u00B0", closestData->twsOverWater,
             closestData->twdOverWater);
 
         waypoint->m_MarkDescription +=
-            wxString::Format(_T("\nBoat: %.1f kts at %.0f°"), closestData->stw,
+            wxString::Format("\nBoat: %.1f kts at %.0f\u00B0", closestData->stw,
                              closestData->ctw);
       }
     }
