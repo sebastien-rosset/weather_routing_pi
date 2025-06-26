@@ -135,7 +135,6 @@ void log_cache_stats() {
       "size=%zu, hitrate=%.1f%%, evictions=%zu",
       segment_cache_queries, segment_cache_hits, segment_cache_misses,
       land_cache.size(), 100.0 * segment_hit_rate, segment_evictions);
-
 }
 
 void maintain_land_cache() {

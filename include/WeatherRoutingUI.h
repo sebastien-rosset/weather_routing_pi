@@ -632,7 +632,7 @@ protected:
   /**
    * Get the list of available weather routing variables.
    *
-   * This function returns an array of VariableInfo structures, each containing
+   * Returns an array of VariableInfo structures, each containing
    * the enum value and display name of a variable. The count of variables is
    * also returned through the count parameter.
    *
