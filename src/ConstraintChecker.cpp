@@ -28,6 +28,8 @@
 #include <vector>
 #include <tuple>
 #include <algorithm>
+#include <mutex>
+#include <atomic>
 
 #include "ConstraintChecker.h"
 #include "WeatherDataProvider.h"
@@ -41,7 +43,11 @@
 constexpr double QUANT = 1e5;
 
 /**
- * Segment cache with size limit.
+ * Thread-safe segment cache with size limit.
+ *
+ * All cache operations are protected by land_cache_mutex to ensure thread
+ * safety during concurrent isochron propagations. Statistics counters use
+ * std::atomic for lock-free updates.
  */
 struct SegmentCacheEntry {
   bool crosses_land;
@@ -87,15 +93,17 @@ struct std::hash<SegmentKey> {
 };
 
 static std::unordered_map<SegmentKey, SegmentCacheEntry> land_cache;
+static std::mutex land_cache_mutex;
 
-static size_t segment_cache_hits = 0, segment_cache_misses = 0,
-              segment_cache_queries = 0;
-static size_t df_hits = 0, df_misses = 0, df_queries = 0,
-              df_safe_water_optimizations = 0;
-static size_t segment_evictions = 0, distance_field_evictions = 0;
+static std::atomic<size_t> segment_cache_hits{0}, segment_cache_misses{0},
+    segment_cache_queries{0};
+static std::atomic<size_t> df_hits{0}, df_misses{0}, df_queries{0},
+    df_safe_water_optimizations{0};
+static std::atomic<size_t> segment_evictions{0}, distance_field_evictions{0};
 constexpr size_t LOG_INTERVAL = 1000;
 
 // LRU eviction for segment cache
+// Note: This function assumes the caller already holds land_cache_mutex
 void evict_oldest_segment_entries() {
   if (land_cache.size() <= MAX_SEGMENT_CACHE_SIZE) return;
 
@@ -119,30 +127,44 @@ void evict_oldest_segment_entries() {
   for (size_t i = 0; i < to_remove && i < entries.size(); ++i) {
     land_cache.erase(entries[i].first);
   }
-  segment_evictions += to_remove;
+  segment_evictions.fetch_add(to_remove);
 }
 
 void log_cache_stats() {
-  double segment_hit_rate =
-      segment_cache_queries ? (double)segment_cache_hits / segment_cache_queries
-                            : 0.0;
+  size_t queries = segment_cache_queries.load();
+  size_t hits = segment_cache_hits.load();
+  size_t misses = segment_cache_misses.load();
+  size_t evictions = segment_evictions.load();
+  size_t df_queries_val = df_queries.load();
+  size_t df_safe_water_opt = df_safe_water_optimizations.load();
+
+  double segment_hit_rate = queries ? (double)hits / queries : 0.0;
   // How often segments using distance field avoided expensive GSHHS calls.
   double df_optimization_rate =
-      df_queries ? (double)df_safe_water_optimizations / df_queries : 0.0;
+      df_queries_val ? (double)df_safe_water_opt / df_queries_val : 0.0;
 
+  // Note: land_cache.size() must be called under mutex protection
+  std::lock_guard<std::mutex> lock(land_cache_mutex);
   wxLogMessage(
       "WeatherRouting Segment cache: queries=%zu, hits=%zu, misses=%zu, "
       "size=%zu, hitrate=%.1f%%, evictions=%zu",
-      segment_cache_queries, segment_cache_hits, segment_cache_misses,
-      land_cache.size(), 100.0 * segment_hit_rate, segment_evictions);
+      queries, hits, misses, land_cache.size(), 100.0 * segment_hit_rate,
+      evictions);
 }
 
 void maintain_land_cache() {
-  evict_oldest_segment_entries();
-  static size_t last_log_queries = 0;
-  if (segment_cache_queries - last_log_queries > LOG_INTERVAL) {
+  static std::atomic<size_t> last_log_queries{0};
+  size_t current_queries = segment_cache_queries.load();
+  size_t last_queries = last_log_queries.load();
+
+  {
+    std::lock_guard<std::mutex> lock(land_cache_mutex);
+    evict_oldest_segment_entries();
+  }
+
+  if (current_queries - last_queries > LOG_INTERVAL) {
+    last_log_queries.store(current_queries);
     log_cache_stats();
-    last_log_queries = segment_cache_queries;
   }
 }
 
@@ -167,25 +189,40 @@ void maintain_land_cache() {
  */
 bool Cached_CrossesLand(double lat1, double lon1, double lat2, double lon2) {
   SegmentKey key(lat1, lon1, lat2, lon2);
-  ++segment_cache_queries;
+  segment_cache_queries.fetch_add(1);
 
   // Check segment cache first.
-  auto it = land_cache.find(key);
-  if (it != land_cache.end()) {
-    it->second.last_used = std::chrono::steady_clock::now();
-    ++segment_cache_hits;
-    return it->second.crosses_land;
+  {
+    std::lock_guard<std::mutex> lock(land_cache_mutex);
+    auto it = land_cache.find(key);
+    if (it != land_cache.end()) {
+      it->second.last_used = std::chrono::steady_clock::now();
+      segment_cache_hits.fetch_add(1);
+      return it->second.crosses_land;
+    }
   }
 
-  ++segment_cache_misses;
+  segment_cache_misses.fetch_add(1);
   bool result = PlugIn_GSHHS_CrossesLand(lat1, lon1, lat2, lon2);
 
   // Cache the result
-  if (land_cache.size() >= MAX_SEGMENT_CACHE_SIZE) {
-    evict_oldest_segment_entries();
+  {
+    std::lock_guard<std::mutex> lock(land_cache_mutex);
+    if (land_cache.size() >= MAX_SEGMENT_CACHE_SIZE) {
+      evict_oldest_segment_entries();
+    }
+    land_cache.emplace(key, SegmentCacheEntry(result));
   }
-  land_cache.emplace(key, SegmentCacheEntry(result));
   return result;
+}
+
+void clear_land_cache() {
+  std::lock_guard<std::mutex> lock(land_cache_mutex);
+  land_cache.clear();
+  segment_cache_hits.store(0);
+  segment_cache_misses.store(0);
+  segment_cache_queries.store(0);
+  segment_evictions.store(0);
 }
 
 bool ConstraintChecker::CheckSwellConstraint(

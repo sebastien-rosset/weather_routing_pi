@@ -187,5 +187,6 @@ public:
 // Land cache management functions
 void log_cache_stats();
 void maintain_land_cache();
+void clear_land_cache();
 
 #endif
