@@ -232,10 +232,12 @@ protected:
   virtual void OnLeftUp(wxMouseEvent& event) { event.Skip(); }
   virtual void OnLeftDown(wxMouseEvent& event) { event.Skip(); }
   virtual void OnPositionKeyDown(wxListEvent& event) { event.Skip(); }
+  virtual void OnWeatherPositionSelected(wxListEvent& event) { event.Skip(); }
   virtual void OnEditConfigurationClick(wxMouseEvent& event) { event.Skip(); }
   virtual void OnWeatherRoutesListLeftDown(wxMouseEvent& event) {
     event.Skip();
   }
+  virtual void OnWeatherRoutesListLeftUp(wxMouseEvent& event) { event.Skip(); }
   virtual void OnWeatherRouteSort(wxListEvent& event) { event.Skip(); }
   virtual void OnWeatherRouteSelected(wxListEvent& event) { event.Skip(); }
   virtual void OnWeatherRouteKeyDown(wxListEvent& event) { event.Skip(); }

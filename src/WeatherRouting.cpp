@@ -528,11 +528,16 @@ void WeatherRouting::OnEvtPanGesture(wxQT_PanGestureEvent& event) {
 }
 #endif
 
+// Shared mouse event handler for both weather routing lists (positions and
+// routes) Handles "press and hold" timer for context menu popup
 void WeatherRouting::OnLeftDown(wxMouseEvent& event) {
   m_tDownTimer.Start(1200, true);
   m_downPos = event.GetPosition();
+  event.Skip();  // Allow default selection behavior
 }
 
+// Shared mouse event handler for both weather routing lists
+// Stops the "press and hold" timer for context menu
 void WeatherRouting::OnLeftUp(wxMouseEvent& event) { m_tDownTimer.Stop(); }
 
 void WeatherRouting::OnDownTimer(wxTimerEvent&) {
@@ -1398,6 +1403,12 @@ void WeatherRouting::OnWeatherRouteSelected() {
   }
 
   SetEnableConfigurationMenu();
+}
+
+void WeatherRouting::OnWeatherPositionSelected() {
+  // For now, just refresh the parent to update the display
+  // This can be extended in the future to handle position-specific logic
+  GetParent()->Refresh();
 }
 
 void WeatherRouting::OnWeatherRouteKeyDown(wxListEvent& event) {
