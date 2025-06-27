@@ -622,14 +622,22 @@ WeatherRoutingPanel::WeatherRoutingPanel(wxWindow* parent, wxWindowID id,
       wxMouseEventHandler(WeatherRoutingPanel::OnEditPositionClick), NULL,
       this);
   m_lPositions->Connect(wxEVT_LEFT_DOWN,
-                        wxMouseEventHandler(WeatherRoutingPanel::OnLeftUp),
+                        wxMouseEventHandler(WeatherRoutingPanel::OnLeftDown),
                         NULL, this);
   m_lPositions->Connect(wxEVT_LEFT_UP,
-                        wxMouseEventHandler(WeatherRoutingPanel::OnLeftDown),
+                        wxMouseEventHandler(WeatherRoutingPanel::OnLeftUp),
                         NULL, this);
   m_lPositions->Connect(
       wxEVT_COMMAND_LIST_KEY_DOWN,
       wxListEventHandler(WeatherRoutingPanel::OnPositionKeyDown), NULL, this);
+  m_lPositions->Connect(
+      wxEVT_COMMAND_LIST_ITEM_SELECTED,
+      wxListEventHandler(WeatherRoutingPanel::OnWeatherPositionSelected), NULL,
+      this);
+  m_lPositions->Connect(
+      wxEVT_COMMAND_LIST_ITEM_DESELECTED,
+      wxListEventHandler(WeatherRoutingPanel::OnWeatherPositionSelected), NULL,
+      this);
   m_lWeatherRoutes->Connect(
       wxEVT_LEFT_DCLICK,
       wxMouseEventHandler(WeatherRoutingPanel::OnEditConfigurationClick), NULL,
@@ -674,14 +682,22 @@ WeatherRoutingPanel::~WeatherRoutingPanel() {
       wxMouseEventHandler(WeatherRoutingPanel::OnEditPositionClick), NULL,
       this);
   m_lPositions->Disconnect(wxEVT_LEFT_DOWN,
-                           wxMouseEventHandler(WeatherRoutingPanel::OnLeftUp),
+                           wxMouseEventHandler(WeatherRoutingPanel::OnLeftDown),
                            NULL, this);
   m_lPositions->Disconnect(wxEVT_LEFT_UP,
-                           wxMouseEventHandler(WeatherRoutingPanel::OnLeftDown),
+                           wxMouseEventHandler(WeatherRoutingPanel::OnLeftUp),
                            NULL, this);
   m_lPositions->Disconnect(
       wxEVT_COMMAND_LIST_KEY_DOWN,
       wxListEventHandler(WeatherRoutingPanel::OnPositionKeyDown), NULL, this);
+  m_lPositions->Disconnect(
+      wxEVT_COMMAND_LIST_ITEM_SELECTED,
+      wxListEventHandler(WeatherRoutingPanel::OnWeatherPositionSelected), NULL,
+      this);
+  m_lPositions->Disconnect(
+      wxEVT_COMMAND_LIST_ITEM_DESELECTED,
+      wxListEventHandler(WeatherRoutingPanel::OnWeatherPositionSelected), NULL,
+      this);
   m_lWeatherRoutes->Disconnect(
       wxEVT_LEFT_DCLICK,
       wxMouseEventHandler(WeatherRoutingPanel::OnEditConfigurationClick), NULL,
