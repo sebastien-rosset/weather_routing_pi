@@ -25,6 +25,8 @@
 #include "GribRecordSet.h"
 #include "RouteSimplifier.h"
 #include "RouteMapOverlay.h"
+#include "RoutePoint.h"
+#include "WeatherDataProvider.h"
 #include "georef.h"
 
 #include <algorithm>
@@ -198,6 +200,164 @@ wxTimeSpan RouteSimplifier::CalculateSegmentDuration(
       duration.Format("%D days %H:%M:%S"));
 
   return duration;
+}
+
+wxTimeSpan RouteSimplifier::CalculateSegmentDurationWithPolars(
+    const std::list<Position*>& segment) const {
+  if (segment.size() <= 1) {
+    wxLogGeneric(wxLOG_Debug, "Segment has only %zu waypoints", segment.size());
+    return wxTimeSpan(-1);
+  }
+
+  if (!m_routemap) {
+    wxLogGeneric(
+        wxLOG_Debug,
+        "RouteSimplifier: No routemap available for polar-based calculation");
+    return wxTimeSpan(-1);
+  }
+
+  Position* startPos = segment.front();
+  Position* endPos = segment.back();
+
+  // Get configuration from routemap
+  RouteMapConfiguration config = m_routemap->GetConfiguration();
+
+  // Calculate total distance and bearing between start and end using rhumb line
+  // (constant bearing navigation that will actually be used)
+  double bearing, totalDistance;
+  DistanceBearingMercator_Plugin(startPos->lat, startPos->lon, endPos->lat,
+                                 endPos->lon, &bearing, &totalDistance);
+
+  if (totalDistance < 1e-6) {
+    // Very short distance, minimal time
+    return wxTimeSpan::Seconds(1);
+  }
+
+  double totalDuration = 0.0;  // in seconds
+  double remainingDistance = totalDistance;
+
+  // Current position for stepping through
+  double currentLat = startPos->lat;
+  double currentLon = startPos->lon;
+
+  int currentPolar = startPos->polar;
+  double deltaTimeSeconds = config.DeltaTime;
+
+  wxLogGeneric(wxLOG_Debug,
+               "RouteSimplifier: Starting polar-based calculation: "
+               "distance=%.3f nm, bearing=%.1f°",
+               totalDistance, bearing);
+
+  int stepCount = 0;
+  const int maxSteps = 1000;  // Prevent infinite loops
+
+  while (remainingDistance > 1e-6 && stepCount < maxSteps) {
+    stepCount++;
+
+    // Create a temporary RoutePoint for weather data lookup
+    RoutePoint tempPoint(currentLat, currentLon, currentPolar, 0, 0, 0,
+                         DataMask::NONE, false);
+
+    // Get weather data using existing infrastructure (including climatology if
+    // configured)
+    double twdOverWater, twsOverWater;
+    DataMask dataMask;
+    bool hasWindData =
+        tempPoint.GetWindData(config, twdOverWater, twsOverWater, dataMask);
+
+    if (!hasWindData) {
+      // No weather data available - this is an error condition
+      wxLogGeneric(wxLOG_Warning,
+                   "RouteSimplifier: No weather data available at step %d "
+                   "(%.4f,%.4f), cannot calculate polar-based duration",
+                   stepCount, currentLat, currentLon);
+      return wxTimeSpan(-1);
+    }
+
+    // Calculate TWA (True Wind Angle)
+    double twa = fabs(twdOverWater - bearing);
+    if (twa > 180.0) twa = 360.0 - twa;
+
+    double tws = twsOverWater;
+
+    // Find best polar for current conditions
+    PolarSpeedStatus status;
+    int newPolar = config.boat.FindBestPolarForCondition(
+        currentPolar, tws, twa, 0.0, config.OptimizeTacking, &status);
+
+    if (newPolar < 0) {
+      newPolar = currentPolar >= 0 ? currentPolar : 0;
+    }
+
+    // Get boat speed from polar
+    double boatSpeed = 0.0;
+    if (newPolar < (int)config.boat.Polars.size()) {
+      boatSpeed = config.boat.Polars[newPolar].Speed(twa, tws, &status);
+    }
+
+    if (boatSpeed <= 0.0 || status != POLAR_SPEED_SUCCESS) {
+      // Invalid polar speed - this is an error condition
+      wxLogGeneric(
+          wxLOG_Warning,
+          "RouteSimplifier: Invalid polar speed at step %d (twa=%.1f°, "
+          "tws=%.1f kts, polar=%d), cannot calculate duration",
+          stepCount, twa, tws, newPolar);
+      return wxTimeSpan(-1);
+    }
+
+    // Calculate distance boat can travel in delta time
+    double stepDistance =
+        boatSpeed * (deltaTimeSeconds / 3600.0);  // Convert seconds to hours
+
+    // Don't overshoot the target
+    if (stepDistance >= remainingDistance) {
+      // Final segment - calculate time based on remaining distance
+      double finalTime =
+          remainingDistance / boatSpeed * 3600.0;  // Convert hours to seconds
+      totalDuration += finalTime;
+
+      wxLogGeneric(wxLOG_Debug,
+                   "RouteSimplifier: Final step: remaining=%.3f nm, speed=%.1f "
+                   "kts, time=%.1f sec",
+                   remainingDistance, boatSpeed, finalTime);
+      break;
+    }
+
+    // Move forward by step distance
+    double stepLat, stepLon;
+    PositionBearingDistanceMercator_Plugin(currentLat, currentLon, bearing,
+                                           stepDistance, &stepLat, &stepLon);
+
+    currentLat = stepLat;
+    currentLon = stepLon;
+    totalDuration += deltaTimeSeconds;
+    remainingDistance -= stepDistance;
+    currentPolar = newPolar;
+
+    if (stepCount <= 5 ||
+        stepCount % 10 == 0) {  // Log first few and every 10th step
+      wxLogGeneric(wxLOG_Debug,
+                   "RouteSimplifier: Step %d: pos=(%.4f,%.4f), twa=%.1f°, "
+                   "tws=%.1f kts, speed=%.1f kts, remaining=%.3f nm",
+                   stepCount, currentLat, currentLon, twa, tws, boatSpeed,
+                   remainingDistance);
+    }
+  }
+
+  if (stepCount >= maxSteps) {
+    wxLogGeneric(wxLOG_Warning,
+                 "RouteSimplifier: Maximum steps (%d) reached for segment "
+                 "calculation, this indicates a problem",
+                 maxSteps);
+    return wxTimeSpan(-1);
+  }
+
+  wxLogGeneric(wxLOG_Debug,
+               "RouteSimplifier: Polar-based calculation complete: %d steps, "
+               "%.1f seconds total",
+               stepCount, totalDuration);
+
+  return wxTimeSpan::Seconds(totalDuration);
 }
 
 SimplificationResult RouteSimplifier::Simplify(
@@ -432,11 +592,18 @@ SimplificationResult RouteSimplifier::Simplify(
       }
     }
 
-    // Calculate time for simplified segment.
+    // Calculate time for simplified segment using polar data.
     wxTimeSpan segmentSimplifiedDuration =
-        CalculateRouteDuration(simplifiedSegment);
+        CalculateSegmentDurationWithPolars(simplifiedSegment);
     if (segmentSimplifiedDuration <= 0) {
-      continue;
+      // Failed to calculate polar-based duration - stop simplification
+      result.success = false;
+      result.message = wxString::Format(
+          "Failed to calculate polar-based duration for segment %zu. "
+          "Check weather data availability and polar configuration.",
+          i);
+      wxLogMessage("RouteSimplifier: %s", result.message);
+      return result;
     }
     totalSimplifiedDuration += segmentSimplifiedDuration;
     wxLogGeneric(wxLOG_Debug, "RouteSimplifier: Segment %zu duration = %s", i,

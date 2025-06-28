@@ -171,6 +171,17 @@ private:
       const std::list<Position*>& segment) const;
 
   /**
+   * Calculate duration of a segment using polar data and weather conditions.
+   * This method subdivides the segment based on DeltaTime configuration,
+   * gets weather data at each step, calculates boat speed from polars,
+   * and accumulates the total duration.
+   * @param segment List of positions in segment
+   * @return Duration as a wxTimeSpan
+   */
+  wxTimeSpan CalculateSegmentDurationWithPolars(
+      const std::list<Position*>& segment) const;
+
+  /**
    * Build a validated route from candidate waypoints.
    * @param candidateRoute Points selected by Douglas-Peucker
    * @return Validated route with necessary intermediate waypoints
